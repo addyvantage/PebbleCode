@@ -1,9 +1,13 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Divider } from '../components/ui/Divider'
+import { buttonClass } from '../components/ui/buttonStyles'
 import { getDemoMode } from '../utils/demoMode'
 import { getPebbleMemory, type MemoryLedgerStatus } from '../utils/pebbleMemory'
+import { getSessionInsights } from '../utils/sessionInsights'
+import { getUserProfile } from '../utils/userProfile'
 
 const chartWidth = 640
 const chartHeight = 220
@@ -51,9 +55,20 @@ function formatTrend(current: number, previous: number, unit = '') {
   return `${sign}${delta}${unit}`
 }
 
+function average(values: number[]) {
+  if (values.length === 0) {
+    return 0
+  }
+
+  const sum = values.reduce((total, value) => total + value, 0)
+  return Math.round((sum / values.length) * 10) / 10
+}
+
 export function DashboardPage() {
   const memory = useMemo(() => getPebbleMemory('local_user'), [])
   const demoMode = useMemo(() => getDemoMode(), [])
+  const sessionInsights = useMemo(() => getSessionInsights(), [])
+  const userProfile = useMemo(() => getUserProfile(), [])
 
   const flowValues = memory.flowTrend30d.map((point) => point.value)
   const loadValues = memory.cognitiveLoadTrend30d.map((point) => point.value)
@@ -90,6 +105,33 @@ export function DashboardPage() {
   const previousBreakpoints = previousSession?.breakpoints ?? currentBreakpoints
 
   const maxRecovery = Math.max(...memory.recoveryByIssue.map((entry) => entry.avgRecoverySec))
+  const insightsCount = sessionInsights.length
+  const averageEffectiveness = average(
+    sessionInsights.map((entry) => entry.recoveryEffectivenessScore),
+  )
+  const guidedSessionsRate =
+    insightsCount === 0
+      ? 0
+      : Math.round(
+          (sessionInsights.filter((entry) => entry.recoveryMode === 'guided').length /
+            insightsCount) *
+            1000,
+        ) / 10
+  const averageRecoveryTime = average(sessionInsights.map((entry) => entry.totalRecoveryTime))
+  const averageDecisionTime = average(sessionInsights.map((entry) => entry.timeToDecisionSec))
+  const guidedFixDurations = sessionInsights
+    .filter((entry) => entry.applyFixUsed)
+    .map((entry) => entry.timeInGuidedFixSec)
+  const averageGuidedFixTime = average(guidedFixDurations)
+  const recentPeakTrend = sessionInsights.slice(-6).map((entry) => entry.struggleScorePeak)
+  const peakTrendDelta =
+    recentPeakTrend.length > 1
+      ? formatTrend(
+          recentPeakTrend[recentPeakTrend.length - 1],
+          recentPeakTrend[0],
+        )
+      : '0'
+  const maxPeakValue = Math.max(1, ...recentPeakTrend)
 
   return (
     <section className="page-enter space-y-6">
@@ -107,6 +149,120 @@ export function DashboardPage() {
           Personalized metrics track cognitive recovery quality, not only correctness,
           and preserve your improvement pattern across sessions.
         </p>
+      </Card>
+
+      <Card className="space-y-4" padding="md" interactive>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-base font-semibold text-pebble-text-primary">Session insights snapshot</p>
+            <p className="text-sm text-pebble-text-secondary">
+              Live outcomes from completed recovery sessions.
+            </p>
+          </div>
+          <Badge variant="neutral">{insightsCount} tracked sessions</Badge>
+        </div>
+        {insightsCount === 0 ? (
+          <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-4">
+            <p className="text-sm text-pebble-text-secondary">
+              Complete a session to populate guided recovery insights.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+            <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-4">
+              <p className="text-xs text-pebble-text-secondary">Avg recovery effectiveness</p>
+              <p className="mt-1 text-2xl font-semibold text-pebble-text-primary">
+                {averageEffectiveness}
+                <span className="ml-1 text-sm font-medium text-pebble-text-secondary">/100</span>
+              </p>
+            </div>
+            <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-4">
+              <p className="text-xs text-pebble-text-secondary">Show me usage rate</p>
+              <p className="mt-1 text-2xl font-semibold text-pebble-text-primary">
+                {guidedSessionsRate}
+                <span className="ml-1 text-sm font-medium text-pebble-text-secondary">%</span>
+              </p>
+            </div>
+            <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-4">
+              <p className="text-xs text-pebble-text-secondary">Avg time to recovery</p>
+              <p className="mt-1 text-2xl font-semibold text-pebble-text-primary">
+                {averageRecoveryTime}
+                <span className="ml-1 text-sm font-medium text-pebble-text-secondary">sec</span>
+              </p>
+            </div>
+            <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-4">
+              <p className="text-xs text-pebble-text-secondary">Avg decision time</p>
+              <p className="mt-1 text-2xl font-semibold text-pebble-text-primary">
+                {averageDecisionTime}
+                <span className="ml-1 text-sm font-medium text-pebble-text-secondary">sec</span>
+              </p>
+            </div>
+            <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-4">
+              <p className="text-xs text-pebble-text-secondary">Avg guided fix time</p>
+              <p className="mt-1 text-2xl font-semibold text-pebble-text-primary">
+                {averageGuidedFixTime}
+                <span className="ml-1 text-sm font-medium text-pebble-text-secondary">sec</span>
+              </p>
+            </div>
+            <div className="space-y-3 rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-pebble-text-secondary">Peak struggle score trend</p>
+                <span className="text-xs text-pebble-text-secondary">{peakTrendDelta}</span>
+              </div>
+              <div className="flex h-12 items-end gap-1.5">
+                {recentPeakTrend.map((value, index) => (
+                  <span
+                    key={`${value}-${index}`}
+                    className="w-3 rounded-sm bg-pebble-accent/70"
+                    style={{
+                      height: `${Math.max(14, (value / maxPeakValue) * 100)}%`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      <Card className="space-y-4" padding="md" interactive>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-base font-semibold text-pebble-text-primary">Profile</p>
+            <p className="text-sm text-pebble-text-secondary">
+              Personalization settings used by session guidance.
+            </p>
+          </div>
+          <Link to="/onboarding" className={buttonClass('secondary', 'sm')}>
+            Edit profile
+          </Link>
+        </div>
+        {userProfile ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-3">
+              <p className="text-xs text-pebble-text-secondary">Skill level</p>
+              <p className="mt-1 text-sm font-medium text-pebble-text-primary">{userProfile.skillLevel}</p>
+            </div>
+            <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-3">
+              <p className="text-xs text-pebble-text-secondary">Goal</p>
+              <p className="mt-1 text-sm font-medium text-pebble-text-primary">{userProfile.goal}</p>
+            </div>
+            <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-3">
+              <p className="text-xs text-pebble-text-secondary">Background</p>
+              <p className="mt-1 text-sm font-medium text-pebble-text-primary">{userProfile.background}</p>
+            </div>
+            <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-3">
+              <p className="text-xs text-pebble-text-secondary">Primary language</p>
+              <p className="mt-1 text-sm font-medium text-pebble-text-primary">{userProfile.primaryLanguage}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.06] p-4">
+            <p className="text-sm text-pebble-text-secondary">
+              Create your profile to personalize nudge tone and sensitivity.
+            </p>
+          </div>
+        )}
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

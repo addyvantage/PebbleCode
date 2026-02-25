@@ -7,6 +7,7 @@ type SimulatedEditorProps = {
   stepLabel: string
   codeLines: string[]
   highlightedLines: number[]
+  proposedLines?: number[]
   cursorLine: number
   runStatus: RunStatus
   runMessage: string
@@ -28,6 +29,7 @@ export function SimulatedEditor({
   stepLabel,
   codeLines,
   highlightedLines,
+  proposedLines = [],
   cursorLine,
   runStatus,
   runMessage,
@@ -55,17 +57,26 @@ export function SimulatedEditor({
             {codeLines.map((line, index) => {
               const lineNumber = index + 1
               const isHighlighted = highlightedLines.includes(lineNumber)
+              const isProposed = proposedLines.includes(lineNumber)
               const isCursorLine = cursorLine === lineNumber
               return (
                 <div
                   key={`${lineNumber}-${line}`}
                   className={`flex items-center gap-3 rounded-md px-2 py-0.5 ${
-                    isHighlighted ? 'bg-pebble-accent/12' : ''
+                    isHighlighted
+                      ? 'bg-pebble-accent/12'
+                      : isProposed
+                        ? 'bg-pebble-accent/8 ring-1 ring-inset ring-pebble-accent/35'
+                        : ''
                   } ${isCursorLine ? 'bg-pebble-overlay/10' : ''}`}
                 >
                   <span
                     className={`h-5 w-[2px] rounded-full ${
-                      isHighlighted ? 'bg-pebble-accent/65' : 'bg-transparent'
+                      isHighlighted
+                        ? 'bg-pebble-accent/65'
+                        : isProposed
+                          ? 'bg-pebble-accent/45'
+                          : 'bg-transparent'
                     }`}
                   />
                   <span className="w-5 text-right text-pebble-text-muted">{lineNumber}</span>

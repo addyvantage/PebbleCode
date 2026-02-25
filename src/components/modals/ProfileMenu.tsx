@@ -1,35 +1,112 @@
+import { createPortal } from 'react-dom'
+import { useTheme } from '../../hooks/useTheme'
 import { buttonClass } from '../ui/buttonStyles'
 
 type ProfileMenuProps = {
   open: boolean
+  anchorRect: DOMRect | null
   userName: string
   personaSummary: string
   onSignOut: () => void
+  onRequestClose: () => void
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value))
 }
 
 export function ProfileMenu({
   open,
+  anchorRect,
   userName,
   personaSummary,
   onSignOut,
+  onRequestClose,
 }: ProfileMenuProps) {
-  if (!open) {
+  const { theme } = useTheme()
+
+  if (!open || !anchorRect || typeof window === 'undefined') {
     return null
   }
 
-  return (
-    <div className="absolute right-0 top-11 z-30 w-64 rounded-xl border border-pebble-border/35 bg-pebble-panel/95 p-4 shadow-glass backdrop-blur-xl">
-      <p className="text-xs uppercase tracking-[0.06em] text-pebble-text-muted">Signed in as</p>
-      <p className="mt-1 text-base font-semibold text-pebble-text-primary">{userName}</p>
-      <p className="mt-2 text-sm text-pebble-text-secondary">{personaSummary}</p>
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
 
-      <button
-        type="button"
-        onClick={onSignOut}
-        className={`${buttonClass('secondary', 'sm')} mt-4 w-full`}
-      >
-        Sign out
-      </button>
-    </div>
+  const viewportPadding = 8
+  const panelWidth = Math.min(352, viewportWidth - viewportPadding * 2)
+  const panelHeightEstimate = 260
+  const belowTop = anchorRect.bottom + 8
+  const aboveTop = anchorRect.top - panelHeightEstimate - 8
+  const top =
+    belowTop + panelHeightEstimate <= viewportHeight - viewportPadding
+      ? belowTop
+      : clamp(aboveTop, viewportPadding, viewportHeight - panelHeightEstimate - viewportPadding)
+  const left = clamp(
+    anchorRect.right - panelWidth,
+    viewportPadding,
+    viewportWidth - panelWidth - viewportPadding,
+  )
+
+  const shellClass =
+    theme === 'light'
+      ? 'border border-slate-300/80 shadow-[0_20px_52px_rgba(15,23,42,0.2)]'
+      : 'border border-pebble-border/42 shadow-[0_22px_54px_rgba(2,8,23,0.34)]'
+
+  const baseLayerClass = theme === 'light' ? 'bg-white' : 'bg-pebble-panel'
+
+  return createPortal(
+    <div
+      data-profile-menu-root="true"
+      role="menu"
+      className={`fixed z-[100] isolate overflow-hidden rounded-xl backdrop-blur-xl ${shellClass}`}
+      style={{
+        top,
+        left,
+        width: panelWidth,
+      }}
+    >
+      <div className={`absolute inset-0 ${baseLayerClass}`} />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            theme === 'light'
+              ? 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,250,255,0.93) 100%)'
+              : 'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.03) 100%)',
+        }}
+      />
+
+      <div className="relative max-h-[70vh] overflow-auto p-4">
+        <div className="space-y-1.5">
+          <p className="text-xs uppercase tracking-[0.06em] text-pebble-text-muted">Signed in as</p>
+          <p className="break-words text-base font-semibold leading-6 text-pebble-text-primary">
+            {userName}
+          </p>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-pebble-border/24 bg-pebble-overlay/[0.06] px-3 py-2.5">
+          <p className="text-xs font-medium uppercase tracking-[0.05em] text-pebble-text-muted">
+            Persona
+          </p>
+          <p className="mt-1 whitespace-normal break-words text-sm leading-6 text-pebble-text-secondary">
+            {personaSummary}
+          </p>
+        </div>
+
+        <div className="my-3 border-t border-pebble-border/28" />
+
+        <button
+          type="button"
+          onClick={() => {
+            onSignOut()
+            onRequestClose()
+          }}
+          className={`${buttonClass('secondary', 'sm')} w-full`}
+        >
+          Sign out
+        </button>
+      </div>
+    </div>,
+    document.body,
   )
 }

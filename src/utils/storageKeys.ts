@@ -2,12 +2,16 @@ export const storageKeys = {
   theme: 'pebble_theme',
   demoMode: 'pebble_demo_mode',
   memory: 'pebble_memory_v1',
+  sessionInsights: 'pebble_session_insights',
+  userProfile: 'pebble_user_profile',
   userName: 'pebble_user_name',
   personaSummary: 'pebble_persona_summary',
 } as const
 
 const localUserKeys = [
   storageKeys.memory,
+  storageKeys.sessionInsights,
+  storageKeys.userProfile,
   storageKeys.userName,
   storageKeys.personaSummary,
 ] as const

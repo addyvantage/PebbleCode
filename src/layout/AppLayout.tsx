@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { ProfileMenu } from '../components/modals/ProfileMenu'
 import { SettingsModal } from '../components/modals/SettingsModal'
@@ -23,26 +23,39 @@ export function AppLayout() {
   const navigate = useNavigate()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [profileAnchorRect, setProfileAnchorRect] = useState<DOMRect | null>(null)
   const [demoMode, setDemoModeState] = useState(() => getDemoMode())
   const [profile, setProfile] = useState(() => getLocalUserProfile())
-  const profileContainerRef = useRef<HTMLDivElement | null>(null)
+  const profileButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const personaLabel = useMemo(() => {
     return profile.personaSummary === 'Not set' ? 'Not set' : profile.personaSummary
   }, [profile.personaSummary])
+
+  const updateProfileAnchorRect = useCallback(() => {
+    setProfileAnchorRect(profileButtonRef.current?.getBoundingClientRect() ?? null)
+  }, [])
 
   useEffect(() => {
     if (!isProfileOpen) {
       return
     }
 
-    function handleOutsideClick(event: MouseEvent) {
-      if (
-        profileContainerRef.current &&
-        !profileContainerRef.current.contains(event.target as Node)
-      ) {
-        setIsProfileOpen(false)
+    function handleOutsideClick(event: MouseEvent | TouchEvent) {
+      const target = event.target as HTMLElement | null
+      if (!target) {
+        return
       }
+
+      if (profileButtonRef.current?.contains(target)) {
+        return
+      }
+
+      if (target.closest('[data-profile-menu-root="true"]')) {
+        return
+      }
+
+      setIsProfileOpen(false)
     }
 
     function handleEscape(event: KeyboardEvent) {
@@ -52,13 +65,35 @@ export function AppLayout() {
     }
 
     window.addEventListener('mousedown', handleOutsideClick)
+    window.addEventListener('touchstart', handleOutsideClick)
     window.addEventListener('keydown', handleEscape)
 
     return () => {
       window.removeEventListener('mousedown', handleOutsideClick)
+      window.removeEventListener('touchstart', handleOutsideClick)
       window.removeEventListener('keydown', handleEscape)
     }
   }, [isProfileOpen])
+
+  useEffect(() => {
+    if (!isProfileOpen) {
+      return
+    }
+
+    updateProfileAnchorRect()
+
+    const syncAnchorRect = () => {
+      updateProfileAnchorRect()
+    }
+
+    window.addEventListener('resize', syncAnchorRect)
+    window.addEventListener('scroll', syncAnchorRect, true)
+
+    return () => {
+      window.removeEventListener('resize', syncAnchorRect)
+      window.removeEventListener('scroll', syncAnchorRect, true)
+    }
+  }, [isProfileOpen, updateProfileAnchorRect])
 
   useEffect(() => {
     return subscribeDemoMode((isEnabled) => {
@@ -130,27 +165,23 @@ export function AppLayout() {
                 </svg>
               </button>
 
-              <div ref={profileContainerRef} className="relative">
-                <button
-                  aria-label="Profile"
-                  aria-expanded={isProfileOpen}
-                  aria-haspopup="menu"
-                  onClick={() => setIsProfileOpen((current) => !current)}
-                  className={iconButtonClass}
-                  type="button"
-                >
-                  <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
-                    <circle cx="10" cy="7" r="2.6" stroke="currentColor" strokeWidth="1.25" />
-                    <path d="M4.9 15.25c.85-2.05 2.88-3.25 5.1-3.25s4.25 1.2 5.1 3.25" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
-                  </svg>
-                </button>
-                <ProfileMenu
-                  open={isProfileOpen}
-                  userName={profile.name}
-                  personaSummary={personaLabel}
-                  onSignOut={handleSignOut}
-                />
-              </div>
+              <button
+                ref={profileButtonRef}
+                aria-label="Profile"
+                aria-expanded={isProfileOpen}
+                aria-haspopup="menu"
+                onClick={() => {
+                  updateProfileAnchorRect()
+                  setIsProfileOpen((current) => !current)
+                }}
+                className={iconButtonClass}
+                type="button"
+              >
+                <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
+                  <circle cx="10" cy="7" r="2.6" stroke="currentColor" strokeWidth="1.25" />
+                  <path d="M4.9 15.25c.85-2.05 2.88-3.25 5.1-3.25s4.25 1.2 5.1 3.25" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -177,6 +208,15 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      <ProfileMenu
+        open={isProfileOpen}
+        anchorRect={profileAnchorRect}
+        userName={profile.name}
+        personaSummary={personaLabel}
+        onSignOut={handleSignOut}
+        onRequestClose={() => setIsProfileOpen(false)}
+      />
 
       <SettingsModal
         open={isSettingsOpen}

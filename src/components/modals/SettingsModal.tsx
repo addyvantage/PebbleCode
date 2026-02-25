@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { buttonClass } from '../ui/buttonStyles'
 import { useTheme } from '../../hooks/useTheme'
+import { buttonClass } from '../ui/buttonStyles'
 
 type SettingsModalProps = {
   open: boolean
@@ -10,11 +10,20 @@ type SettingsModalProps = {
   onResetLocalData: () => void
 }
 
-function segmentButtonClass(isActive: boolean) {
-  return `rounded-lg px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40 ${
+type SegmentTone = 'default' | 'accent' | 'neutral'
+
+function segmentButtonClass(isActive: boolean, tone: SegmentTone = 'default') {
+  const activeClass =
+    tone === 'accent'
+      ? 'bg-pebble-accent/90 text-white shadow-[0_1px_8px_rgba(2,8,23,0.22)] ring-1 ring-pebble-accent/35'
+      : tone === 'neutral'
+        ? 'bg-pebble-panel text-pebble-text-primary shadow-[0_1px_8px_rgba(2,8,23,0.16)] ring-1 ring-pebble-border/35'
+        : 'bg-pebble-panel text-pebble-text-primary shadow-[0_1px_8px_rgba(2,8,23,0.16)] ring-1 ring-pebble-border/35'
+
+  return `rounded-lg px-4 py-1.5 text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45 ${
     isActive
-      ? 'bg-pebble-overlay/16 text-pebble-text-primary'
-      : 'text-pebble-text-secondary hover:bg-pebble-overlay/12 hover:text-pebble-text-primary'
+      ? `${activeClass} scale-[1.01]`
+      : 'bg-transparent text-pebble-text-secondary hover:text-pebble-text-primary'
   }`
 }
 
@@ -32,18 +41,28 @@ export function SettingsModal({
       return
     }
 
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         onClose()
       }
     }
 
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', handleEscape)
 
     return () => {
-      document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleEscape)
     }
   }, [onClose, open])
@@ -52,10 +71,15 @@ export function SettingsModal({
     return null
   }
 
+  const modalSurfaceClass =
+    theme === 'light'
+      ? 'border border-slate-300/70 bg-white/[0.86] shadow-[0_24px_56px_rgba(15,23,42,0.18)]'
+      : 'border border-pebble-border/40 bg-pebble-panel/92 shadow-glass'
+
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/42 px-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose()
@@ -66,7 +90,13 @@ export function SettingsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className="glass-panel soft-ring w-full max-w-[480px] space-y-6 border border-pebble-border/40 bg-pebble-panel/92 p-6"
+        className={`soft-ring w-full max-w-[500px] space-y-6 rounded-2xl p-6 backdrop-blur-2xl ${modalSurfaceClass}`}
+        style={{
+          backgroundImage:
+            theme === 'light'
+              ? 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(241,247,255,0.9) 100%)'
+              : 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 100%)',
+        }}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -84,7 +114,12 @@ export function SettingsModal({
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-pebble-border/35 bg-pebble-overlay/8 text-pebble-text-secondary transition hover:bg-pebble-overlay/14 hover:text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40"
           >
             <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
-              <path d="M5 5l10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+              <path
+                d="M5 5l10 10M15 5 5 15"
+                stroke="currentColor"
+                strokeWidth="1.35"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -92,18 +127,18 @@ export function SettingsModal({
         <div className="space-y-4">
           <div className="space-y-2">
             <p className="text-sm font-medium text-pebble-text-primary">Theme</p>
-            <div className="inline-flex rounded-xl border border-pebble-border/35 bg-pebble-overlay/7 p-1">
+            <div className="inline-flex rounded-xl border border-pebble-border/40 bg-pebble-overlay/[0.08] p-1">
               <button
                 type="button"
                 onClick={() => setTheme('dark')}
-                className={segmentButtonClass(theme === 'dark')}
+                className={segmentButtonClass(theme === 'dark', 'default')}
               >
                 Dark
               </button>
               <button
                 type="button"
                 onClick={() => setTheme('light')}
-                className={segmentButtonClass(theme === 'light')}
+                className={segmentButtonClass(theme === 'light', 'default')}
               >
                 Light
               </button>
@@ -112,18 +147,18 @@ export function SettingsModal({
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-pebble-text-primary">Demo mode</p>
-            <div className="inline-flex rounded-xl border border-pebble-border/35 bg-pebble-overlay/7 p-1">
+            <div className="inline-flex rounded-xl border border-pebble-border/40 bg-pebble-overlay/[0.08] p-1">
               <button
                 type="button"
                 onClick={() => onDemoModeChange(true)}
-                className={segmentButtonClass(demoMode)}
+                className={segmentButtonClass(demoMode, 'accent')}
               >
                 On
               </button>
               <button
                 type="button"
                 onClick={() => onDemoModeChange(false)}
-                className={segmentButtonClass(!demoMode)}
+                className={segmentButtonClass(!demoMode, 'neutral')}
               >
                 Off
               </button>
@@ -132,11 +167,7 @@ export function SettingsModal({
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-pebble-text-primary">Data</p>
-            <button
-              type="button"
-              onClick={onResetLocalData}
-              className={buttonClass('secondary')}
-            >
+            <button type="button" onClick={onResetLocalData} className={buttonClass('secondary')}>
               Reset local data
             </button>
             <p className="text-xs text-pebble-text-secondary">

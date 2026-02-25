@@ -9,6 +9,7 @@ export type TelemetrySnapshot = {
 type StruggleContext = {
   runStatus: 'idle' | 'error' | 'success'
   phase: 'struggle' | 'recovery' | 'complete'
+  isAfk?: boolean
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -19,30 +20,33 @@ export function computeStruggleScore(
   snapshot: TelemetrySnapshot,
   context: StruggleContext,
 ) {
-  let score = 18
+  // Weighting keeps early noise low: idle/backspace rise slowly, repeated failures carry most weight, and success/recovery damp quickly.
+  let score = 16
 
-  score += Math.min(30, snapshot.idleSeconds * 2.4)
-  score += Math.min(26, snapshot.backspaceBurstCount * 6)
-  score += Math.min(24, snapshot.repeatErrorCount * 10)
+  if (!context.isAfk) {
+    score += Math.min(18, snapshot.idleSeconds * 1.2)
+  }
+  score += Math.min(14, snapshot.backspaceBurstCount * 2.8)
+  score += Math.min(36, snapshot.repeatErrorCount * 7.5)
 
-  if (snapshot.keysPerSecond < 1.1) {
-    score += (1.1 - snapshot.keysPerSecond) * 18
+  if (!context.isAfk && snapshot.keysPerSecond < 1) {
+    score += (1 - snapshot.keysPerSecond) * 12
   }
 
-  if (snapshot.keysPerSecond > 2) {
-    score -= Math.min(14, (snapshot.keysPerSecond - 2) * 8)
+  if (snapshot.keysPerSecond > 2.1) {
+    score -= Math.min(12, (snapshot.keysPerSecond - 2.1) * 7)
   }
 
   if (context.phase === 'recovery') {
-    score -= 14
+    score -= 20
   }
 
   if (context.runStatus === 'success') {
-    score -= 26
+    score -= 32
   }
 
   if (context.runStatus === 'error' && snapshot.runAttempts > 1) {
-    score += 8
+    score += 4
   }
 
   return clamp(Math.round(score), 0, 100)
