@@ -956,17 +956,13 @@ export function SessionPage() {
     }
 
     if (demoStep === 'init') {
-      if (!runDemoStepActionOnce('init', () => onReplay({ fromDemo: true }))) {
-        return
-      }
+      runDemoStepActionOnce('init', () => onReplay({ fromDemo: true }))
       scheduleDemoNext('run_first', DEMO_PACING.pauseAfterTypingMs, 'init->run_first')
       return
     }
 
     if (demoStep === 'run_first') {
-      if (!runDemoStepActionOnce('run_first', () => onRun({ fromDemo: true }))) {
-        return
-      }
+      runDemoStepActionOnce('run_first', () => onRun({ fromDemo: true }))
       scheduleDemoNext('type_partial_fix', DEMO_PACING.pauseAfterRunMs, 'run_first->type_partial_fix')
       return
     }
@@ -976,9 +972,7 @@ export function SessionPage() {
         return
       }
 
-      if (!runDemoStepActionOnce('type_partial_fix', () => undefined)) {
-        return
-      }
+      runDemoStepActionOnce('type_partial_fix', () => undefined)
       scheduleDemoTyping(demoPartialFixCode, {
         key: 'type_partial_fix',
         nextStep: 'run_second',
@@ -987,14 +981,17 @@ export function SessionPage() {
     }
 
     if (demoStep === 'run_second') {
-      if (!runDemoStepActionOnce('run_second', () => onRun({ fromDemo: true }))) {
-        return
-      }
+      runDemoStepActionOnce('run_second', () => onRun({ fromDemo: true }))
       scheduleDemoNext('wait_nudge', DEMO_PACING.pauseAfterRunMs, 'run_second->wait_nudge')
       return
     }
 
     if (demoStep === 'wait_nudge') {
+      if (sim.recovery.mode === 'guided' && !sim.recovery.fixApplied) {
+        scheduleDemoNext('guided_progress', DEMO_PACING.pauseOnGuidedStepMs, 'wait_nudge:guided-open')
+        return
+      }
+
       if (sim.nudgeVisible) {
         scheduleDemoNext('show_me', DEMO_PACING.pauseOnNudgeMs, 'wait_nudge:visible')
         return
@@ -1009,14 +1006,17 @@ export function SessionPage() {
     }
 
     if (demoStep === 'show_me') {
+      if (sim.recovery.mode === 'guided' && !sim.recovery.fixApplied) {
+        scheduleDemoNext('guided_progress', DEMO_PACING.pauseOnGuidedStepMs, 'show_me:guided-open')
+        return
+      }
+
       if (!sim.nudgeVisible) {
         scheduleDemoNext('wait_nudge', DEMO_PACING.pollMs, 'show_me:wait_for_nudge')
         return
       }
 
-      if (!runDemoStepActionOnce('show_me', () => onShowMe({ fromDemo: true }))) {
-        return
-      }
+      runDemoStepActionOnce('show_me', () => onShowMe({ fromDemo: true }))
       scheduleDemoNext('guided_progress', DEMO_PACING.pauseOnGuidedStepMs, 'show_me->guided_progress')
       return
     }
@@ -1048,9 +1048,7 @@ export function SessionPage() {
     }
 
     if (demoStep === 'apply_fix') {
-      if (!runDemoStepActionOnce('apply_fix', () => onGuidedApplyFix({ fromDemo: true }))) {
-        return
-      }
+      runDemoStepActionOnce('apply_fix', () => onGuidedApplyFix({ fromDemo: true }))
       scheduleDemoNext('run_success', DEMO_PACING.pauseAfterApplyMs, 'apply_fix->run_success')
       return
     }
@@ -1090,9 +1088,7 @@ export function SessionPage() {
     }
 
     if (demoStep === 'replay') {
-      if (!runDemoStepActionOnce('replay', () => onReplay({ fromDemo: true }))) {
-        return
-      }
+      runDemoStepActionOnce('replay', () => onReplay({ fromDemo: true }))
       scheduleDemoNext('run_first', DEMO_PACING.pauseAfterTypingMs, 'replay->run_first')
     }
   }, [

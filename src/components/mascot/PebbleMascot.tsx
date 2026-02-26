@@ -141,7 +141,9 @@ export function PebbleMascot({ data }: { data: MascotContextData }) {
 
     const dragged = dragRef.current.moved
     dragRef.current.active = false
-    event.currentTarget.releasePointerCapture(event.pointerId)
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
     dragRef.current = null
 
     setPosition((prev) => {
@@ -153,6 +155,38 @@ export function PebbleMascot({ data }: { data: MascotContextData }) {
     if (!dragged) {
       setExpanded((prev) => !prev)
     }
+  }
+
+  function onPointerCancel(event: React.PointerEvent<HTMLButtonElement>) {
+    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) {
+      return
+    }
+
+    dragRef.current.active = false
+    dragRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+
+    setPosition((prev) => {
+      const next = clampPosition(prev)
+      persistPosition(next)
+      return next
+    })
+  }
+
+  function onLostPointerCapture(event: React.PointerEvent<HTMLButtonElement>) {
+    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) {
+      return
+    }
+
+    dragRef.current.active = false
+    dragRef.current = null
+    setPosition((prev) => {
+      const next = clampPosition(prev)
+      persistPosition(next)
+      return next
+    })
   }
 
   return (
@@ -168,6 +202,8 @@ export function PebbleMascot({ data }: { data: MascotContextData }) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onLostPointerCapture={onLostPointerCapture}
         className="flex h-[58px] w-[58px] items-center justify-center rounded-full border border-pebble-accent/35 bg-pebble-panel/95 text-lg shadow-[0_16px_28px_rgba(2,8,23,0.38)] backdrop-blur-md transition hover:border-pebble-accent/50"
         style={{ touchAction: 'none', cursor: 'grab' }}
         aria-label="Toggle Pebble mascot"
