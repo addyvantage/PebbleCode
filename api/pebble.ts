@@ -1,5 +1,5 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime'
-import { PEBBLE_CLARIFY_RULE, PEBBLE_OUTPUT_RULE, PEBBLE_SYSTEM_PROMPT } from '../shared/pebblePromptRules'
+import { PEBBLE_CLARIFY_RULE, PEBBLE_OUTPUT_RULE, PEBBLE_SYSTEM_PROMPT } from './_shared/pebblePromptRules'
 
 type PebbleContext = {
   taskTitle?: unknown
@@ -203,206 +203,198 @@ function getBedrockText(payload: unknown) {
   return lines.join('\n')
 }
 
-function isHealthCheckRequest(req: { query?: Record<string, unknown>; url?: string }) {
-  const queryValue = req.query?.health
-  if (queryValue === '1') {
-    return true
-  }
-
-  if (Array.isArray(queryValue) && queryValue.includes('1')) {
-    return true
-  }
-
-  if (typeof req.url === 'string') {
-    try {
-      const searchParams = new URL(req.url, 'http://localhost').searchParams
-      return searchParams.get('health') === '1'
-    } catch {
-      return false
-    }
-  }
-
-  return false
-}
-
 export default async function handler(
   req: {
     method?: string
     body?: unknown
     on?: (event: string, cb: (chunk: Buffer) => void) => void
-    query?: Record<string, unknown>
-    url?: string
   },
-  res: { status: (code: number) => { json: (payload: unknown) => void }; json: (payload: unknown) => void },
+  res: {
+    status: (code: number) => { json: (payload: unknown) => void }
+    json: (payload: unknown) => void
+    setHeader?: (name: string, value: string) => void
+  },
 ) {
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
   const region = process.env.AWS_REGION
   const modelId = process.env.BEDROCK_MODEL_ID
+  const debugErrors = process.env.PEBBLE_DEBUG_ERRORS === '1'
+  let timedOut = false
+  let missingVars: string[] = []
 
-  if (req.method === 'GET' && isHealthCheckRequest(req)) {
+  if (req.method === 'GET') {
     sendJson(res, 200, {
       ok: true,
-      region: region ?? '',
-      modelId: modelId ?? '',
-      hasAccessKey: Boolean(accessKeyId),
-      hasSecretKey: Boolean(secretAccessKey),
+      route: '/api/pebble',
+      hasEnv: {
+        AWS_REGION: Boolean(region),
+        BEDROCK_MODEL_ID: Boolean(modelId),
+        AWS_ACCESS_KEY_ID: Boolean(accessKeyId),
+        AWS_SECRET_ACCESS_KEY: Boolean(secretAccessKey),
+      },
     })
     return
   }
 
   if (req.method !== 'POST') {
-    sendJson(res, 405, { error: 'Method not allowed. Use POST.' })
+    res.setHeader?.('Allow', 'GET, POST')
+    sendJson(res, 405, { error: 'Method not allowed. Use GET or POST.' })
     return
   }
-
-  const missingVars = [
-    ['AWS_REGION', region],
-    ['BEDROCK_MODEL_ID', modelId],
-  ]
-    .filter(([, value]) => !value)
-    .map(([key]) => key)
-
-  if (missingVars.length > 0) {
-    sendJson(res, 500, { error: `Server missing required env vars: ${missingVars.join(', ')}.` })
-    return
-  }
-
-  if ((accessKeyId && !secretAccessKey) || (!accessKeyId && secretAccessKey)) {
-    sendJson(res, 500, { error: 'Set both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or neither.' })
-    return
-  }
-
-  const awsRegion = region as string
-  const bedrockModelId = modelId as string
-  if (bedrockModelId === 'anthropic.claude-sonnet-4-5' || !bedrockModelId.includes('v1:0')) {
-    sendJson(res, 500, {
-      error:
-        'BEDROCK_MODEL_ID looks incomplete. Use the exact modelId from `aws bedrock list-foundation-models ...` (example: anthropic.claude-sonnet-4-5-20250929-v1:0 or global.*).',
-    })
-    return
-  }
-
-  const rawBody = await readBody(req)
-  let body: PebbleRequestBody
-  try {
-    body = rawBody ? (JSON.parse(rawBody) as PebbleRequestBody) : {}
-  } catch {
-    sendJson(res, 400, { error: 'Invalid JSON body.' })
-    return
-  }
-
-  if (typeof body.prompt !== 'string' || !body.prompt.trim()) {
-    sendJson(res, 400, { error: 'Field "prompt" must be a non-empty string.' })
-    return
-  }
-
-  if (!isContextValid(body.context)) {
-    sendJson(res, 400, { error: 'Field "context" must be an object.' })
-    return
-  }
-  const compactContext = compactContextForModel(body.context)
-
-  const controller = new AbortController()
-  let timedOut = false
-  const timeout = setTimeout(() => {
-    timedOut = true
-    controller.abort()
-  }, REQUEST_TIMEOUT_MS)
-  const clientConfig: ConstructorParameters<typeof BedrockRuntimeClient>[0] = {
-    region: awsRegion,
-  }
-  if (accessKeyId && secretAccessKey) {
-    clientConfig.credentials = {
-      accessKeyId,
-      secretAccessKey,
-    }
-  }
-  const client = new BedrockRuntimeClient(clientConfig)
 
   try {
-    const userMessage = buildBedrockUserMessage(body.prompt, compactContext)
-    if (process.env.PEBBLE_DEBUG_COST === '1') {
-      const totalChars = PEBBLE_SYSTEM_PROMPT.length + userMessage.length
-      const estimatedTokens = Math.ceil(totalChars / 4)
-      console.log(
-        `[pebble-cost] systemChars=${PEBBLE_SYSTEM_PROMPT.length} userChars=${userMessage.length} totalChars=${totalChars} estTokens=${estimatedTokens}`,
-      )
-    }
+    missingVars = [
+      ['AWS_REGION', region],
+      ['BEDROCK_MODEL_ID', modelId],
+    ]
+      .filter(([, value]) => !value)
+      .map(([key]) => key)
 
-    const command = new InvokeModelCommand({
-      modelId: bedrockModelId,
-      contentType: 'application/json',
-      accept: 'application/json',
-      body: JSON.stringify({
-        anthropic_version: 'bedrock-2023-05-31',
-        max_tokens: 240,
-        temperature: 0.35,
-        system: PEBBLE_SYSTEM_PROMPT,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: userMessage,
-              },
-            ],
-          },
-        ],
-      }),
-    })
-
-    const response = await client.send(command, { abortSignal: controller.signal })
-    const rawResponse = decodeBedrockBody(response.body)
-    if (!rawResponse) {
-      sendJson(res, 502, { error: 'Bedrock returned an empty response body.' })
+    if (missingVars.length > 0) {
+      sendJson(res, 500, { error: `Server missing required env vars: ${missingVars.join(', ')}.` })
       return
     }
 
-    let payload: unknown
+    if ((accessKeyId && !secretAccessKey) || (!accessKeyId && secretAccessKey)) {
+      sendJson(res, 500, { error: 'Set both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or neither.' })
+      return
+    }
+
+    const awsRegion = region as string
+    const bedrockModelId = modelId as string
+    if (bedrockModelId === 'anthropic.claude-sonnet-4-5' || !bedrockModelId.includes('v1:0')) {
+      sendJson(res, 500, {
+        error:
+          'BEDROCK_MODEL_ID looks incomplete. Use the exact modelId from `aws bedrock list-foundation-models ...` (example: anthropic.claude-sonnet-4-5-20250929-v1:0 or global.*).',
+      })
+      return
+    }
+
+    const rawBody = await readBody(req)
+    let body: PebbleRequestBody
     try {
-      payload = JSON.parse(rawResponse) as unknown
+      body = rawBody ? (JSON.parse(rawBody) as PebbleRequestBody) : {}
     } catch {
-      sendJson(res, 502, { error: 'Bedrock returned malformed JSON.' })
+      sendJson(res, 400, { error: 'Invalid JSON body.' })
       return
     }
 
-    const text = getBedrockText(payload)
-    if (!text) {
-      sendJson(res, 502, { error: 'Bedrock returned no text output.' })
+    if (typeof body.prompt !== 'string' || !body.prompt.trim()) {
+      sendJson(res, 400, { error: 'Field "prompt" must be a non-empty string.' })
       return
     }
 
-    sendJson(res, 200, { text })
-  } catch (error) {
-    const errorName = error instanceof Error ? error.name : 'UnknownError'
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    const metadata =
-      isRecord(error) && '$metadata' in error && isRecord(error.$metadata)
-        ? error.$metadata
-        : undefined
-    console.error('[pebble-bedrock-error]', {
+    if (!isContextValid(body.context)) {
+      sendJson(res, 400, { error: 'Field "context" must be an object.' })
+      return
+    }
+    const compactContext = compactContextForModel(body.context)
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, REQUEST_TIMEOUT_MS)
+    const clientConfig: ConstructorParameters<typeof BedrockRuntimeClient>[0] = {
       region: awsRegion,
-      modelId: bedrockModelId,
-      errorName,
-      errorMessage,
-      metadata,
-    })
-
-    if (controller.signal.aborted) {
-      if (timedOut) {
-        sendJson(res, 504, { error: 'Pebble request timed out.' })
-      } else {
-        sendJson(res, 200, { text: 'Stopped.' })
+    }
+    if (accessKeyId && secretAccessKey) {
+      clientConfig.credentials = {
+        accessKeyId,
+        secretAccessKey,
       }
+    }
+    const client = new BedrockRuntimeClient(clientConfig)
+
+    try {
+      const userMessage = buildBedrockUserMessage(body.prompt, compactContext)
+      if (process.env.PEBBLE_DEBUG_COST === '1') {
+        const totalChars = PEBBLE_SYSTEM_PROMPT.length + userMessage.length
+        const estimatedTokens = Math.ceil(totalChars / 4)
+        console.log(
+          `[pebble-cost] systemChars=${PEBBLE_SYSTEM_PROMPT.length} userChars=${userMessage.length} totalChars=${totalChars} estTokens=${estimatedTokens}`,
+        )
+      }
+
+      const command = new InvokeModelCommand({
+        modelId: bedrockModelId,
+        contentType: 'application/json',
+        accept: 'application/json',
+        body: JSON.stringify({
+          anthropic_version: 'bedrock-2023-05-31',
+          max_tokens: 240,
+          temperature: 0.35,
+          system: PEBBLE_SYSTEM_PROMPT,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: userMessage,
+                },
+              ],
+            },
+          ],
+        }),
+      })
+
+      const response = await client.send(command, { abortSignal: controller.signal })
+      const rawResponse = decodeBedrockBody(response.body)
+      if (!rawResponse) {
+        sendJson(res, 502, { error: 'Bedrock returned an empty response body.' })
+        return
+      }
+
+      let payload: unknown
+      try {
+        payload = JSON.parse(rawResponse) as unknown
+      } catch {
+        sendJson(res, 502, { error: 'Bedrock returned malformed JSON.' })
+        return
+      }
+
+      const text = getBedrockText(payload)
+      if (!text) {
+        sendJson(res, 502, { error: 'Bedrock returned no text output.' })
+        return
+      }
+
+      sendJson(res, 200, { text })
+    } catch (error) {
+      if (controller.signal.aborted) {
+        if (timedOut) {
+          sendJson(res, 504, { error: 'Pebble request timed out.' })
+        } else {
+          sendJson(res, 200, { text: 'Stopped.' })
+        }
+        return
+      }
+      throw error
+    } finally {
+      clearTimeout(timeout)
+      client.destroy()
+    }
+  } catch (error) {
+    const name = error instanceof Error ? error.name : 'UnknownError'
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    const stack = error instanceof Error && error.stack ? error.stack : `${name}: ${message}`
+    console.error('[pebble-api-error]', stack)
+
+    if (debugErrors) {
+      sendJson(res, 502, {
+        error: message,
+        name,
+        stackTop: stack.split('\n').slice(0, 12).join('\n'),
+        timedOut,
+        region: region ?? '',
+        modelId: modelId ?? '',
+        missingVars,
+      })
       return
     }
 
-    const message = error instanceof Error && error.message ? error.message : 'Bedrock request failed.'
-    sendJson(res, 502, { error: message })
-  } finally {
-    clearTimeout(timeout)
-    client.destroy()
+    sendJson(res, 502, { error: 'Pebble server request failed.' })
   }
 }

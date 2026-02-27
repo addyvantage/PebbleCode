@@ -156,6 +156,12 @@ Optional:
    - `npm run build`
    - Expect TypeScript + Vite build success.
 
+## API Smoke Test (Local/Deployed)
+- Health (no Bedrock call):
+  - `curl -sS http://localhost:5173/api/pebble | jq`
+- Minimal POST:
+  - `curl -sS -X POST http://localhost:5173/api/pebble -H "Content-Type: application/json" -d '{"prompt":"hi","context":{}}' | jq`
+
 ## Vercel Deployment Notes
 - Runtime: Node serverless function for `/api/pebble`.
 - Set env vars in Vercel project settings (do not use `VITE_` prefix for secrets).
