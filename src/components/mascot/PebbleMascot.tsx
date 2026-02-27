@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { PEBBLE_CLARIFY_RULE, PEBBLE_OUTPUT_RULE } from '../../shared/pebblePromptRules'
+import { PEBBLE_CLARIFY_RULE, PEBBLE_OUTPUT_RULE } from '../../../shared/pebblePromptRules'
 import { askPebble } from '../../utils/pebbleLLM'
 
 export type MascotContextData = {
@@ -223,6 +223,19 @@ function classifyAssistantKind(answer: string): MemoryTurn['kind'] {
   }
 
   return 'answer'
+}
+
+function normalizeAskFailureMessage(answer: string) {
+  const normalized = answer.trim()
+  if (!/pebble request failed/i.test(normalized)) {
+    return answer
+  }
+
+  const match = normalized.match(/\bstatus\s+(\d{3})\b/i)
+  if (match?.[1]) {
+    return `Pebble request failed (status ${match[1]}). Open console / Vercel logs.`
+  }
+  return 'Pebble request failed. Open console / Vercel logs.'
 }
 
 function buildPebblePrompt(question: string, data: MascotContextData, memory: MemoryTurn[]) {
@@ -574,10 +587,11 @@ export function PebbleMascot({ data }: { data: MascotContextData }) {
         return
       }
 
-      const assistantKind = classifyAssistantKind(answer)
+      const finalAnswer = normalizeAskFailureMessage(answer)
+      const assistantKind = classifyAssistantKind(finalAnswer)
       setLastAnswerIsErrorish(assistantKind === 'error_answer')
-      setFullAnswer(answer)
-      startTypewriter(answer, requestId, assistantKind)
+      setFullAnswer(finalAnswer)
+      startTypewriter(finalAnswer, requestId, assistantKind)
     } finally {
       if (activeAbortRef.current === abortController) {
         activeAbortRef.current = null

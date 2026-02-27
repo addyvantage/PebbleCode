@@ -1,4 +1,4 @@
-import { PEBBLE_SYSTEM_PROMPT } from '../shared/pebblePromptRules'
+import { PEBBLE_SYSTEM_PROMPT } from '../../shared/pebblePromptRules'
 
 type PebbleLLMContext = {
   taskTitle: string
@@ -60,6 +60,35 @@ async function readJsonResponse(response: Response) {
   }
 }
 
+async function readErrorSnippet(response: Response) {
+  let raw = ''
+  try {
+    raw = await response.text()
+  } catch {
+    return '<unreadable body>'
+  }
+
+  const trimmed = raw.trim()
+  if (!trimmed) {
+    return '<empty body>'
+  }
+
+  let normalized = trimmed
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+    normalized = typeof parsed === 'string' ? parsed : JSON.stringify(parsed)
+  } catch {
+    normalized = trimmed
+  }
+
+  return normalized.replace(/\s+/g, ' ').slice(0, 500)
+}
+
+function getStatusFromMessage(message: string) {
+  const match = message.match(/\bHTTP\s+(\d{3})\b/i)
+  return match?.[1] ?? ''
+}
+
 function getResponsesText(payload: unknown) {
   if (!payload || typeof payload !== 'object') {
     return ''
@@ -102,27 +131,35 @@ async function askServer(input: AskPebbleInput) {
   const { controller, clear } = withTimeout(REQUEST_TIMEOUT_MS)
   const disconnect = bridgeAbortSignal(controller, input.signal)
   try {
-    const response = await fetch('/api/pebble', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: input.prompt,
-        context: input.context,
-      }),
-      signal: controller.signal,
-    })
-
-    const payload = await readJsonResponse(response)
-    if (!response.ok) {
-      const message =
-        payload && typeof payload === 'object' && 'error' in payload
-          ? String((payload as { error?: unknown }).error ?? '')
-          : ''
-      throw new Error(message || 'Pebble server request failed.')
+    let response: Response
+    try {
+      response = await fetch('/api/pebble', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: input.prompt,
+          context: input.context,
+        }),
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw error
+        }
+        throw new Error(`Fetch /api/pebble failed: ${error.name}: ${error.message}`)
+      }
+      throw new Error('Fetch /api/pebble failed: unknown error')
     }
 
+    if (!response.ok) {
+      const snippet = await readErrorSnippet(response)
+      throw new Error(`HTTP ${response.status} from /api/pebble. Body: ${snippet}`)
+    }
+
+    const payload = await readJsonResponse(response)
     const text =
       payload && typeof payload === 'object' && 'text' in payload
         ? String((payload as { text?: unknown }).text ?? '')
@@ -150,37 +187,45 @@ async function askUnsafeClient(input: AskPebbleInput) {
   const disconnect = bridgeAbortSignal(controller, input.signal)
 
   try {
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        input: [
-          {
-            role: 'system',
-            content: PEBBLE_SYSTEM_PROMPT,
-          },
-          {
-            role: 'user',
-            content: `${input.prompt}\nContext:${JSON.stringify(input.context)}`,
-          },
-        ],
-      }),
-      signal: controller.signal,
-    })
-
-    const payload = await readJsonResponse(response)
-    if (!response.ok) {
-      const message =
-        payload && typeof payload === 'object' && 'error' in payload
-          ? String((payload as { error?: { message?: string } }).error?.message ?? '')
-          : ''
-      throw new Error(message || 'OpenAI client request failed.')
+    let response: Response
+    try {
+      response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          input: [
+            {
+              role: 'system',
+              content: PEBBLE_SYSTEM_PROMPT,
+            },
+            {
+              role: 'user',
+              content: `${input.prompt}\nContext:${JSON.stringify(input.context)}`,
+            },
+          ],
+        }),
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw error
+        }
+        throw new Error(`Fetch OpenAI failed: ${error.name}: ${error.message}`)
+      }
+      throw new Error('Fetch OpenAI failed: unknown error')
     }
 
+    if (!response.ok) {
+      const snippet = await readErrorSnippet(response)
+      throw new Error(`HTTP ${response.status} from OpenAI. Body: ${snippet}`)
+    }
+
+    const payload = await readJsonResponse(response)
     const text = getResponsesText(payload)
     if (!text) {
       throw new Error('OpenAI returned an empty response.')
@@ -211,7 +256,12 @@ export async function askPebble(input: AskPebbleInput): Promise<string> {
         }
         return 'Pebble timed out while thinking. Try a shorter question.'
       }
-      return error.message || 'Pebble hit a temporary issue. Try again.'
+      console.error('[pebble-llm]', error.name, error.message)
+      const status = getStatusFromMessage(error.message)
+      if (status) {
+        return `Pebble request failed (status ${status}). Open console / Vercel logs.`
+      }
+      return `Pebble request failed. Open console / Vercel logs. (${error.name})`
     }
     return 'Pebble hit a temporary issue. Try again.'
   }
