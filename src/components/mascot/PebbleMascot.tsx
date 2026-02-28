@@ -24,7 +24,6 @@ export type MascotContextData = {
   repeatErrorCount: number
   errorHistory: string[]
   isAfk: boolean
-  demoMode: boolean
 }
 
 type AssistantState = 'idle' | 'thinking' | 'typing' | 'done'
@@ -862,10 +861,6 @@ export function PebbleMascot({ data }: { data: MascotContextData }) {
           {data.isAfk && (
             <p className="mt-1 text-xs text-pebble-text-secondary">Paused while you're away.</p>
           )}
-          {data.demoMode && (
-            <p className="mt-1 text-xs text-pebble-text-muted">Demo mode active.</p>
-          )}
-
           <div className="mt-3 rounded-lg border border-pebble-border/28 bg-pebble-overlay/[0.06] p-2.5">
             <p className="text-[11px] font-medium text-pebble-text-secondary">Ask Pebble</p>
             <div className="mt-2 flex items-center gap-2">

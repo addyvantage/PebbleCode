@@ -22,13 +22,11 @@ import { GrowthLedger } from '../components/insights/GrowthLedger'
 import { NextTasks } from '../components/insights/NextTasks'
 import { StreakCalendar } from '../components/insights/StreakCalendar'
 import { getPebbleUserState } from '../utils/pebbleUserState'
-import { getDemoMode, subscribeDemoMode } from '../utils/demoMode'
 import { useI18n } from '../i18n/useI18n'
 import { loadCurriculumPath, type CurriculumUnit } from '../content/pathLoader'
 import { getLocalizedUnitCopy } from '../i18n/unitContent'
 import {
   getAnalyticsState,
-  seedDemoAnalyticsData,
   subscribeAnalytics,
 } from '../lib/analyticsStore'
 import {
@@ -54,7 +52,6 @@ const RADAR_AXIS_ORDER = [
 export function DashboardPage() {
   const { t, lang, isRTL } = useI18n()
   const proseClass = isRTL ? 'rtlText' : ''
-  const [demoMode, setDemoMode] = useState(() => getDemoMode())
   const [units, setUnits] = useState<CurriculumUnit[]>([])
   const [unitsLoading, setUnitsLoading] = useState(true)
   const [nowTick, setNowTick] = useState(() => Date.now())
@@ -69,19 +66,6 @@ export function DashboardPage() {
       'python'
     )
   }, [pebbleState])
-  const trackId = useMemo(() => {
-    const level =
-      pebbleState.curriculum?.selectedLevel ??
-      pebbleState.placement?.level ??
-      pebbleState.onboarding?.level ??
-      'beginner'
-    return `${selectedLanguage}:${level}`
-  }, [pebbleState, selectedLanguage])
-
-  useEffect(() => {
-    return subscribeDemoMode((value) => setDemoMode(value))
-  }, [])
-
   useEffect(() => {
     const id = window.setInterval(() => setNowTick(Date.now()), 60_000)
     return () => window.clearInterval(id)
@@ -113,17 +97,6 @@ export function DashboardPage() {
       mounted = false
     }
   }, [selectedLanguage])
-
-  useEffect(() => {
-    if (!demoMode || units.length === 0) {
-      return
-    }
-    seedDemoAnalyticsData({
-      language: selectedLanguage,
-      trackId,
-      unitIds: units.map((unit) => unit.id),
-    })
-  }, [demoMode, selectedLanguage, trackId, units])
 
   const unitProgress = useMemo(() => loadUnitProgress(), [analyticsState.updatedAt])
   const submissions = useMemo(() => loadSubmissions(), [analyticsState.updatedAt])
@@ -190,9 +163,6 @@ export function DashboardPage() {
           <div className="flex items-center gap-2">
             <Badge variant="neutral">{t('insights.hero.chipLast7')}</Badge>
             <Badge variant={hasLiveData ? 'success' : 'neutral'}>{t('insights.hero.chipLive')}</Badge>
-            <Badge variant={demoMode ? 'warning' : 'neutral'}>
-              {t('insights.hero.demoMode')} {demoMode ? t('actions.on') : t('actions.off')}
-            </Badge>
           </div>
         </div>
         <h1 className={`text-3xl font-semibold tracking-[-0.02em] text-pebble-text-primary ${proseClass}`}>

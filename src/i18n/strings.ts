@@ -128,6 +128,7 @@ export const EN_STRINGS = {
   'landing.subheadline':
     'Pebble combines path-based curriculum, weekly rotating placement, and in-context AI coaching so every session is focused, measurable, and calm.',
   'landing.tryPebble': 'Try Pebble',
+  'landing.openSession': 'Open Session',
   'landing.openDemo': 'Open Demo Session',
   'landing.trust1': 'Runs real code',
   'landing.trust2': 'Placement-based start',

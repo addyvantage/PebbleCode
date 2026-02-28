@@ -7,13 +7,9 @@ import { LanguageSelect } from '../ui/LanguageSelect'
 
 type SettingsModalProps = {
   open: boolean
-  demoMode: boolean
   onClose: () => void
-  onDemoModeChange: (isEnabled: boolean) => void
   onResetLocalData: () => void
 }
-
-type SegmentTone = 'default' | 'accent' | 'neutral'
 
 const BODY_LOCK_COUNT_ATTR = 'data-pebble-scroll-lock-count'
 const BODY_PREVIOUS_OVERFLOW_ATTR = 'data-pebble-scroll-lock-overflow'
@@ -46,14 +42,8 @@ function unlockBodyScroll() {
   body.setAttribute(BODY_LOCK_COUNT_ATTR, String(nextCount))
 }
 
-function segmentButtonClass(isActive: boolean, tone: SegmentTone = 'default') {
-  const activeClass =
-    tone === 'accent'
-      ? 'bg-pebble-accent/90 text-white shadow-[0_1px_8px_rgba(2,8,23,0.22)] ring-1 ring-pebble-accent/35'
-      : tone === 'neutral'
-        ? 'bg-pebble-panel text-pebble-text-primary shadow-[0_1px_8px_rgba(2,8,23,0.16)] ring-1 ring-pebble-border/35'
-        : 'bg-pebble-panel text-pebble-text-primary shadow-[0_1px_8px_rgba(2,8,23,0.16)] ring-1 ring-pebble-border/35'
-
+function segmentButtonClass(isActive: boolean) {
+  const activeClass = 'bg-pebble-panel text-pebble-text-primary shadow-[0_1px_8px_rgba(2,8,23,0.16)] ring-1 ring-pebble-border/35'
   return `rounded-lg px-4 py-1.5 text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45 ${
     isActive
       ? `${activeClass} scale-[1.01]`
@@ -63,9 +53,7 @@ function segmentButtonClass(isActive: boolean, tone: SegmentTone = 'default') {
 
 export function SettingsModal({
   open,
-  demoMode,
   onClose,
-  onDemoModeChange,
   onResetLocalData,
 }: SettingsModalProps) {
   const { theme, setTheme } = useTheme()
@@ -174,36 +162,16 @@ export function SettingsModal({
               <button
                 type="button"
                 onClick={() => setTheme('dark')}
-                className={segmentButtonClass(theme === 'dark', 'default')}
+                className={segmentButtonClass(theme === 'dark')}
               >
                 {t('settings.themeDark')}
               </button>
               <button
                 type="button"
                 onClick={() => setTheme('light')}
-                className={segmentButtonClass(theme === 'light', 'default')}
+                className={segmentButtonClass(theme === 'light')}
               >
                 {t('settings.themeLight')}
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-pebble-text-primary">{t('settings.demoMode')}</p>
-            <div className="inline-flex rounded-xl border border-pebble-border/40 bg-pebble-overlay/[0.08] p-1">
-              <button
-                type="button"
-                onClick={() => onDemoModeChange(true)}
-                className={segmentButtonClass(demoMode, 'accent')}
-              >
-                {t('actions.on')}
-              </button>
-              <button
-                type="button"
-                onClick={() => onDemoModeChange(false)}
-                className={segmentButtonClass(!demoMode, 'neutral')}
-              >
-                {t('actions.off')}
               </button>
             </div>
           </div>

@@ -14,6 +14,8 @@ const SIZE = 360
 const CENTER = SIZE / 2
 const OUTER_RADIUS = 120
 const RINGS = 5
+const LABEL_OFFSET = 24
+const LABEL_EDGE_PADDING = 14
 
 function toPoint(index: number, total: number, score01: number) {
   const angle = (-Math.PI / 2) + (index / total) * Math.PI * 2
@@ -83,7 +85,8 @@ export function HexRadar({
       currentFill: dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.18)',
       currentStroke: dark ? 'rgba(255, 255, 255, 0.74)' : 'rgba(15, 23, 42, 0.66)',
       previousStroke: dark ? 'rgba(var(--pebble-accent), 0.58)' : 'rgba(var(--pebble-accent), 0.52)',
-      labelFill: dark ? 'rgba(var(--pebble-text-secondary), 0.98)' : 'rgba(var(--pebble-text-secondary), 0.94)',
+      labelFill: dark ? 'rgba(var(--pebble-text-primary), 0.97)' : 'rgba(var(--pebble-text-primary), 0.9)',
+      labelStroke: dark ? 'rgba(var(--pebble-canvas), 0.78)' : 'rgba(255, 255, 255, 0.7)',
       currentDotFill: dark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.9)',
       currentDotStroke: dark ? 'rgba(var(--pebble-canvas), 0.9)' : 'rgba(var(--pebble-canvas), 0.85)',
       centerDot: dark ? 'rgba(var(--pebble-border), 0.8)' : 'rgba(var(--pebble-border), 0.85)',
@@ -93,7 +96,7 @@ export function HexRadar({
 
   return (
     <div className={classNames('h-full w-full', className)}>
-      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="h-full w-full">
+      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="h-full w-full overflow-visible">
         {ringPolygons.map((ring, index) => (
           <polygon
             key={`ring-${index}`}
@@ -166,18 +169,24 @@ export function HexRadar({
           const label = axisLabels[axisOrder[index]]
           const dx = point.x - CENTER
           const dy = point.y - CENTER
-          const labelX = CENTER + dx * 1.2
-          const labelY = CENTER + dy * 1.2
+          const vectorLength = Math.sqrt(dx * dx + dy * dy) || 1
+          const rawX = point.x + (dx / vectorLength) * LABEL_OFFSET
+          const rawY = point.y + (dy / vectorLength) * LABEL_OFFSET
+          const labelX = Math.min(SIZE - LABEL_EDGE_PADDING, Math.max(LABEL_EDGE_PADDING, rawX))
+          const labelY = Math.min(SIZE - LABEL_EDGE_PADDING, Math.max(LABEL_EDGE_PADDING, rawY))
           return (
             <text
               key={`label-${axisOrder[index]}`}
               x={labelX}
               y={labelY}
-              textAnchor={Math.abs(dx) < 8 ? 'middle' : dx > 0 ? 'start' : 'end'}
-              dominantBaseline={Math.abs(dy) < 8 ? 'middle' : dy > 0 ? 'hanging' : 'auto'}
+              textAnchor={Math.abs(dx) < 20 ? 'middle' : dx > 0 ? 'start' : 'end'}
+              dominantBaseline={Math.abs(dy) < 16 ? 'middle' : dy > 0 ? 'hanging' : 'auto'}
               fill={chartStyle.labelFill}
-              fontSize="12"
-              fontWeight="600"
+              fontSize="13"
+              fontWeight="650"
+              stroke={chartStyle.labelStroke}
+              strokeWidth="0.8"
+              paintOrder="stroke"
             >
               {label}
             </text>

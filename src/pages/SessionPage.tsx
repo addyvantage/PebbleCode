@@ -50,6 +50,7 @@ import { useTheme } from '../hooks/useTheme'
 import { loadPagePrefs, savePagePrefs, type PagePrefs } from '../lib/pagePrefsStore'
 import { useI18n } from '../i18n/useI18n'
 import { getLocalizedUnitCopy } from '../i18n/unitContent'
+import { getLocalizedProblem } from '../i18n/problemContent'
 import {
   dateKeyForTimeZone,
   selectCurrentStreak,
@@ -226,21 +227,25 @@ export function SessionPage() {
     )
   }, [searchParams, storedState])
 
-  const activeProblem = useMemo(() => getProblemById(queryProblemId), [queryProblemId])
+  const activeProblemBase = useMemo(() => getProblemById(queryProblemId), [queryProblemId])
+  const activeProblem = useMemo(
+    () => (activeProblemBase ? getLocalizedProblem(activeProblemBase, uiLanguage) : null),
+    [activeProblemBase, uiLanguage],
+  )
   const activeProblemLanguage = useMemo<ProblemLanguage>(() => {
-    if (!activeProblem) {
+    if (!activeProblemBase) {
       return 'python'
     }
 
     const queryLanguage = searchParams.get('lang')
-    if (isProblemLanguage(queryLanguage) && activeProblem.languageSupport.includes(queryLanguage)) {
+    if (isProblemLanguage(queryLanguage) && activeProblemBase.languageSupport.includes(queryLanguage)) {
       return queryLanguage
     }
 
-    return getDefaultProblemLanguage(activeProblem)
-  }, [activeProblem, searchParams, selectedLanguage])
+    return getDefaultProblemLanguage(activeProblemBase)
+  }, [activeProblemBase, searchParams, selectedLanguage])
   const sessionLanguage: SessionEditorLanguage = activeProblem ? activeProblemLanguage : selectedLanguage
-  const isSqlMode = activeProblem?.kind === 'sql' && sessionLanguage === 'sql'
+  const isSqlMode = activeProblemBase?.kind === 'sql' && sessionLanguage === 'sql'
 
   const [units, setUnits] = useState<CurriculumUnit[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -473,17 +478,17 @@ export function SessionPage() {
   )
   const currentUnitCopy = currentUnit ? getLocalizedUnitCopy(currentUnit, uiLanguage) : null
   const currentDefaultCode = currentUnit
-    ? activeProblem
-      ? getProblemStarterCode(activeProblem, activeProblemLanguage)
+    ? activeProblemBase
+      ? getProblemStarterCode(activeProblemBase, activeProblemLanguage)
       : getUnitFunctionMode(selectedLanguage, currentUnit.id)?.starterStub ?? currentUnit.starterCode
     : ''
   const currentCode = currentUnit ? draftByUnitId[currentUnit.id] ?? currentDefaultCode : ''
   const currentFunctionConfig = useMemo(() => {
-    if (!currentUnit || activeProblem) {
+    if (!currentUnit || activeProblemBase) {
       return null
     }
     return getUnitFunctionMode(selectedLanguage, currentUnit.id)
-  }, [activeProblem, currentUnit, selectedLanguage])
+  }, [activeProblemBase, currentUnit, selectedLanguage])
 
   const syncStruggle = useCallback((nextState: StruggleEngineState) => {
     struggleStateRef.current = nextState

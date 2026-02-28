@@ -18,6 +18,7 @@ import {
   TOPICS_WITH_COUNTS,
 } from '../data/problemsBank'
 import { useI18n } from '../i18n/useI18n'
+import { getLocalizedProblem } from '../i18n/problemContent'
 import { loadSolvedProblems, subscribeSolvedProblems, type SolvedProblemsMap } from '../lib/solvedProblemsStore'
 
 type SortMode = 'difficulty' | 'acceptance' | 'newest' | 'topic' | 'lastSolved'
@@ -41,7 +42,7 @@ function getSolvedTimestamp(solvedMap: SolvedProblemsMap, problemId: string) {
 }
 
 export function ProblemsPage() {
-  const { t, isRTL } = useI18n()
+  const { t, isRTL, lang } = useI18n()
   const navigate = useNavigate()
   const isUrdu = isRTL
 
@@ -54,9 +55,13 @@ export function ProblemsPage() {
   const [previewLanguage, setPreviewLanguage] = useState<ProblemLanguage>('python')
 
   const normalizedSearch = searchValue.trim().toLowerCase()
+  const localizedProblems = useMemo(
+    () => PROBLEMS_BANK.map((problem) => getLocalizedProblem(problem, lang)),
+    [lang],
+  )
 
   const filteredProblems = useMemo(() => {
-    const rows = PROBLEMS_BANK.filter((problem) => {
+    const rows = localizedProblems.filter((problem) => {
       if (normalizedSearch) {
         const haystack = `${problem.title} ${problem.topics.join(' ')} ${problem.keySkills.join(' ')}`.toLowerCase()
         if (!haystack.includes(normalizedSearch)) {
@@ -110,11 +115,11 @@ export function ProblemsPage() {
 
       return left.createdAtRank - right.createdAtRank
     })
-  }, [filters, normalizedSearch, solvedMap, sortMode])
+  }, [filters, localizedProblems, normalizedSearch, solvedMap, sortMode])
 
   const solvedCount = useMemo(
-    () => PROBLEMS_BANK.filter((problem) => solvedMap[problem.id]?.solvedAt).length,
-    [solvedMap],
+    () => localizedProblems.filter((problem) => solvedMap[problem.id]?.solvedAt).length,
+    [localizedProblems, solvedMap],
   )
 
   const filteredSolved = useMemo(
@@ -273,7 +278,7 @@ export function ProblemsPage() {
 
           <div className="ml-auto flex items-center gap-2">
             <span className={`rounded-xl border border-pebble-border/32 bg-pebble-overlay/[0.08] px-3 py-2 text-sm text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
-              {t('problems.solvedCounter', { solved: solvedCount, total: PROBLEMS_BANK.length })}
+              {t('problems.solvedCounter', { solved: solvedCount, total: localizedProblems.length })}
               <span className="ltrSafe text-pebble-text-muted"> ({filteredSolved}/{filteredProblems.length})</span>
             </span>
             <Button

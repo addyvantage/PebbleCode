@@ -5,7 +5,6 @@ import { SettingsModal } from '../components/modals/SettingsModal'
 import { Card } from '../components/ui/Card'
 import { PageContainer } from '../components/ui/PageContainer'
 import { StreakPill } from '../components/ui/StreakPill'
-import { getDemoMode, setDemoMode, subscribeDemoMode } from '../utils/demoMode'
 import {
   clearAppLocalData,
   clearLocalUserData,
@@ -27,7 +26,6 @@ export function AppLayout() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [profileAnchorRect, setProfileAnchorRect] = useState<DOMRect | null>(null)
-  const [demoMode, setDemoModeState] = useState(() => getDemoMode())
   const [profile, setProfile] = useState(() => getLocalUserProfile())
   const [showStoragePressureNotice, setShowStoragePressureNotice] = useState(false)
   const [nowTick, setNowTick] = useState(() => Date.now())
@@ -123,12 +121,6 @@ export function AppLayout() {
   }, [isProfileOpen, updateProfileAnchorRect])
 
   useEffect(() => {
-    return subscribeDemoMode((isEnabled) => {
-      setDemoModeState(isEnabled)
-    })
-  }, [])
-
-  useEffect(() => {
     const id = window.setInterval(() => setNowTick(Date.now()), 60_000)
     return () => window.clearInterval(id)
   }, [])
@@ -138,11 +130,6 @@ export function AppLayout() {
       setShowStoragePressureNotice(true)
     })
   }, [])
-
-  function handleDemoModeChange(nextMode: boolean) {
-    setDemoModeState(nextMode)
-    setDemoMode(nextMode)
-  }
 
   function handleResetLocalData() {
     clearTaskProgress()
@@ -302,8 +289,6 @@ export function AppLayout() {
       <SettingsModal
         open={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        demoMode={demoMode}
-        onDemoModeChange={handleDemoModeChange}
         onResetLocalData={handleResetLocalData}
       />
 

@@ -58,7 +58,7 @@ export function LandingPage() {
                   {t('landing.tryPebble')}
                 </Link>
                 <Link to="/session/1" className={buttonClass('secondary')}>
-                  {t('landing.openDemo')}
+                  {t('landing.openSession')}
                 </Link>
               </div>
 
