@@ -20,6 +20,7 @@ import { TrendLineChart } from '../components/insights/TrendLineChart'
 import { IssueBars } from '../components/insights/IssueBars'
 import { GrowthLedger } from '../components/insights/GrowthLedger'
 import { NextTasks } from '../components/insights/NextTasks'
+import { StreakCalendar } from '../components/insights/StreakCalendar'
 import { getPebbleUserState } from '../utils/pebbleUserState'
 import { getDemoMode, subscribeDemoMode } from '../utils/demoMode'
 import { useI18n } from '../i18n/useI18n'
@@ -30,7 +31,13 @@ import {
   seedDemoAnalyticsData,
   subscribeAnalytics,
 } from '../lib/analyticsStore'
-import { deriveInsights } from '../lib/analyticsDerivers'
+import {
+  dateKeyForTimeZone,
+  deriveInsights,
+  selectCurrentStreak,
+  selectDailyCompletions,
+  selectLongestStreak,
+} from '../lib/analyticsDerivers'
 import { loadUnitProgress } from '../lib/progressStore'
 import { loadSubmissions } from '../lib/submissionsStore'
 import type { PlacementLanguage } from '../data/onboardingData'
@@ -46,6 +53,7 @@ const RADAR_AXIS_ORDER = [
 
 export function DashboardPage() {
   const { t, lang, isRTL } = useI18n()
+  const proseClass = isRTL ? 'rtlText' : ''
   const [demoMode, setDemoMode] = useState(() => getDemoMode())
   const [units, setUnits] = useState<CurriculumUnit[]>([])
   const [unitsLoading, setUnitsLoading] = useState(true)
@@ -113,6 +121,17 @@ export function DashboardPage() {
 
   const unitProgress = useMemo(() => loadUnitProgress(), [analyticsState.updatedAt])
   const submissions = useMemo(() => loadSubmissions(), [analyticsState.updatedAt])
+  const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
+  const dailyCompletions = useMemo(
+    () => selectDailyCompletions(analyticsState.events, timeZone),
+    [analyticsState.events, timeZone],
+  )
+  const todayKey = useMemo(() => dateKeyForTimeZone(Date.now(), timeZone), [analyticsState.updatedAt, timeZone])
+  const streakStats = useMemo(
+    () => selectCurrentStreak(dailyCompletions, todayKey),
+    [dailyCompletions, todayKey],
+  )
+  const longestStreak = useMemo(() => selectLongestStreak(dailyCompletions), [dailyCompletions])
 
   const derived = useMemo(
     () =>
@@ -158,7 +177,7 @@ export function DashboardPage() {
   )
 
   return (
-    <section dir={isRTL ? 'rtl' : 'ltr'} className="page-enter space-y-4">
+    <section className="page-enter space-y-4">
       <Card padding="md" interactive className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Badge>{t('insights.hero.chipGrowth')}</Badge>
@@ -170,10 +189,10 @@ export function DashboardPage() {
             </Badge>
           </div>
         </div>
-        <h1 className="text-3xl font-semibold tracking-[-0.02em] text-pebble-text-primary">
+        <h1 className={`text-3xl font-semibold tracking-[-0.02em] text-pebble-text-primary ${proseClass}`}>
           {t('insights.hero.title')}
         </h1>
-        <p className="max-w-3xl text-sm text-pebble-text-secondary sm:text-base">
+        <p className={`max-w-3xl text-sm text-pebble-text-secondary sm:text-base ${proseClass}`}>
           {t('insights.hero.subtitle')}
         </p>
       </Card>
@@ -216,12 +235,20 @@ export function DashboardPage() {
         />
       </div>
 
+      <StreakCalendar
+        dailyMap={dailyCompletions}
+        streak={streakStats.streak}
+        longest={longestStreak.longest}
+        isTodayComplete={streakStats.isTodayComplete}
+        timeZone={timeZone}
+      />
+
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <Card padding="md" interactive className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-base font-semibold text-pebble-text-primary">{t('insights.radar.title')}</p>
-              <p className="text-sm text-pebble-text-secondary">{t('insights.radar.subtitle')}</p>
+              <p className={`text-base font-semibold text-pebble-text-primary ${proseClass}`}>{t('insights.radar.title')}</p>
+              <p className={`text-sm text-pebble-text-secondary ${proseClass}`}>{t('insights.radar.subtitle')}</p>
             </div>
             <Badge variant="neutral">{t('insights.radar.liveShape')}</Badge>
           </div>
@@ -238,8 +265,8 @@ export function DashboardPage() {
         <Card padding="md" interactive className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-base font-semibold text-pebble-text-primary">{t('insights.next.title')}</p>
-              <p className="text-sm text-pebble-text-secondary">{t('insights.next.subtitle')}</p>
+              <p className={`text-base font-semibold text-pebble-text-primary ${proseClass}`}>{t('insights.next.title')}</p>
+              <p className={`text-sm text-pebble-text-secondary ${proseClass}`}>{t('insights.next.subtitle')}</p>
             </div>
             <Target className="h-4 w-4 text-pebble-text-secondary" aria-hidden="true" />
           </div>
@@ -263,8 +290,8 @@ export function DashboardPage() {
         <Card padding="md" interactive className="space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-base font-semibold text-pebble-text-primary">{t('insights.trend.title')}</p>
-              <p className="text-sm text-pebble-text-secondary">{t('insights.trend.subtitle')}</p>
+              <p className={`text-base font-semibold text-pebble-text-primary ${proseClass}`}>{t('insights.trend.title')}</p>
+              <p className={`text-sm text-pebble-text-secondary ${proseClass}`}>{t('insights.trend.subtitle')}</p>
             </div>
             <TrendingUp className="h-4 w-4 text-pebble-text-secondary" aria-hidden="true" />
           </div>
@@ -278,8 +305,8 @@ export function DashboardPage() {
         <Card padding="md" interactive className="space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-base font-semibold text-pebble-text-primary">{t('insights.issue.title')}</p>
-              <p className="text-sm text-pebble-text-secondary">{t('insights.issue.subtitle')}</p>
+              <p className={`text-base font-semibold text-pebble-text-primary ${proseClass}`}>{t('insights.issue.title')}</p>
+              <p className={`text-sm text-pebble-text-secondary ${proseClass}`}>{t('insights.issue.subtitle')}</p>
             </div>
             <Brain className="h-4 w-4 text-pebble-text-secondary" aria-hidden="true" />
           </div>
@@ -290,8 +317,8 @@ export function DashboardPage() {
       <Card padding="md" interactive className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="text-base font-semibold text-pebble-text-primary">{t('insights.ledger.title')}</p>
-            <p className="text-sm text-pebble-text-secondary">{t('insights.ledger.subtitle')}</p>
+            <p className={`text-base font-semibold text-pebble-text-primary ${proseClass}`}>{t('insights.ledger.title')}</p>
+            <p className={`text-sm text-pebble-text-secondary ${proseClass}`}>{t('insights.ledger.subtitle')}</p>
           </div>
           <Gauge className="h-4 w-4 text-pebble-text-secondary" aria-hidden="true" />
         </div>

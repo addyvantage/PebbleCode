@@ -45,7 +45,17 @@ export type AssistAnalyticsEvent = AnalyticsEventBase & {
   action: 'hint' | 'explain' | 'next'
 }
 
-export type AnalyticsEvent = RunAnalyticsEvent | SubmitAnalyticsEvent | AssistAnalyticsEvent
+export type PlacementSkipAnalyticsEvent = AnalyticsEventBase & {
+  type: 'placement_skip'
+  questionId: string
+  questionIndex: number
+}
+
+export type AnalyticsEvent =
+  | RunAnalyticsEvent
+  | SubmitAnalyticsEvent
+  | AssistAnalyticsEvent
+  | PlacementSkipAnalyticsEvent
 
 export type AnalyticsState = {
   version: 1
@@ -56,6 +66,7 @@ export type AnalyticsState = {
 export type RunEventInput = Omit<RunAnalyticsEvent, 'type' | 'id' | 'ts'>
 export type SubmitEventInput = Omit<SubmitAnalyticsEvent, 'type' | 'id' | 'ts'>
 export type AssistEventInput = Omit<AssistAnalyticsEvent, 'type' | 'id' | 'ts'>
+export type PlacementSkipEventInput = Omit<PlacementSkipAnalyticsEvent, 'type' | 'id' | 'ts'>
 
 const EMPTY_STATE: AnalyticsState = {
   version: 1,
@@ -170,6 +181,18 @@ function readFromStorage(): AnalyticsState {
             type: 'assist',
             action: item.action,
           } satisfies AssistAnalyticsEvent)
+        }
+        continue
+      }
+
+      if (item.type === 'placement_skip') {
+        if (typeof item.questionId === 'string' && typeof item.questionIndex === 'number') {
+          events.push({
+            ...base,
+            type: 'placement_skip',
+            questionId: item.questionId,
+            questionIndex: item.questionIndex,
+          } satisfies PlacementSkipAnalyticsEvent)
         }
       }
     }
@@ -318,6 +341,16 @@ export function logAssistEvent(input: AssistEventInput) {
     ...input,
     type: 'assist',
     id: buildEventId('assist', ts),
+    ts,
+  })
+}
+
+export function logPlacementSkipEvent(input: PlacementSkipEventInput) {
+  const ts = Date.now()
+  return appendEvent({
+    ...input,
+    type: 'placement_skip',
+    id: buildEventId('placement-skip', ts),
     ts,
   })
 }

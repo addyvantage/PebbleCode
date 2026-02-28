@@ -35,7 +35,7 @@ export function LandingPage() {
 
   return (
     <section className="page-enter h-full min-h-0 overflow-y-auto lg:overflow-hidden">
-      <div className="mx-auto flex h-full max-w-[1320px] min-h-0 flex-col gap-3 lg:grid lg:grid-rows-[minmax(0,1fr)_auto] lg:gap-4">
+      <div className="mx-auto flex h-full max-w-[1480px] min-h-0 flex-col gap-3 lg:grid lg:grid-rows-[minmax(0,1fr)_auto] lg:gap-4">
         <Card className="relative min-h-0 overflow-hidden p-5 lg:p-6" interactive>
           <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-pebble-accent/18 blur-3xl" />
           <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-sky-400/12 blur-3xl" />

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { StreakPill } from '../components/ui/StreakPill'
 import { PebbleChatPanel } from '../components/session/PebbleChatPanel'
 import { ProblemStatementPanel } from '../components/session/ProblemStatementPanel'
 import {
@@ -51,6 +52,13 @@ import { loadPagePrefs, savePagePrefs, type PagePrefs } from '../lib/pagePrefsSt
 import { useI18n } from '../i18n/useI18n'
 import { getLocalizedUnitCopy } from '../i18n/unitContent'
 import {
+  dateKeyForTimeZone,
+  selectCurrentStreak,
+  selectDailyCompletions,
+} from '../lib/analyticsDerivers'
+import {
+  getAnalyticsState,
+  subscribeAnalytics,
   classifyErrorType,
   logAssistEvent,
   logRunEvent,
@@ -224,6 +232,20 @@ export function SessionPage() {
   const { theme, setTheme } = useTheme()
   const runtimeLanguage: PlacementLanguage = selectedLanguage === 'c' ? 'cpp' : selectedLanguage
   const trackId = `${selectedLanguage}:${selectedLevel}`
+  const analyticsState = useSyncExternalStore(subscribeAnalytics, getAnalyticsState, getAnalyticsState)
+  const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
+  const dailyCompletions = useMemo(
+    () => selectDailyCompletions(analyticsState.events, timeZone),
+    [analyticsState.events, timeZone],
+  )
+  const todayKey = useMemo(
+    () => dateKeyForTimeZone(Date.now(), timeZone),
+    [analyticsState.updatedAt, timeZone],
+  )
+  const currentStreak = useMemo(
+    () => selectCurrentStreak(dailyCompletions, todayKey),
+    [dailyCompletions, todayKey],
+  )
 
   useEffect(() => {
     saveUnitProgress(unitProgress)
@@ -1023,6 +1045,12 @@ export function SessionPage() {
           >
             ☰ {t('topBar.units')}
           </button>
+
+          <StreakPill
+            streak={currentStreak.streak}
+            isTodayComplete={currentStreak.isTodayComplete}
+            compact
+          />
 
           <Badge variant={statusVariant(runStatus)}>{statusLabelMap[runStatus]}</Badge>
         </div>

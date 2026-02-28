@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ProfileMenu } from '../components/modals/ProfileMenu'
 import { SettingsModal } from '../components/modals/SettingsModal'
 import { Card } from '../components/ui/Card'
+import { StreakPill } from '../components/ui/StreakPill'
 import { getDemoMode, setDemoMode, subscribeDemoMode } from '../utils/demoMode'
 import {
   clearAppLocalData,
@@ -11,6 +12,8 @@ import {
 } from '../utils/storageKeys'
 import { clearTaskProgress } from '../utils/taskProgress'
 import { useI18n } from '../i18n/useI18n'
+import { getAnalyticsState, subscribeAnalytics } from '../lib/analyticsStore'
+import { dateKeyForTimeZone, selectCurrentStreak, selectDailyCompletions } from '../lib/analyticsDerivers'
 
 const iconButtonClass =
   'inline-flex h-9 w-9 items-center justify-center rounded-lg border border-pebble-border/35 bg-pebble-overlay/8 text-pebble-text-secondary transition hover:bg-pebble-overlay/14 hover:text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40'
@@ -29,6 +32,17 @@ export function AppLayout() {
   const personaLabel = useMemo(() => {
     return profile.personaSummary === 'Not set' ? 'Not set' : profile.personaSummary
   }, [profile.personaSummary])
+  const analyticsState = useSyncExternalStore(subscribeAnalytics, getAnalyticsState, getAnalyticsState)
+  const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
+  const dailyCompletions = useMemo(
+    () => selectDailyCompletions(analyticsState.events, timeZone),
+    [analyticsState.events, timeZone],
+  )
+  const todayKey = useMemo(() => dateKeyForTimeZone(Date.now(), timeZone), [analyticsState.updatedAt, timeZone])
+  const currentStreak = useMemo(
+    () => selectCurrentStreak(dailyCompletions, todayKey),
+    [dailyCompletions, todayKey],
+  )
   const isImmersiveRoute = location.pathname.startsWith('/session/') || location.pathname.startsWith('/placement')
   const isLandingRoute = location.pathname === '/'
   const navItems = useMemo(
@@ -142,7 +156,7 @@ export function AppLayout() {
         </div>
       ) : (
         <div
-          className={`relative mx-auto flex w-full max-w-[1360px] flex-col px-4 pt-4 sm:px-8 lg:px-12 ${
+          className={`relative mx-auto flex w-full max-w-[1520px] flex-col px-3 pt-3 sm:px-6 lg:px-8 ${
             isLandingRoute ? 'h-screen overflow-hidden pb-4' : 'min-h-screen pb-8 pt-5'
           }`}
         >
@@ -163,6 +177,11 @@ export function AppLayout() {
               </div>
 
               <div className="flex items-center gap-2">
+                <StreakPill
+                  streak={currentStreak.streak}
+                  isTodayComplete={currentStreak.isTodayComplete}
+                  compact
+                />
                 <button
                   aria-label={t('layout.notificationsAria')}
                   className={iconButtonClass}

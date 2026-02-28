@@ -67,6 +67,27 @@ export type InsightsDerived = {
   nextActions: NextActionItem[]
 }
 
+export type DailyCompletionEntry = {
+  completed: boolean
+  count: number
+  lastCompletedAt?: number
+}
+
+export type DailyCompletionMap = Record<string, DailyCompletionEntry>
+
+export type MonthGridDay = {
+  key: string
+  dayNumber: number
+  isInMonth: boolean
+  isComplete: boolean
+  isToday: boolean
+  count: number
+}
+
+export type MonthGrid = {
+  weeks: MonthGridDay[][]
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 function clamp(value: number, min: number, max: number) {
@@ -80,6 +101,149 @@ function round(value: number, digits = 1) {
 
 function normalize100(value: number) {
   return clamp(Math.round(value), 0, 100)
+}
+
+export function resolveLocalTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+}
+
+export function dateKeyForTimeZone(ts: number, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+  const parts = formatter.formatToParts(new Date(ts))
+  const year = parts.find((part) => part.type === 'year')?.value ?? '1970'
+  const month = parts.find((part) => part.type === 'month')?.value ?? '01'
+  const day = parts.find((part) => part.type === 'day')?.value ?? '01'
+  return `${year}-${month}-${day}`
+}
+
+function shiftDateKey(dateKey: string, dayOffset: number) {
+  const [year, month, day] = dateKey.split('-').map((value) => Number.parseInt(value, 10))
+  const shifted = new Date(Date.UTC(year, month - 1, day + dayOffset))
+  const y = shifted.getUTCFullYear()
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(shifted.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function isCompletionEvent(event: AnalyticsEvent) {
+  if (event.type === 'submit') {
+    return event.accepted
+  }
+  if (event.type === 'run') {
+    return event.passed
+  }
+  return false
+}
+
+export function selectDailyCompletions(
+  events: AnalyticsEvent[],
+  timeZone = resolveLocalTimeZone(),
+): DailyCompletionMap {
+  const map: DailyCompletionMap = {}
+
+  for (const event of events) {
+    if (!isCompletionEvent(event)) {
+      continue
+    }
+    const key = dateKeyForTimeZone(event.ts, timeZone)
+    const existing = map[key]
+    map[key] = {
+      completed: true,
+      count: (existing?.count ?? 0) + 1,
+      lastCompletedAt: Math.max(existing?.lastCompletedAt ?? 0, event.ts),
+    }
+  }
+
+  return map
+}
+
+export function selectCurrentStreak(
+  dailyMap: DailyCompletionMap,
+  todayKey: string,
+) {
+  const isTodayComplete = Boolean(dailyMap[todayKey]?.completed)
+  let streak = 0
+  let cursor = isTodayComplete ? todayKey : shiftDateKey(todayKey, -1)
+
+  while (dailyMap[cursor]?.completed) {
+    streak += 1
+    cursor = shiftDateKey(cursor, -1)
+  }
+
+  return {
+    streak,
+    isTodayComplete,
+  }
+}
+
+export function selectLongestStreak(dailyMap: DailyCompletionMap) {
+  const keys = Object.keys(dailyMap)
+    .filter((key) => dailyMap[key]?.completed)
+    .sort()
+
+  let longest = 0
+  let current = 0
+  let previous = ''
+
+  for (const key of keys) {
+    if (!previous) {
+      current = 1
+      longest = 1
+      previous = key
+      continue
+    }
+
+    const expected = shiftDateKey(previous, 1)
+    if (key === expected) {
+      current += 1
+    } else {
+      current = 1
+    }
+    longest = Math.max(longest, current)
+    previous = key
+  }
+
+  return { longest }
+}
+
+export function selectMonthGrid(
+  dailyMap: DailyCompletionMap,
+  year: number,
+  month: number,
+  timeZone = resolveLocalTimeZone(),
+): MonthGrid {
+  const firstOfMonth = new Date(year, month, 1)
+  const dayOfWeek = firstOfMonth.getDay()
+  const mondayIndex = (dayOfWeek + 6) % 7
+  const gridStart = new Date(year, month, 1 - mondayIndex)
+  const todayKey = dateKeyForTimeZone(Date.now(), timeZone)
+
+  const weeks: MonthGridDay[][] = []
+  for (let week = 0; week < 6; week += 1) {
+    const row: MonthGridDay[] = []
+    for (let day = 0; day < 7; day += 1) {
+      const cellDate = new Date(gridStart)
+      cellDate.setDate(gridStart.getDate() + week * 7 + day)
+      const key = dateKeyForTimeZone(cellDate.getTime(), timeZone)
+      const completion = dailyMap[key]
+      row.push({
+        key,
+        dayNumber: cellDate.getDate(),
+        isInMonth: cellDate.getMonth() === month,
+        isComplete: Boolean(completion?.completed),
+        isToday: key === todayKey,
+        count: completion?.count ?? 0,
+      })
+    }
+    weeks.push(row)
+  }
+
+  return { weeks }
 }
 
 function asRunAttempt(event: AnalyticsEvent): RunAnalyticsEvent | SubmitAnalyticsEvent | null {
@@ -175,19 +339,6 @@ function computeRecoverySeries(attemptsAsc: Array<RunAnalyticsEvent | SubmitAnal
   }
 
   return recoveries
-}
-
-function computeStreakDays(successAttempts: Array<RunAnalyticsEvent | SubmitAnalyticsEvent>, nowTs: number) {
-  const successDays = new Set(successAttempts.map((attempt) => dayBucket(attempt.ts)))
-  let streak = 0
-  let cursor = dayBucket(nowTs)
-
-  while (successDays.has(cursor)) {
-    streak += 1
-    cursor -= DAY_MS
-  }
-
-  return streak
 }
 
 function computeBreakpoints(
@@ -431,6 +582,7 @@ export function deriveInsights(input: {
   nowTs?: number
 }): InsightsDerived {
   const nowTs = input.nowTs ?? Date.now()
+  const timeZone = resolveLocalTimeZone()
   const attemptsAsc = input.events
     .map(asRunAttempt)
     .filter((item): item is RunAnalyticsEvent | SubmitAnalyticsEvent => item !== null)
@@ -467,10 +619,9 @@ export function deriveInsights(input: {
   const guidanceReliancePct =
     attempts30d.length > 0 ? round((assists30d.length / attempts30d.length) * 100) : 0
   const autonomyRatePct = round(100 - guidanceReliancePct)
-  const streakDays = computeStreakDays(
-    attemptsAsc.filter((attempt) => isSuccess(attempt)),
-    nowTs,
-  )
+  const dailyCompletions = selectDailyCompletions(input.events, timeZone)
+  const todayKey = dateKeyForTimeZone(nowTs, timeZone)
+  const streakDays = selectCurrentStreak(dailyCompletions, todayKey).streak
 
   const runtime30d = runtimeStats(attempts30d)
   const variancePenalty = clamp(runtime30d.cv * 100, 0, 100)

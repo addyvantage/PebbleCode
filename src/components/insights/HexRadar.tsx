@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { RadarAxisKey, RadarScores } from '../../lib/analyticsDerivers'
+import { useTheme } from '../../hooks/useTheme'
 
 type HexRadarProps = {
   current: RadarScores
@@ -36,6 +37,7 @@ export function HexRadar({
   currentLabel,
   previousLabel,
 }: HexRadarProps) {
+  const { theme } = useTheme()
   const [reveal, setReveal] = useState(false)
 
   useEffect(() => {
@@ -70,6 +72,21 @@ export function HexRadar({
       ),
     [axisOrder, previous],
   )
+  const chartStyle = useMemo(() => {
+    const dark = theme === 'dark'
+    return {
+      gridStroke: dark ? 'rgba(var(--pebble-border), 0.28)' : 'rgba(var(--pebble-border), 0.2)',
+      axisStroke: dark ? 'rgba(var(--pebble-border), 0.22)' : 'rgba(var(--pebble-border), 0.18)',
+      currentFill: dark ? 'rgba(var(--pebble-accent), 0.24)' : 'rgba(var(--pebble-accent), 0.18)',
+      currentStroke: dark ? 'rgba(var(--pebble-accent), 0.92)' : 'rgba(var(--pebble-accent), 0.78)',
+      previousFill: dark ? 'rgba(var(--pebble-accent), 0.08)' : 'rgba(var(--pebble-accent), 0.06)',
+      previousStroke: dark ? 'rgba(var(--pebble-accent), 0.56)' : 'rgba(var(--pebble-accent), 0.48)',
+      labelFill: dark ? 'rgb(var(--pebble-text-secondary))' : 'rgb(var(--pebble-text-primary))',
+      currentDotFill: dark ? 'rgba(var(--pebble-accent), 0.98)' : 'rgba(var(--pebble-accent), 0.86)',
+      previousDotFill: dark ? 'rgba(var(--pebble-accent), 0.62)' : 'rgba(var(--pebble-accent), 0.52)',
+      polygonFilter: dark ? 'drop-shadow(0 0 10px rgba(59,130,246,0.22))' : undefined,
+    }
+  }, [theme])
 
   return (
     <div className="rounded-2xl border border-pebble-border/30 bg-pebble-overlay/[0.05] p-4">
@@ -80,8 +97,8 @@ export function HexRadar({
               key={`ring-${index}`}
               points={pointsToPath(ring)}
               fill="none"
-              stroke="rgba(var(--pebble-border), 0.20)"
-              strokeWidth={index === RINGS - 1 ? 1.2 : 1}
+              stroke={chartStyle.gridStroke}
+              strokeWidth={index === RINGS - 1 ? 1.25 : 1}
             />
           ))}
 
@@ -92,17 +109,18 @@ export function HexRadar({
               y1={CENTER}
               x2={point.x}
               y2={point.y}
-              stroke="rgba(var(--pebble-border), 0.22)"
+              stroke={chartStyle.axisStroke}
               strokeWidth="1"
             />
           ))}
 
           <polygon
             points={pointsToPath(previousPoints)}
-            fill="rgba(var(--pebble-accent), 0.04)"
-            stroke="rgba(var(--pebble-accent), 0.40)"
-            strokeDasharray="4 4"
-            strokeWidth="1.2"
+            fill={chartStyle.previousFill}
+            stroke={chartStyle.previousStroke}
+            strokeDasharray="5 5"
+            strokeWidth="1.35"
+            strokeLinejoin="round"
             style={{
               opacity: reveal ? 1 : 0,
               transition: 'opacity 280ms ease',
@@ -111,17 +129,49 @@ export function HexRadar({
 
           <polygon
             points={pointsToPath(currentPoints)}
-            fill="rgba(var(--pebble-accent), 0.18)"
-            stroke="rgba(var(--pebble-accent), 0.88)"
-            strokeWidth="2"
+            fill={chartStyle.currentFill}
+            stroke={chartStyle.currentStroke}
+            strokeWidth="2.2"
             strokeLinejoin="round"
             style={{
               opacity: reveal ? 1 : 0,
+              filter: chartStyle.polygonFilter,
               transformOrigin: '50% 50%',
               transform: reveal ? 'scale(1)' : 'scale(0.94)',
               transition: 'opacity 280ms ease, transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1)',
             }}
           />
+
+          {previousPoints.map((point, index) => (
+            <circle
+              key={`previous-dot-${index}`}
+              cx={point.x}
+              cy={point.y}
+              r="2.4"
+              fill={chartStyle.previousDotFill}
+              stroke="rgba(var(--pebble-panel), 0.4)"
+              strokeWidth="1"
+              style={{
+                opacity: reveal ? 1 : 0,
+                transition: 'opacity 260ms ease',
+              }}
+            />
+          ))}
+          {currentPoints.map((point, index) => (
+            <circle
+              key={`current-dot-${index}`}
+              cx={point.x}
+              cy={point.y}
+              r="2.8"
+              fill={chartStyle.currentDotFill}
+              stroke="rgba(var(--pebble-panel), 0.35)"
+              strokeWidth="1"
+              style={{
+                opacity: reveal ? 1 : 0,
+                transition: 'opacity 260ms ease',
+              }}
+            />
+          ))}
 
           {axisPoints.map((point, index) => {
             const label = axisLabels[axisOrder[index]]
@@ -136,7 +186,7 @@ export function HexRadar({
                 y={labelY}
                 textAnchor={Math.abs(dx) < 8 ? 'middle' : dx > 0 ? 'start' : 'end'}
                 dominantBaseline={Math.abs(dy) < 8 ? 'middle' : dy > 0 ? 'hanging' : 'auto'}
-                fill="rgb(var(--pebble-text-secondary))"
+                fill={chartStyle.labelFill}
                 fontSize="11"
                 fontWeight="500"
               >
@@ -149,11 +199,11 @@ export function HexRadar({
 
       <div className="mt-1 flex items-center justify-center gap-4 text-xs text-pebble-text-secondary">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-pebble-accent" />
+          <span className="h-2 w-2 rounded-full bg-pebble-accent shadow-[0_0_8px_rgba(59,130,246,0.28)]" />
           {currentLabel}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full border border-pebble-accent/60 bg-transparent" />
+          <span className="h-2 w-2 rounded-full border border-pebble-accent/60 bg-pebble-accent/15" />
           {previousLabel}
         </span>
       </div>
