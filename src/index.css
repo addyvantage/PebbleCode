@@ -78,9 +78,17 @@
     content: '';
     position: fixed;
     inset: 0;
-    background: center / cover no-repeat
-      url('/assets/pebble/master/backgrounds/pebble_hero_background_plate_3840x2160.png');
-    opacity: var(--pebble-bg-image-opacity);
+    background:
+      radial-gradient(
+        720px 240px at 24% 12%,
+        rgba(var(--pebble-overlay), 0.055),
+        transparent 65%
+      ),
+      radial-gradient(
+        820px 300px at 76% 88%,
+        rgba(var(--pebble-overlay), 0.04),
+        transparent 68%
+      );
     pointer-events: none;
     z-index: 0;
   }

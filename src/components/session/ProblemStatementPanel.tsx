@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { PlacementLanguage } from '../../data/onboardingData'
 import { getUnitSolution } from '../../data/solutionsBank'
+import type { UnitSubmission } from '../../lib/submissionsStore'
 
 type ProblemTest = {
   input: string
@@ -19,6 +20,7 @@ type ProblemStatementPanelProps = {
   tags: string[]
   language: PlacementLanguage
   functionMode?: boolean
+  submissions: UnitSubmission[]
   className?: string
 }
 
@@ -49,11 +51,13 @@ export function ProblemStatementPanel({
   tags,
   language,
   functionMode = false,
+  submissions,
   className,
 }: ProblemStatementPanelProps) {
-  const [activeTab, setActiveTab] = useState<'problem' | 'solutions' | 'hints'>('problem')
+  const [activeTab, setActiveTab] = useState<'problem' | 'solutions' | 'hints' | 'submissions'>('problem')
   const [solutionLanguage, setSolutionLanguage] = useState<PlacementLanguage>(language)
   const [copied, setCopied] = useState(false)
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState('')
 
   const solution = useMemo(() => getUnitSolution(unitId), [unitId])
   const examples = tests.slice(0, 2)
@@ -61,6 +65,7 @@ export function ProblemStatementPanel({
   useEffect(() => {
     setSolutionLanguage(language)
     setCopied(false)
+    setSelectedSubmissionId('')
   }, [language, unitId])
 
   useEffect(() => {
@@ -80,6 +85,16 @@ export function ProblemStatementPanel({
   }, [language, solution])
 
   const selectedSolutionCode = solution?.implementations[solutionLanguage]
+  const lastAcceptedSubmission = useMemo(
+    () => submissions.find((submission) => submission.status === 'accepted') ?? null,
+    [submissions],
+  )
+  const selectedSubmission = useMemo(() => {
+    if (!selectedSubmissionId) {
+      return submissions[0] ?? null
+    }
+    return submissions.find((submission) => submission.id === selectedSubmissionId) ?? submissions[0] ?? null
+  }, [selectedSubmissionId, submissions])
 
   async function copySolution() {
     if (!selectedSolutionCode) {
@@ -116,6 +131,11 @@ export function ProblemStatementPanel({
           active={activeTab === 'hints'}
           onClick={() => setActiveTab('hints')}
           label="Hints"
+        />
+        <TabButton
+          active={activeTab === 'submissions'}
+          onClick={() => setActiveTab('submissions')}
+          label="Submissions"
         />
       </div>
 
@@ -287,8 +307,153 @@ export function ProblemStatementPanel({
             )}
           </div>
         )}
+
+        {activeTab === 'submissions' && (
+          <div className="space-y-3">
+            {submissions.length === 0 ? (
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-white/75">
+                No submissions yet. Click <span className="font-medium text-white">Submit</span> after a run to save your result.
+              </div>
+            ) : (
+              <>
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="text-xs uppercase tracking-[0.06em] text-white/55">Last Accepted</p>
+                  {lastAcceptedSubmission ? (
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-semibold text-white">{LANGUAGE_LABELS[lastAcceptedSubmission.language]}</p>
+                        <p className="text-xs text-white/65">
+                          {new Date(lastAcceptedSubmission.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="rounded-full border border-pebble-success/35 bg-pebble-success/15 px-2 py-0.5 text-[11px] text-pebble-success">
+                          Accepted
+                        </span>
+                        <p className="mt-1 text-xs text-white/70">
+                          {lastAcceptedSubmission.runtimeMs}ms • exit {lastAcceptedSubmission.exitCode ?? 'null'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-white/70">No accepted submission yet.</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-white">Recent submissions</h3>
+                  <div className="grid gap-1.5">
+                    {submissions.map((submission) => {
+                      const active = (selectedSubmission?.id ?? submissions[0]?.id) === submission.id
+                      return (
+                        <button
+                          key={submission.id}
+                          type="button"
+                          onClick={() => setSelectedSubmissionId(submission.id)}
+                          className={`rounded-xl border px-3 py-2 text-left transition ${
+                            active
+                              ? 'border-pebble-accent/45 bg-pebble-accent/12'
+                              : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.08]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className={`rounded-full border px-2 py-0.5 text-[11px] ${
+                                submission.status === 'accepted'
+                                  ? 'border-pebble-success/35 bg-pebble-success/15 text-pebble-success'
+                                  : 'border-pebble-warning/35 bg-pebble-warning/15 text-pebble-warning'
+                              }`}
+                            >
+                              {submission.status === 'accepted' ? 'Accepted' : 'Failed'}
+                            </span>
+                            <span className="text-xs text-white/65">{new Date(submission.timestamp).toLocaleString()}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-white/75">
+                            {LANGUAGE_LABELS[submission.language]} • {submission.runtimeMs}ms • {submission.passCount}/{submission.totalCount}
+                          </p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {selectedSubmission && (
+                  <SubmissionDetail submission={selectedSubmission} />
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </section>
+  )
+}
+
+function SubmissionDetail({ submission }: { submission: UnitSubmission }) {
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!copied) {
+      return
+    }
+    const timeoutId = window.setTimeout(() => setCopied(false), 1200)
+    return () => window.clearTimeout(timeoutId)
+  }, [copied])
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(submission.code)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-sm font-semibold text-white">Submission detail</h4>
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[11px] ${
+            submission.status === 'accepted'
+              ? 'border-pebble-success/35 bg-pebble-success/15 text-pebble-success'
+              : 'border-pebble-warning/35 bg-pebble-warning/15 text-pebble-warning'
+          }`}
+        >
+          {submission.status === 'accepted' ? 'Accepted' : 'Failed'}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-lg border border-white/10 bg-black/20 p-2">
+          <p className="text-[11px] uppercase tracking-[0.06em] text-white/55">Runtime</p>
+          <p className="mt-1 text-sm font-medium text-white">{submission.runtimeMs}ms</p>
+          <p className="text-xs text-white/55">Beats --%</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-black/20 p-2">
+          <p className="text-[11px] uppercase tracking-[0.06em] text-white/55">Memory</p>
+          <p className="mt-1 text-sm font-medium text-white">--</p>
+          <p className="text-xs text-white/55">Pending benchmark</p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-white/65">
+          {LANGUAGE_LABELS[submission.language]} • exit {submission.exitCode ?? 'null'} • {new Date(submission.timestamp).toLocaleString()}
+        </p>
+        <button
+          type="button"
+          onClick={() => void copyCode()}
+          className="rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/80 transition hover:bg-white/[0.12]"
+        >
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+
+      <pre className="max-h-60 overflow-auto rounded-xl border border-white/10 bg-black/25 p-3 text-[12px] leading-relaxed text-white/85">
+        <code>{submission.code}</code>
+      </pre>
+    </div>
   )
 }
 

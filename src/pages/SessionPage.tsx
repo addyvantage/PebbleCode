@@ -11,7 +11,6 @@ import {
   type UnitTestResultItem,
 } from '../components/session/TestResultsPanel'
 import { UnitsDrawer } from '../components/session/UnitsDrawer'
-import { getFunctionModeTemplate } from '../data/functionModeTemplates'
 import {
   getUnitIndexFromStartUnit,
   getLanguageMetadata,
@@ -27,7 +26,25 @@ import {
   getPebbleUserState,
   savePebbleCurriculumProgress,
 } from '../utils/pebbleUserState'
-import { buildRunnableCode, parseHarnessCasesFromStdout } from '../utils/harness'
+import {
+  buildFunctionModeRunnable,
+  buildSingleCaseFunctionModeRunnable,
+  getUnitFunctionMode,
+  parseHarnessCasesFromStdout,
+} from '../lib/functionMode'
+import { ChevronLeft, ChevronRight, Play, RotateCcw, Settings2 } from 'lucide-react'
+import {
+  loadUnitProgress,
+  markUnitCompleted,
+  saveUnitProgress,
+  type UnitProgressMap,
+} from '../lib/progressStore'
+import {
+  appendSubmission,
+  loadSubmissions,
+  saveSubmissions,
+  type SubmissionsByUnit,
+} from '../lib/submissionsStore'
 import { useBodyScrollLock } from '../utils/useBodyScrollLock'
 
 type RunResponse = {
@@ -162,9 +179,20 @@ export function SessionPage() {
 
   const [currentUnitIndex, setCurrentUnitIndex] = useState(0)
   const [draftByUnitId, setDraftByUnitId] = useState<Record<string, string>>({})
-  const [completedUnitIds, setCompletedUnitIds] = useState<string[]>(
-    storedState.curriculum?.completedUnitIds ?? [],
-  )
+  const [unitProgress, setUnitProgress] = useState<UnitProgressMap>(() => {
+    const persisted = loadUnitProgress()
+    const migrated = { ...persisted }
+    for (const unitId of storedState.curriculum?.completedUnitIds ?? []) {
+      if (!migrated[unitId]?.completed) {
+        migrated[unitId] = {
+          completed: true,
+          lastPassedAt: Date.now(),
+        }
+      }
+    }
+    return migrated
+  })
+  const [submissionsByUnit, setSubmissionsByUnit] = useState<SubmissionsByUnit>(() => loadSubmissions())
 
   const [runStatus, setRunStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
   const [runMessage, setRunMessage] = useState('Run to evaluate all testcases.')
@@ -180,7 +208,23 @@ export function SessionPage() {
   const [editorFontSize, setEditorFontSize] = useState(14)
   const [wordWrapEnabled, setWordWrapEnabled] = useState(true)
 
+  const completedUnitIds = useMemo(
+    () =>
+      Object.entries(unitProgress)
+        .filter(([, entry]) => entry.completed)
+        .map(([unitId]) => unitId),
+    [unitProgress],
+  )
+
   const languageMeta = useMemo(() => getLanguageMetadata(selectedLanguage), [selectedLanguage])
+
+  useEffect(() => {
+    saveUnitProgress(unitProgress)
+  }, [unitProgress])
+
+  useEffect(() => {
+    saveSubmissions(submissionsByUnit)
+  }, [submissionsByUnit])
 
   useEffect(() => {
     let mounted = true
@@ -198,7 +242,7 @@ export function SessionPage() {
         setDraftByUnitId(() => {
           const next: Record<string, string> = {}
           for (const unit of nextUnits) {
-            const functionConfig = getFunctionModeTemplate(selectedLanguage, unit.id)
+            const functionConfig = getUnitFunctionMode(selectedLanguage, unit.id)
             next[unit.id] = functionConfig?.starterStub ?? unit.starterCode
           }
           return next
@@ -265,14 +309,14 @@ export function SessionPage() {
 
   const currentUnit = units[currentUnitIndex] ?? null
   const currentDefaultCode = currentUnit
-    ? getFunctionModeTemplate(selectedLanguage, currentUnit.id)?.starterStub ?? currentUnit.starterCode
+    ? getUnitFunctionMode(selectedLanguage, currentUnit.id)?.starterStub ?? currentUnit.starterCode
     : ''
   const currentCode = currentUnit ? draftByUnitId[currentUnit.id] ?? currentDefaultCode : ''
   const currentFunctionConfig = useMemo(() => {
     if (!currentUnit) {
       return null
     }
-    return getFunctionModeTemplate(selectedLanguage, currentUnit.id)
+    return getUnitFunctionMode(selectedLanguage, currentUnit.id)
   }, [currentUnit, selectedLanguage])
 
   const failingSummary = useMemo(
@@ -385,11 +429,8 @@ export function SessionPage() {
       let durationTotal = 0
 
       if (currentFunctionConfig?.evalMode === 'function') {
-        const harnessCases = currentUnit.tests
-          .map((test) => currentFunctionConfig.parseTestCase(test))
-          .filter((test): test is NonNullable<typeof test> => test !== null)
-
-        if (harnessCases.length !== currentUnit.tests.length) {
+        const parsedCases = currentUnit.tests.map((test) => currentFunctionConfig.parseTestCase(test))
+        if (parsedCases.some((test) => test === null)) {
           nextResults = Object.fromEntries(
             currentUnit.tests.map((test, index) => [index, {
               input: test.input,
@@ -409,108 +450,192 @@ export function SessionPage() {
           return
         }
 
-        const runnableCode = buildRunnableCode({
-          language: selectedLanguage,
-          userCode: currentCode,
-          methodName: currentFunctionConfig.methodName,
-          cases: harnessCases,
-        })
+        const functionCases = parsedCases.filter(
+          (test): test is NonNullable<typeof test> => test !== null,
+        )
 
-        if (!runnableCode) {
-          nextResults = Object.fromEntries(
-            currentUnit.tests.map((test, index) => [index, {
-              input: test.input,
-              expected: test.expected,
-              actual: '',
-              stderr: `Function mode is not supported for ${selectedLanguage}.`,
-              passed: false,
+        if (selectedLanguage === 'python') {
+          const runnableCode = buildFunctionModeRunnable({
+            language: selectedLanguage,
+            userCode: currentCode,
+            methodName: currentFunctionConfig.methodName,
+            cases: functionCases,
+          })
+
+          if (!runnableCode) {
+            nextResults = Object.fromEntries(
+              currentUnit.tests.map((test, index) => [index, {
+                input: test.input,
+                expected: test.expected,
+                actual: '',
+                stderr: `Function mode is not supported for ${selectedLanguage}.`,
+                passed: false,
+                timedOut: false,
+                durationMs: 0,
+                exitCode: null,
+              }]),
+            )
+            setTestResultsByIndex(nextResults)
+            setRunStatus('error')
+            setRunMessage(`Function mode unavailable for ${selectedLanguage}.`)
+            setSubmitAccepted(false)
+            return
+          }
+
+          let payload: unknown = null
+          try {
+            const response = await fetch('/api/run', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                language: selectedLanguage,
+                code: runnableCode,
+                stdin: '',
+                timeoutMs: 4000,
+              }),
+            })
+            payload = await response.json().catch(() => null)
+          } catch {
+            payload = {
+              ok: false,
+              exitCode: null,
+              stdout: '',
+              stderr: 'Failed to reach /api/run.',
               timedOut: false,
               durationMs: 0,
-              exitCode: null,
-            }]),
-          )
-          setTestResultsByIndex(nextResults)
-          setRunStatus('error')
-          setRunMessage(`Function mode unavailable for ${selectedLanguage}.`)
-          setSubmitAccepted(false)
-          return
-        }
-
-        let payload: unknown = null
-        try {
-          const response = await fetch('/api/run', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              language: selectedLanguage,
-              code: runnableCode,
-              stdin: '',
-              timeoutMs: 4000,
-            }),
-          })
-          payload = await response.json().catch(() => null)
-        } catch {
-          payload = {
-            ok: false,
-            exitCode: null,
-            stdout: '',
-            stderr: 'Failed to reach /api/run.',
-            timedOut: false,
-            durationMs: 0,
+            }
           }
-        }
 
-        const runResult = normalizeRunResponse(payload)
-        durationTotal = runResult.durationMs
-        const parsedHarnessCases = parseHarnessCasesFromStdout(runResult.stdout)
-        const perCaseDuration = currentUnit.tests.length > 0
-          ? Math.max(1, Math.floor(durationTotal / currentUnit.tests.length))
-          : 0
+          const runResult = normalizeRunResponse(payload)
+          durationTotal = runResult.durationMs
+          const parsedHarnessCases = parseHarnessCasesFromStdout(runResult.stdout)
+          const perCaseDuration = currentUnit.tests.length > 0
+            ? Math.max(1, Math.floor(durationTotal / currentUnit.tests.length))
+            : 0
 
-        if (parsedHarnessCases && parsedHarnessCases.length > 0) {
-          nextResults = Object.fromEntries(
-            currentUnit.tests.map((test, index) => {
-              const harnessCase = parsedHarnessCases[index]
-              if (!harnessCase) {
+          if (parsedHarnessCases && parsedHarnessCases.length > 0) {
+            nextResults = Object.fromEntries(
+              currentUnit.tests.map((test, index) => {
+                const harnessCase = parsedHarnessCases[index]
+                if (!harnessCase) {
+                  return [index, {
+                    input: test.input,
+                    expected: test.expected,
+                    actual: '',
+                    stderr: 'Missing case result from harness output.',
+                    passed: false,
+                    timedOut: false,
+                    durationMs: perCaseDuration,
+                    exitCode: runResult.exitCode,
+                  }]
+                }
+
                 return [index, {
-                  input: test.input,
-                  expected: test.expected,
-                  actual: '',
-                  stderr: 'Missing case result from harness output.',
-                  passed: false,
-                  timedOut: false,
+                  input: harnessCase.input || test.input,
+                  expected: harnessCase.expected || test.expected,
+                  actual: harnessCase.actual,
+                  stderr: harnessCase.stderr,
+                  passed: harnessCase.passed,
+                  timedOut: runResult.timedOut,
                   durationMs: perCaseDuration,
                   exitCode: runResult.exitCode,
                 }]
-              }
-
-              return [index, {
-                input: harnessCase.input || test.input,
-                expected: harnessCase.expected || test.expected,
-                actual: harnessCase.actual,
-                stderr: harnessCase.stderr,
-                passed: harnessCase.passed,
+              }),
+            )
+          } else {
+            nextResults = Object.fromEntries(
+              currentUnit.tests.map((test, index) => [index, {
+                input: test.input,
+                expected: test.expected,
+                actual: runResult.stdout,
+                stderr: runResult.stderr || 'Unable to parse harness output.',
+                passed: false,
                 timedOut: runResult.timedOut,
                 durationMs: perCaseDuration,
                 exitCode: runResult.exitCode,
-              }]
-            }),
-          )
+              }]),
+            )
+          }
         } else {
-          nextResults = Object.fromEntries(
-            currentUnit.tests.map((test, index) => [index, {
+          for (let index = 0; index < currentUnit.tests.length; index += 1) {
+            const currentCase = functionCases[index]
+            const test = currentUnit.tests[index]
+
+            const runnableCode = currentCase
+              ? buildSingleCaseFunctionModeRunnable({
+                language: selectedLanguage,
+                userCode: currentCode,
+                methodName: currentFunctionConfig.methodName,
+                args: currentCase.args,
+              })
+              : null
+
+            if (!runnableCode) {
+              const failedResult: UnitTestResultItem = {
+                input: test.input,
+                expected: test.expected,
+                actual: '',
+                stderr: `Function wrapper unavailable for ${selectedLanguage}.`,
+                passed: false,
+                timedOut: false,
+                durationMs: 0,
+                exitCode: null,
+              }
+              nextResults[index] = failedResult
+              continue
+            }
+
+            let payload: unknown = null
+            try {
+              const response = await fetch('/api/run', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  language: selectedLanguage,
+                  code: runnableCode,
+                  stdin: '',
+                  timeoutMs: 4000,
+                }),
+              })
+              payload = await response.json().catch(() => null)
+            } catch {
+              payload = {
+                ok: false,
+                exitCode: null,
+                stdout: '',
+                stderr: 'Failed to reach /api/run.',
+                timedOut: false,
+                durationMs: 0,
+              }
+            }
+
+            const runResult = normalizeRunResponse(payload)
+            const expectedNormalized = normalizeOutput(test.expected)
+            const actualNormalized = normalizeOutput(runResult.stdout)
+            const passed = runResult.ok && expectedNormalized === actualNormalized
+            const caseResult: UnitTestResultItem = {
               input: test.input,
               expected: test.expected,
               actual: runResult.stdout,
-              stderr: runResult.stderr || 'Unable to parse harness output.',
-              passed: false,
+              stderr: runResult.stderr,
+              passed,
               timedOut: runResult.timedOut,
-              durationMs: perCaseDuration,
+              durationMs: runResult.durationMs,
               exitCode: runResult.exitCode,
-            }]),
-          )
+            }
+
+            nextResults[index] = caseResult
+            durationTotal += runResult.durationMs
+
+            setTestResultsByIndex((prev) => ({
+              ...prev,
+              [index]: caseResult,
+            }))
+          }
         }
       } else {
         for (let index = 0; index < currentUnit.tests.length; index += 1) {
@@ -530,16 +655,18 @@ export function SessionPage() {
 
       const passedCount = Object.values(nextResults).filter((item) => item.passed).length
       const allPassed = passedCount === currentUnit.tests.length
+      const runExitCode =
+        Object.values(nextResults)
+          .map((item) => item.exitCode)
+          .find((exitCode) => exitCode !== null) ?? null
 
       if (allPassed) {
         setRunStatus('success')
         setRunMessage(`${passedCount}/${currentUnit.tests.length} passed • ${durationTotal}ms`)
+        setUnitProgress((prev) => markUnitCompleted(prev, currentUnit.id, durationTotal))
 
         if (mode === 'submit') {
           setSubmitAccepted(true)
-          setCompletedUnitIds((prev) =>
-            prev.includes(currentUnit.id) ? prev : [...prev, currentUnit.id],
-          )
         }
       } else {
         const firstFailed = Object.entries(nextResults)
@@ -555,6 +682,21 @@ export function SessionPage() {
         if (mode === 'submit') {
           setSubmitAccepted(false)
         }
+      }
+
+      if (mode === 'submit') {
+        setSubmissionsByUnit((prev) =>
+          appendSubmission(prev, {
+            unitId: currentUnit.id,
+            status: allPassed ? 'accepted' : 'failed',
+            language: selectedLanguage,
+            runtimeMs: durationTotal,
+            passCount: passedCount,
+            totalCount: currentUnit.tests.length,
+            exitCode: runExitCode,
+            code: currentCode,
+          }),
+        )
       }
     } finally {
       setIsRunningAll(false)
@@ -638,6 +780,7 @@ export function SessionPage() {
     .find((exitCode) => exitCode !== null)
   const levelLabel = `${selectedLevel[0]?.toUpperCase() ?? ''}${selectedLevel.slice(1)}`
   const summaryLabel = `${passedCount}/${currentUnit.tests.length} passed • ${completedCount}/${currentUnit.tests.length} run${totalDurationMs > 0 ? ` • ${totalDurationMs}ms` : ''}${typeof lastExitCode === 'number' ? ` • exit ${lastExitCode}` : ''}`
+  const currentUnitSubmissions = submissionsByUnit[currentUnit.id] ?? []
 
   const constraints = currentFunctionConfig?.evalMode === 'function'
     ? [
@@ -674,11 +817,9 @@ export function SessionPage() {
             onClick={moveToPreviousUnit}
             disabled={!previousEnabled}
             title="Previous question"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/85 transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-white/85 transition hover:border-white/20 hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <svg viewBox="0 0 20 20" className="h-4.5 w-4.5 fill-current">
-              <path d="M12.9 4.6 11.5 3.2 4.7 10l6.8 6.8 1.4-1.4L7.5 10z" />
-            </svg>
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           <p className="max-w-[420px] truncate px-1 text-sm font-semibold text-white">{currentUnit.title}</p>
           <button
@@ -686,15 +827,13 @@ export function SessionPage() {
             onClick={moveToNextUnit}
             disabled={!nextEnabled}
             title="Next question"
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-white/[0.05] text-white/85 transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-45 ${
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-white/[0.05] text-white/85 transition hover:border-white/20 hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-45 ${
               allTestsPassed && nextEnabled
                 ? 'border-pebble-success/45 shadow-[0_0_0_1px_rgba(74,222,128,0.28),0_0_16px_rgba(74,222,128,0.22)]'
                 : 'border-white/10'
             }`}
           >
-            <svg viewBox="0 0 20 20" className="h-4.5 w-4.5 fill-current">
-              <path d="m7.1 15.4 1.4 1.4 6.8-6.8-6.8-6.8-1.4 1.4L12.5 10z" />
-            </svg>
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -725,13 +864,14 @@ export function SessionPage() {
             tags={[languageMeta.label, 'Practice', 'Runtime verified']}
             language={selectedLanguage}
             functionMode={currentFunctionConfig?.evalMode === 'function'}
+            submissions={currentUnitSubmissions}
             className="min-h-0"
           />
 
           <div
             className="grid min-h-0 gap-3"
             style={{
-              gridTemplateRows: 'minmax(0,1fr) clamp(245px,29vh,315px)',
+              gridTemplateRows: 'minmax(0,1fr) clamp(280px,33vh,360px)',
             }}
           >
             <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.03]">
@@ -750,26 +890,26 @@ export function SessionPage() {
                       Function mode
                     </span>
                   )}
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="sm"
                     title="Reset code"
                     onClick={handleResetCode}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/85 transition hover:bg-white/[0.12]"
+                    className="h-9 w-9 rounded-xl border-white/20 bg-white/[0.06] p-0 text-white/90 hover:border-white/35 hover:bg-white/[0.14]"
                   >
-                    <svg viewBox="0 0 20 20" className="h-5 w-5 fill-current">
-                      <path d="M10 3a7 7 0 1 0 6.5 4.4h-2.2A5 5 0 1 1 10 5c1.2 0 2.3.4 3.1 1H11v2h6V2h-2v2.3A6.9 6.9 0 0 0 10 3z" />
-                    </svg>
-                  </button>
-                  <button
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="sm"
                     title="Editor settings"
                     onClick={() => setSettingsOpen(true)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/85 transition hover:bg-white/[0.12]"
+                    className="h-9 w-9 rounded-xl border-white/20 bg-white/[0.06] p-0 text-white/90 hover:border-white/35 hover:bg-white/[0.14]"
                   >
-                    <svg viewBox="0 0 20 20" className="h-5 w-5 fill-current">
-                      <path d="M8.4 2.8h3.2l.4 1.5c.4.1.7.3 1 .4l1.5-.7 1.6 2.8-1.1 1.1c0 .2.1.5.1.7 0 .2 0 .5-.1.7l1.1 1.1-1.6 2.8-1.5-.7c-.3.2-.6.3-1 .4l-.4 1.5H8.4L8 15.8a6.5 6.5 0 0 1-1-.4l-1.5.7-1.6-2.8L5 12.2a6.8 6.8 0 0 1 0-1.4L3.9 9.7l1.6-2.8 1.5.7c.3-.2.6-.3 1-.4zM10 12.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4z" />
-                    </svg>
-                  </button>
+                    <Settings2 className="h-4 w-4" aria-hidden="true" />
+                  </Button>
 
                   <Button
                     size="sm"
@@ -777,11 +917,7 @@ export function SessionPage() {
                     disabled={isRunningAll}
                     className="gap-2"
                   >
-                    <span aria-hidden="true" className="inline-flex">
-                      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current">
-                        <path d="M5 3.8a1 1 0 0 1 1.53-.85l8.9 5.7a1.6 1.6 0 0 1 0 2.7l-8.9 5.7A1 1 0 0 1 5 16.2V3.8z" />
-                      </svg>
-                    </span>
+                    <Play className="h-3.5 w-3.5" aria-hidden="true" />
                     {isRunningAll && activeAction === 'run' ? 'Running...' : 'Run'}
                   </Button>
 

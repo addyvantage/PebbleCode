@@ -18,6 +18,16 @@ export type FunctionModeTemplate = {
   parseTestCase: (test: CurriculumTestCase) => FunctionHarnessCase | null
 }
 
+type UnitFunctionDefinition = {
+  unitId: string
+  parseTestCase: (test: CurriculumTestCase) => FunctionHarnessCase | null
+  methodNameByLanguage: Record<PlacementLanguage, string>
+  signatureByLanguage: Record<PlacementLanguage, string>
+  starterStubByLanguage: Record<PlacementLanguage, string>
+}
+
+const FUNCTION_LANGUAGES: PlacementLanguage[] = ['python', 'javascript', 'cpp', 'java']
+
 function tokensToInts(input: string) {
   return input
     .trim()
@@ -146,7 +156,7 @@ function parseTwoSumCase(test: CurriculumTestCase): FunctionHarnessCase | null {
 
   return {
     input: test.input,
-    expectedText: `[${expectedValue.join(', ')}]`,
+    expectedText: test.expected.trim(),
     args: [nums, target],
     expectedValue,
   }
@@ -167,116 +177,196 @@ function parsePalindromeCase(test: CurriculumTestCase): FunctionHarnessCase | nu
   }
 }
 
-const FUNCTION_MODE_TEMPLATES: FunctionModeTemplate[] = [
+const UNIT_FUNCTION_DEFINITIONS: UnitFunctionDefinition[] = [
   {
     unitId: 'hello-world',
-    language: 'python',
-    evalMode: 'function',
-    signatureLabel: 'Solution.solve() -> str',
-    methodName: 'solve',
-    starterStub: `class Solution:
-    def solve(self) -> str:
-        # write your code here
-        return ""
-`,
     parseTestCase: parseHelloWorldCase,
+    methodNameByLanguage: {
+      python: 'solve',
+      javascript: 'solve',
+      cpp: 'solve',
+      java: 'solve',
+    },
+    signatureByLanguage: {
+      python: 'Solution.solve() -> str',
+      javascript: 'Solution.solve() => string',
+      cpp: 'Solution::solve() -> string',
+      java: 'Solution.solve() -> String',
+    },
+    starterStubByLanguage: {
+      python: `class Solution:\n    def solve(self) -> str:\n        # write your code here\n        return ""\n`,
+      javascript: `class Solution {\n  solve() {\n    // write your code here\n    return ''\n  }\n}\n`,
+      cpp: `#include <string>\nusing namespace std;\n\nclass Solution {\npublic:\n  string solve() {\n    // write your code here\n    return \"\";\n  }\n};\n`,
+      java: `class Solution {\n  public String solve() {\n    // write your code here\n    return \"\";\n  }\n}\n`,
+    },
   },
   {
     unitId: 'variables-sum',
-    language: 'python',
-    evalMode: 'function',
-    signatureLabel: 'Solution.solve(a: int, b: int) -> int',
-    methodName: 'solve',
-    starterStub: `class Solution:
-    def solve(self, a: int, b: int) -> int:
-        # write your code here
-        return 0
-`,
     parseTestCase: parseVariablesSumCase,
+    methodNameByLanguage: {
+      python: 'solve',
+      javascript: 'solve',
+      cpp: 'solve',
+      java: 'solve',
+    },
+    signatureByLanguage: {
+      python: 'Solution.solve(a: int, b: int) -> int',
+      javascript: 'Solution.solve(a, b) => number',
+      cpp: 'Solution::solve(int a, int b) -> int',
+      java: 'Solution.solve(int a, int b) -> int',
+    },
+    starterStubByLanguage: {
+      python: `class Solution:\n    def solve(self, a: int, b: int) -> int:\n        # write your code here\n        return 0\n`,
+      javascript: `class Solution {\n  solve(a, b) {\n    // write your code here\n    return 0\n  }\n}\n`,
+      cpp: `class Solution {\npublic:\n  int solve(int a, int b) {\n    // write your code here\n    return 0;\n  }\n};\n`,
+      java: `class Solution {\n  public int solve(int a, int b) {\n    // write your code here\n    return 0;\n  }\n}\n`,
+    },
   },
   {
     unitId: 'loops-sum-n',
-    language: 'python',
-    evalMode: 'function',
-    signatureLabel: 'Solution.sumToN(n: int) -> int',
-    methodName: 'sumToN',
-    starterStub: `class Solution:
-    def sumToN(self, n: int) -> int:
-        # write your code here
-        return 0
-`,
     parseTestCase: parseSumToNCase,
+    methodNameByLanguage: {
+      python: 'sumToN',
+      javascript: 'sumToN',
+      cpp: 'sumToN',
+      java: 'sumToN',
+    },
+    signatureByLanguage: {
+      python: 'Solution.sumToN(n: int) -> int',
+      javascript: 'Solution.sumToN(n) => number',
+      cpp: 'Solution::sumToN(int n) -> int',
+      java: 'Solution.sumToN(int n) -> int',
+    },
+    starterStubByLanguage: {
+      python: `class Solution:\n    def sumToN(self, n: int) -> int:\n        # write your code here\n        return 0\n`,
+      javascript: `class Solution {\n  sumToN(n) {\n    // write your code here\n    return 0\n  }\n}\n`,
+      cpp: `class Solution {\npublic:\n  int sumToN(int n) {\n    // write your code here\n    return 0;\n  }\n};\n`,
+      java: `class Solution {\n  public int sumToN(int n) {\n    // write your code here\n    return 0;\n  }\n}\n`,
+    },
   },
   {
     unitId: 'functions-even',
-    language: 'python',
-    evalMode: 'function',
-    signatureLabel: 'Solution.isEven(x: int) -> bool',
-    methodName: 'isEven',
-    starterStub: `class Solution:
-    def isEven(self, x: int) -> bool:
-        # write your code here
-        return False
-`,
     parseTestCase: parseIsEvenCase,
+    methodNameByLanguage: {
+      python: 'isEven',
+      javascript: 'isEven',
+      cpp: 'isEven',
+      java: 'isEven',
+    },
+    signatureByLanguage: {
+      python: 'Solution.isEven(x: int) -> bool',
+      javascript: 'Solution.isEven(x) => boolean',
+      cpp: 'Solution::isEven(int x) -> bool',
+      java: 'Solution.isEven(int x) -> boolean',
+    },
+    starterStubByLanguage: {
+      python: `class Solution:\n    def isEven(self, x: int) -> bool:\n        # write your code here\n        return False\n`,
+      javascript: `class Solution {\n  isEven(x) {\n    // write your code here\n    return false\n  }\n}\n`,
+      cpp: `class Solution {\npublic:\n  bool isEven(int x) {\n    // write your code here\n    return false;\n  }\n};\n`,
+      java: `class Solution {\n  public boolean isEven(int x) {\n    // write your code here\n    return false;\n  }\n}\n`,
+    },
   },
   {
     unitId: 'arrays-max',
-    language: 'python',
-    evalMode: 'function',
-    signatureLabel: 'Solution.maxValue(nums: List[int]) -> int',
-    methodName: 'maxValue',
-    starterStub: `from typing import List
-
-class Solution:
-    def maxValue(self, nums: List[int]) -> int:
-        # write your code here
-        return 0
-`,
     parseTestCase: parseArraysMaxCase,
+    methodNameByLanguage: {
+      python: 'maxValue',
+      javascript: 'maxValue',
+      cpp: 'maxValue',
+      java: 'maxValue',
+    },
+    signatureByLanguage: {
+      python: 'Solution.maxValue(nums: List[int]) -> int',
+      javascript: 'Solution.maxValue(nums) => number',
+      cpp: 'Solution::maxValue(const vector<int>& nums) -> int',
+      java: 'Solution.maxValue(int[] nums) -> int',
+    },
+    starterStubByLanguage: {
+      python: `from typing import List\n\nclass Solution:\n    def maxValue(self, nums: List[int]) -> int:\n        # write your code here\n        return 0\n`,
+      javascript: `class Solution {\n  maxValue(nums) {\n    // write your code here\n    return 0\n  }\n}\n`,
+      cpp: `#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n  int maxValue(const vector<int>& nums) {\n    // write your code here\n    return 0;\n  }\n};\n`,
+      java: `class Solution {\n  public int maxValue(int[] nums) {\n    // write your code here\n    return 0;\n  }\n}\n`,
+    },
   },
   {
     unitId: 'strings-reverse',
-    language: 'python',
-    evalMode: 'function',
-    signatureLabel: 'Solution.reverseText(text: str) -> str',
-    methodName: 'reverseText',
-    starterStub: `class Solution:
-    def reverseText(self, text: str) -> str:
-        # write your code here
-        return ""
-`,
     parseTestCase: parseReverseStringCase,
+    methodNameByLanguage: {
+      python: 'reverseText',
+      javascript: 'reverseText',
+      cpp: 'reverseText',
+      java: 'reverseText',
+    },
+    signatureByLanguage: {
+      python: 'Solution.reverseText(text: str) -> str',
+      javascript: 'Solution.reverseText(text) => string',
+      cpp: 'Solution::reverseText(const string& text) -> string',
+      java: 'Solution.reverseText(String text) -> String',
+    },
+    starterStubByLanguage: {
+      python: `class Solution:\n    def reverseText(self, text: str) -> str:\n        # write your code here\n        return \"\"\n`,
+      javascript: `class Solution {\n  reverseText(text) {\n    // write your code here\n    return ''\n  }\n}\n`,
+      cpp: `#include <string>\nusing namespace std;\n\nclass Solution {\npublic:\n  string reverseText(const string& text) {\n    // write your code here\n    return \"\";\n  }\n};\n`,
+      java: `class Solution {\n  public String reverseText(String text) {\n    // write your code here\n    return \"\";\n  }\n}\n`,
+    },
   },
   {
     unitId: 'dsa-two-sum',
-    language: 'python',
-    evalMode: 'function',
-    signatureLabel: 'Solution.twoSum(nums: List[int], target: int) -> List[int]',
-    methodName: 'twoSum',
-    starterStub: `from typing import List
-
-class Solution:
-    def twoSum(self, nums: List[int], target: int) -> List[int]:
-        # write your code here
-        return []
-`,
     parseTestCase: parseTwoSumCase,
+    methodNameByLanguage: {
+      python: 'twoSum',
+      javascript: 'twoSum',
+      cpp: 'twoSum',
+      java: 'twoSum',
+    },
+    signatureByLanguage: {
+      python: 'Solution.twoSum(nums: List[int], target: int) -> List[int]',
+      javascript: 'Solution.twoSum(nums, target) => number[]',
+      cpp: 'Solution::twoSum(const vector<int>& nums, int target) -> vector<int>',
+      java: 'Solution.twoSum(int[] nums, int target) -> int[]',
+    },
+    starterStubByLanguage: {
+      python: `from typing import List\n\nclass Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        # write your code here\n        return []\n`,
+      javascript: `class Solution {\n  twoSum(nums, target) {\n    // write your code here\n    return []\n  }\n}\n`,
+      cpp: `#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n  vector<int> twoSum(const vector<int>& nums, int target) {\n    // write your code here\n    return {};\n  }\n};\n`,
+      java: `class Solution {\n  public int[] twoSum(int[] nums, int target) {\n    // write your code here\n    return new int[0];\n  }\n}\n`,
+    },
   },
   {
     unitId: 'dsa-palindrome',
-    language: 'python',
-    evalMode: 'function',
-    signatureLabel: 'Solution.isPalindrome(text: str) -> bool',
-    methodName: 'isPalindrome',
-    starterStub: `class Solution:
-    def isPalindrome(self, text: str) -> bool:
-        # write your code here
-        return False
-`,
     parseTestCase: parsePalindromeCase,
+    methodNameByLanguage: {
+      python: 'isPalindrome',
+      javascript: 'isPalindrome',
+      cpp: 'isPalindrome',
+      java: 'isPalindrome',
+    },
+    signatureByLanguage: {
+      python: 'Solution.isPalindrome(text: str) -> bool',
+      javascript: 'Solution.isPalindrome(text) => boolean',
+      cpp: 'Solution::isPalindrome(const string& text) -> bool',
+      java: 'Solution.isPalindrome(String text) -> boolean',
+    },
+    starterStubByLanguage: {
+      python: `class Solution:\n    def isPalindrome(self, text: str) -> bool:\n        # write your code here\n        return False\n`,
+      javascript: `class Solution {\n  isPalindrome(text) {\n    // write your code here\n    return false\n  }\n}\n`,
+      cpp: `#include <string>\nusing namespace std;\n\nclass Solution {\npublic:\n  bool isPalindrome(const string& text) {\n    // write your code here\n    return false;\n  }\n};\n`,
+      java: `class Solution {\n  public boolean isPalindrome(String text) {\n    // write your code here\n    return false;\n  }\n}\n`,
+    },
   },
 ]
+
+const FUNCTION_MODE_TEMPLATES: FunctionModeTemplate[] = UNIT_FUNCTION_DEFINITIONS.flatMap((definition) =>
+  FUNCTION_LANGUAGES.map((language) => ({
+    unitId: definition.unitId,
+    language,
+    evalMode: 'function' as const,
+    signatureLabel: definition.signatureByLanguage[language],
+    methodName: definition.methodNameByLanguage[language],
+    starterStub: definition.starterStubByLanguage[language],
+    parseTestCase: definition.parseTestCase,
+  })),
+)
 
 export function getFunctionModeTemplate(language: PlacementLanguage, unitId: string) {
   return FUNCTION_MODE_TEMPLATES.find(

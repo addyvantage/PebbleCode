@@ -73,11 +73,11 @@ export function TestResultsPanel({
         })}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-white/10 bg-black/20 p-2.5 pr-2">
+      <div className="min-h-0 flex-1 rounded-xl border border-white/10 bg-black/20 p-2.5">
         {!selectedTest ? (
           <p className="text-sm text-white/65">No testcases configured.</p>
         ) : (
-          <div className="grid gap-2">
+          <div className="grid h-full content-start gap-2">
             <FieldBlock label="Input" value={selectedTest.input || '(empty)'} />
             <FieldBlock label="Expected" value={normalizeOutput(selectedTest.expected)} />
             <FieldBlock
@@ -86,9 +86,24 @@ export function TestResultsPanel({
               status={selectedResult ? (selectedResult.passed ? 'pass' : 'fail') : 'not run'}
             />
 
-            {selectedResult?.timedOut ? (
-              <div className="inline-flex w-fit items-center gap-1 rounded-full border border-pebble-warning/35 bg-pebble-warning/10 px-2 py-0.5 text-[11px] text-pebble-warning">
-                timed out
+            {selectedResult ? (
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span
+                  className={`rounded-full border px-2 py-0.5 ${
+                    selectedResult.passed
+                      ? 'border-pebble-success/35 bg-pebble-success/15 text-pebble-success'
+                      : 'border-pebble-warning/35 bg-pebble-warning/15 text-pebble-warning'
+                  }`}
+                >
+                  {selectedResult.passed ? 'pass' : 'fail'}
+                </span>
+                <span className="text-white/70">runtime {selectedResult.durationMs}ms</span>
+                <span className="text-white/70">exit {selectedResult.exitCode ?? 'null'}</span>
+                {selectedResult.timedOut ? (
+                  <span className="rounded-full border border-pebble-warning/35 bg-pebble-warning/10 px-2 py-0.5 text-pebble-warning">
+                    timed out
+                  </span>
+                ) : null}
               </div>
             ) : null}
 
@@ -117,29 +132,40 @@ function FieldBlock({
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] uppercase tracking-[0.06em] text-white/55">{label}</p>
-        {status && (
-          <span
-            className={`rounded-full border px-2 py-0.5 text-[10px] ${
-              status === 'pass'
-                ? 'border-pebble-success/35 bg-pebble-success/15 text-pebble-success'
-                : status === 'fail'
-                  ? 'border-pebble-warning/35 bg-pebble-warning/15 text-pebble-warning'
-                  : 'border-white/10 bg-white/[0.04] text-white/65'
-            }`}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => void navigator.clipboard.writeText(value)}
+            className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-white/75 transition hover:bg-white/[0.1]"
           >
-            {status}
-          </span>
-        )}
+            Copy
+          </button>
+          {status && (
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[10px] ${
+                status === 'pass'
+                  ? 'border-pebble-success/35 bg-pebble-success/15 text-pebble-success'
+                  : status === 'fail'
+                    ? 'border-pebble-warning/35 bg-pebble-warning/15 text-pebble-warning'
+                    : 'border-white/10 bg-white/[0.04] text-white/65'
+              }`}
+            >
+              {status}
+            </span>
+          )}
+        </div>
       </div>
-      <pre
-        className={`max-h-[72px] overflow-auto whitespace-pre-wrap break-words rounded-lg border px-2 py-1.5 font-mono text-[12px] leading-relaxed ${
+      <div
+        className={`rounded-lg border px-2 py-1.5 font-mono text-[12px] leading-relaxed ${
           warning
             ? 'border-pebble-warning/35 bg-pebble-warning/10 text-pebble-warning'
             : 'border-white/10 bg-black/30 text-white/85'
         }`}
       >
-        {value}
-      </pre>
+        <p className="[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:8] overflow-hidden whitespace-pre-wrap break-words">
+          {value}
+        </p>
+      </div>
     </div>
   )
 }

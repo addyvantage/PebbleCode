@@ -18,6 +18,7 @@
     "@monaco-editor/react": "^4.7.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "lucide-react": "^0.551.0",
     "monaco-editor": "^0.55.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
