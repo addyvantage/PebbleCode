@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -11,6 +11,7 @@ import {
   type UnitTestResultItem,
 } from '../components/session/TestResultsPanel'
 import { UnitsDrawer } from '../components/session/UnitsDrawer'
+import { getFunctionModeTemplate } from '../data/functionModeTemplates'
 import {
   getUnitIndexFromStartUnit,
   getLanguageMetadata,
@@ -26,6 +27,7 @@ import {
   getPebbleUserState,
   savePebbleCurriculumProgress,
 } from '../utils/pebbleUserState'
+import { buildRunnableCode, parseHarnessCasesFromStdout } from '../utils/harness'
 import { useBodyScrollLock } from '../utils/useBodyScrollLock'
 
 type RunResponse = {
@@ -38,10 +40,10 @@ type RunResponse = {
 }
 
 const LANGUAGE_RUNTIME_LABEL: Record<PlacementLanguage, string> = {
-  python: 'Python3',
+  python: 'Python 3',
   javascript: 'JavaScript',
   cpp: 'C++17',
-  java: 'Java',
+  java: 'Java 17',
 }
 
 function normalizeOutput(value: string) {
@@ -156,6 +158,7 @@ export function SessionPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const [currentUnitIndex, setCurrentUnitIndex] = useState(0)
   const [draftByUnitId, setDraftByUnitId] = useState<Record<string, string>>({})
@@ -164,14 +167,18 @@ export function SessionPage() {
   )
 
   const [runStatus, setRunStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
-  const [runMessage, setRunMessage] = useState('Run a testcase or submit all tests.')
+  const [runMessage, setRunMessage] = useState('Run to evaluate all testcases.')
   const [selectedTestIndex, setSelectedTestIndex] = useState(0)
   const [testResultsByIndex, setTestResultsByIndex] = useState<Record<number, UnitTestResultItem>>({})
-  const [isRunningSingle, setIsRunningSingle] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRunningAll, setIsRunningAll] = useState(false)
+  const [activeAction, setActiveAction] = useState<'run' | 'submit' | null>(null)
+  const [totalDurationMs, setTotalDurationMs] = useState(0)
+  const [submitAccepted, setSubmitAccepted] = useState(false)
   const [recentChatSummary, setRecentChatSummary] = useState(
     storedState.curriculum?.recentChatSummary ?? '',
   )
+  const [editorFontSize, setEditorFontSize] = useState(14)
+  const [wordWrapEnabled, setWordWrapEnabled] = useState(true)
 
   const languageMeta = useMemo(() => getLanguageMetadata(selectedLanguage), [selectedLanguage])
 
@@ -191,7 +198,8 @@ export function SessionPage() {
         setDraftByUnitId(() => {
           const next: Record<string, string> = {}
           for (const unit of nextUnits) {
-            next[unit.id] = unit.starterCode
+            const functionConfig = getFunctionModeTemplate(selectedLanguage, unit.id)
+            next[unit.id] = functionConfig?.starterStub ?? unit.starterCode
           }
           return next
         })
@@ -226,6 +234,10 @@ export function SessionPage() {
         setCurrentUnitIndex(nextIndex)
         setSelectedTestIndex(0)
         setTestResultsByIndex({})
+        setRunStatus('idle')
+        setRunMessage('Run to evaluate all testcases.')
+        setTotalDurationMs(0)
+        setSubmitAccepted(false)
       } catch (error) {
         if (!mounted) {
           return
@@ -252,7 +264,16 @@ export function SessionPage() {
   ])
 
   const currentUnit = units[currentUnitIndex] ?? null
-  const currentCode = currentUnit ? draftByUnitId[currentUnit.id] ?? currentUnit.starterCode : ''
+  const currentDefaultCode = currentUnit
+    ? getFunctionModeTemplate(selectedLanguage, currentUnit.id)?.starterStub ?? currentUnit.starterCode
+    : ''
+  const currentCode = currentUnit ? draftByUnitId[currentUnit.id] ?? currentDefaultCode : ''
+  const currentFunctionConfig = useMemo(() => {
+    if (!currentUnit) {
+      return null
+    }
+    return getFunctionModeTemplate(selectedLanguage, currentUnit.id)
+  }, [currentUnit, selectedLanguage])
 
   const failingSummary = useMemo(
     () => buildFailingSummary(testResultsByIndex),
@@ -282,6 +303,7 @@ export function SessionPage() {
       ...prev,
       [currentUnit.id]: value,
     }))
+    setSubmitAccepted(false)
   }, [currentUnit])
 
   async function executeTest(index: number): Promise<UnitTestResultItem> {
@@ -293,6 +315,8 @@ export function SessionPage() {
         stderr: 'No active unit.',
         passed: false,
         timedOut: false,
+        durationMs: 0,
+        exitCode: null,
       }
     }
 
@@ -336,85 +360,249 @@ export function SessionPage() {
       stderr: result.stderr,
       passed,
       timedOut: result.timedOut,
+      durationMs: result.durationMs,
+      exitCode: result.exitCode,
     }
   }
 
-  const runSelectedTest = useCallback(async () => {
-    if (!currentUnit || isRunningSingle || isSubmitting) {
+  const runAllTests = useCallback(async (mode: 'run' | 'submit') => {
+    if (!currentUnit || isRunningAll) {
       return
     }
 
-    setIsRunningSingle(true)
+    setIsRunningAll(true)
+    setActiveAction(mode)
     setRunStatus('running')
-    setRunMessage(`Running testcase #${selectedTestIndex + 1}...`)
+    setRunMessage(`${mode === 'submit' ? 'Submitting' : 'Running'} ${currentUnit.tests.length} testcases...`)
+    setTestResultsByIndex({})
+    setTotalDurationMs(0)
+    if (mode === 'run') {
+      setSubmitAccepted(false)
+    }
 
     try {
-      const result = await executeTest(selectedTestIndex)
-      setTestResultsByIndex((prev) => ({
-        ...prev,
-        [selectedTestIndex]: result,
-      }))
+      let nextResults: Record<number, UnitTestResultItem> = {}
+      let durationTotal = 0
 
-      if (result.passed) {
-        setRunStatus('success')
-        setRunMessage(`Testcase #${selectedTestIndex + 1} passed.`)
+      if (currentFunctionConfig?.evalMode === 'function') {
+        const harnessCases = currentUnit.tests
+          .map((test) => currentFunctionConfig.parseTestCase(test))
+          .filter((test): test is NonNullable<typeof test> => test !== null)
+
+        if (harnessCases.length !== currentUnit.tests.length) {
+          nextResults = Object.fromEntries(
+            currentUnit.tests.map((test, index) => [index, {
+              input: test.input,
+              expected: test.expected,
+              actual: '',
+              stderr: 'Failed to parse testcase into function arguments.',
+              passed: false,
+              timedOut: false,
+              durationMs: 0,
+              exitCode: null,
+            }]),
+          )
+          setTestResultsByIndex(nextResults)
+          setRunStatus('error')
+          setRunMessage('Failed to prepare function-mode testcases.')
+          setSubmitAccepted(false)
+          return
+        }
+
+        const runnableCode = buildRunnableCode({
+          language: selectedLanguage,
+          userCode: currentCode,
+          methodName: currentFunctionConfig.methodName,
+          cases: harnessCases,
+        })
+
+        if (!runnableCode) {
+          nextResults = Object.fromEntries(
+            currentUnit.tests.map((test, index) => [index, {
+              input: test.input,
+              expected: test.expected,
+              actual: '',
+              stderr: `Function mode is not supported for ${selectedLanguage}.`,
+              passed: false,
+              timedOut: false,
+              durationMs: 0,
+              exitCode: null,
+            }]),
+          )
+          setTestResultsByIndex(nextResults)
+          setRunStatus('error')
+          setRunMessage(`Function mode unavailable for ${selectedLanguage}.`)
+          setSubmitAccepted(false)
+          return
+        }
+
+        let payload: unknown = null
+        try {
+          const response = await fetch('/api/run', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              language: selectedLanguage,
+              code: runnableCode,
+              stdin: '',
+              timeoutMs: 4000,
+            }),
+          })
+          payload = await response.json().catch(() => null)
+        } catch {
+          payload = {
+            ok: false,
+            exitCode: null,
+            stdout: '',
+            stderr: 'Failed to reach /api/run.',
+            timedOut: false,
+            durationMs: 0,
+          }
+        }
+
+        const runResult = normalizeRunResponse(payload)
+        durationTotal = runResult.durationMs
+        const parsedHarnessCases = parseHarnessCasesFromStdout(runResult.stdout)
+        const perCaseDuration = currentUnit.tests.length > 0
+          ? Math.max(1, Math.floor(durationTotal / currentUnit.tests.length))
+          : 0
+
+        if (parsedHarnessCases && parsedHarnessCases.length > 0) {
+          nextResults = Object.fromEntries(
+            currentUnit.tests.map((test, index) => {
+              const harnessCase = parsedHarnessCases[index]
+              if (!harnessCase) {
+                return [index, {
+                  input: test.input,
+                  expected: test.expected,
+                  actual: '',
+                  stderr: 'Missing case result from harness output.',
+                  passed: false,
+                  timedOut: false,
+                  durationMs: perCaseDuration,
+                  exitCode: runResult.exitCode,
+                }]
+              }
+
+              return [index, {
+                input: harnessCase.input || test.input,
+                expected: harnessCase.expected || test.expected,
+                actual: harnessCase.actual,
+                stderr: harnessCase.stderr,
+                passed: harnessCase.passed,
+                timedOut: runResult.timedOut,
+                durationMs: perCaseDuration,
+                exitCode: runResult.exitCode,
+              }]
+            }),
+          )
+        } else {
+          nextResults = Object.fromEntries(
+            currentUnit.tests.map((test, index) => [index, {
+              input: test.input,
+              expected: test.expected,
+              actual: runResult.stdout,
+              stderr: runResult.stderr || 'Unable to parse harness output.',
+              passed: false,
+              timedOut: runResult.timedOut,
+              durationMs: perCaseDuration,
+              exitCode: runResult.exitCode,
+            }]),
+          )
+        }
       } else {
-        setRunStatus('error')
-        setRunMessage(`Testcase #${selectedTestIndex + 1} failed.`)
-      }
-    } finally {
-      setIsRunningSingle(false)
-    }
-  }, [currentUnit, isRunningSingle, isSubmitting, selectedTestIndex])
+        for (let index = 0; index < currentUnit.tests.length; index += 1) {
+          const result = await executeTest(index)
+          nextResults[index] = result
+          durationTotal += result.durationMs
 
-  const submitAllTests = useCallback(async () => {
-    if (!currentUnit || isSubmitting || isRunningSingle) {
-      return
-    }
-
-    setIsSubmitting(true)
-    setRunStatus('running')
-    setRunMessage(`Submitting ${currentUnit.tests.length} tests...`)
-
-    const nextResults: Record<number, UnitTestResultItem> = {}
-
-    try {
-      for (let index = 0; index < currentUnit.tests.length; index += 1) {
-        nextResults[index] = await executeTest(index)
+          setTestResultsByIndex((prev) => ({
+            ...prev,
+            [index]: result,
+          }))
+        }
       }
 
       setTestResultsByIndex(nextResults)
+      setTotalDurationMs(durationTotal)
 
       const passedCount = Object.values(nextResults).filter((item) => item.passed).length
       const allPassed = passedCount === currentUnit.tests.length
 
       if (allPassed) {
         setRunStatus('success')
-        setRunMessage(`All tests passed (${passedCount}/${currentUnit.tests.length}).`)
-        setCompletedUnitIds((prev) =>
-          prev.includes(currentUnit.id) ? prev : [...prev, currentUnit.id],
-        )
+        setRunMessage(`${passedCount}/${currentUnit.tests.length} passed • ${durationTotal}ms`)
+
+        if (mode === 'submit') {
+          setSubmitAccepted(true)
+          setCompletedUnitIds((prev) =>
+            prev.includes(currentUnit.id) ? prev : [...prev, currentUnit.id],
+          )
+        }
       } else {
+        const firstFailed = Object.entries(nextResults)
+          .map(([index, result]) => ({ index: Number(index), result }))
+          .find(({ result }) => !result.passed)
+
+        const failPreview = firstFailed
+          ? `Fail #${firstFailed.index + 1}: expected ${firstFailed.result.expected}, got ${normalizeOutput(firstFailed.result.actual) || '(empty)'}`
+          : 'Some tests failed.'
+
         setRunStatus('error')
-        setRunMessage(`${passedCount}/${currentUnit.tests.length} passed. Keep iterating.`)
+        setRunMessage(`${passedCount}/${currentUnit.tests.length} passed • ${durationTotal}ms • ${failPreview}`)
+        if (mode === 'submit') {
+          setSubmitAccepted(false)
+        }
       }
     } finally {
-      setIsSubmitting(false)
+      setIsRunningAll(false)
+      setActiveAction(null)
     }
-  }, [currentUnit, isSubmitting, isRunningSingle])
+  }, [currentCode, currentFunctionConfig, currentUnit, executeTest, isRunningAll, selectedLanguage])
 
   function selectUnit(index: number) {
     setCurrentUnitIndex(index)
     setSelectedTestIndex(0)
     setRunStatus('idle')
-    setRunMessage('Run a testcase or submit all tests.')
+    setRunMessage('Run to evaluate all testcases.')
     setTestResultsByIndex({})
+    setTotalDurationMs(0)
+    setSubmitAccepted(false)
   }
 
   function moveToNextUnit() {
     if (currentUnitIndex < units.length - 1) {
       selectUnit(currentUnitIndex + 1)
     }
+  }
+
+  function moveToPreviousUnit() {
+    if (currentUnitIndex > 0) {
+      selectUnit(currentUnitIndex - 1)
+    }
+  }
+
+  function handleResetCode() {
+    if (!currentUnit) {
+      return
+    }
+
+    const confirmed = window.confirm('Reset editor to starter code?')
+    if (!confirmed) {
+      return
+    }
+
+    setDraftByUnitId((prev) => ({
+      ...prev,
+      [currentUnit.id]: currentFunctionConfig?.starterStub ?? currentUnit.starterCode,
+    }))
+    setRunStatus('idle')
+    setRunMessage('Editor reset to starter code.')
+    setTestResultsByIndex({})
+    setTotalDurationMs(0)
+    setSubmitAccepted(false)
   }
 
   if (isLoading) {
@@ -442,80 +630,170 @@ export function SessionPage() {
   const completedCount = Object.keys(testResultsByIndex).length
   const passedCount = Object.values(testResultsByIndex).filter((result) => result.passed).length
   const currentIsCompleted = completedUnitIds.includes(currentUnit.id)
+  const allTestsPassed = currentUnit.tests.length > 0 && passedCount === currentUnit.tests.length
+  const nextEnabled = currentUnitIndex < units.length - 1
+  const previousEnabled = currentUnitIndex > 0
+  const lastExitCode = Object.values(testResultsByIndex)
+    .map((result) => result.exitCode)
+    .find((exitCode) => exitCode !== null)
+  const levelLabel = `${selectedLevel[0]?.toUpperCase() ?? ''}${selectedLevel.slice(1)}`
+  const summaryLabel = `${passedCount}/${currentUnit.tests.length} passed • ${completedCount}/${currentUnit.tests.length} run${totalDurationMs > 0 ? ` • ${totalDurationMs}ms` : ''}${typeof lastExitCode === 'number' ? ` • exit ${lastExitCode}` : ''}`
 
-  const constraints = [
-    'Read input from stdin exactly as provided.',
-    'Write output to stdout in the exact expected format.',
-    `Pass all ${currentUnit.tests.length} unit tests before submitting.`,
-  ]
+  const constraints = currentFunctionConfig?.evalMode === 'function'
+    ? [
+        'Implement only the Solution method for this unit.',
+        'Input parsing, testcase looping, and output checks are handled automatically.',
+        `Pass all ${currentUnit.tests.length} unit tests before submitting.`,
+      ]
+    : [
+        'Read input from stdin exactly as provided.',
+        'Write output to stdout in the exact expected format.',
+        `Pass all ${currentUnit.tests.length} unit tests before submitting.`,
+      ]
 
   return (
     <section className="h-[100vh] overflow-hidden bg-[#070b14] text-white">
-      <header className="flex h-16 items-center justify-between border-b border-white/10 bg-white/[0.02] px-4">
-        <div className="flex items-center gap-4">
-          <p className="text-lg font-semibold tracking-[-0.01em] text-white">Pebble</p>
-          <nav className="hidden items-center gap-2 text-sm text-white/55 md:flex">
-            <span className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-white/85">Session</span>
-            <span>{languageMeta.label}</span>
-          </nav>
+      <header className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-white/10 bg-white/[0.02] px-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Link
+            to="/"
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-white/[0.12] active:bg-white/[0.15] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/55"
+          >
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-pebble-accent/20 text-xs">P</span>
+            Pebble
+          </Link>
+
+          <span className="hidden rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-xs text-white/70 md:inline-flex">
+            {languageMeta.label} • {levelLabel}
+          </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={moveToPreviousUnit}
+            disabled={!previousEnabled}
+            title="Previous question"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/85 transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <svg viewBox="0 0 20 20" className="h-4.5 w-4.5 fill-current">
+              <path d="M12.9 4.6 11.5 3.2 4.7 10l6.8 6.8 1.4-1.4L7.5 10z" />
+            </svg>
+          </button>
+          <p className="max-w-[420px] truncate px-1 text-sm font-semibold text-white">{currentUnit.title}</p>
+          <button
+            type="button"
+            onClick={moveToNextUnit}
+            disabled={!nextEnabled}
+            title="Next question"
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-white/[0.05] text-white/85 transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-45 ${
+              allTestsPassed && nextEnabled
+                ? 'border-pebble-success/45 shadow-[0_0_0_1px_rgba(74,222,128,0.28),0_0_16px_rgba(74,222,128,0.22)]'
+                : 'border-white/10'
+            }`}
+          >
+            <svg viewBox="0 0 20 20" className="h-4.5 w-4.5 fill-current">
+              <path d="m7.1 15.4 1.4 1.4 6.8-6.8-6.8-6.8-1.4 1.4L12.5 10z" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-sm text-white/80 transition hover:bg-white/[0.1]"
+            className="rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-sm text-white/85 transition hover:bg-white/[0.12]"
           >
             ☰ Units
           </button>
+
           <Badge variant={statusVariant(runStatus)}>{runStatus}</Badge>
-          {currentIsCompleted && currentUnitIndex < units.length - 1 && (
-            <Button variant="secondary" size="sm" onClick={moveToNextUnit}>
-              Next unit
-            </Button>
-          )}
         </div>
       </header>
 
       <main className="h-[calc(100vh-64px)] overflow-hidden p-3">
-        <div className="grid h-full min-h-0 grid-cols-[420px_minmax(0,1fr)] gap-3">
+        <div className="grid h-full min-h-0 grid-cols-[clamp(380px,24vw,420px)_minmax(0,1fr)_clamp(360px,24vw,400px)] gap-3">
           <ProblemStatementPanel
+            unitId={currentUnit.id}
             title={currentUnit.title}
             concept={currentUnit.concept}
             prompt={currentUnit.prompt}
             constraints={constraints}
+            hints={currentUnit.hints}
             tests={currentUnit.tests}
             difficultyLabel={difficultyByLevel(selectedLevel)}
-            tags={[languageMeta.label, 'Arrays', 'Simulation']}
+            tags={[languageMeta.label, 'Practice', 'Runtime verified']}
+            language={selectedLanguage}
+            functionMode={currentFunctionConfig?.evalMode === 'function'}
             className="min-h-0"
           />
 
-          <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_260px] gap-3">
+          <div
+            className="grid min-h-0 gap-3"
+            style={{
+              gridTemplateRows: 'minmax(0,1fr) clamp(245px,29vh,315px)',
+            }}
+          >
             <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.03]">
               <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
                 <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-[0.08em] text-white/45">Code</p>
+                  <p className="text-xs uppercase tracking-[0.08em] text-white/55">Code</p>
                   <p className="truncate text-sm font-medium text-white">{currentUnit.title}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/70">
+                  <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/80">
                     {LANGUAGE_RUNTIME_LABEL[selectedLanguage]}
                   </span>
+                  {currentFunctionConfig?.evalMode === 'function' && (
+                    <span className="rounded-full border border-pebble-accent/35 bg-pebble-accent/12 px-2.5 py-1 text-xs text-pebble-accent">
+                      Function mode
+                    </span>
+                  )}
                   <button
                     type="button"
-                    className="rounded-lg border border-white/10 bg-white/[0.05] px-2 py-1 text-[11px] text-white/65 transition hover:bg-white/[0.1]"
-                    aria-label="Format"
+                    title="Reset code"
+                    onClick={handleResetCode}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/85 transition hover:bg-white/[0.12]"
                   >
-                    ⟲
+                    <svg viewBox="0 0 20 20" className="h-5 w-5 fill-current">
+                      <path d="M10 3a7 7 0 1 0 6.5 4.4h-2.2A5 5 0 1 1 10 5c1.2 0 2.3.4 3.1 1H11v2h6V2h-2v2.3A6.9 6.9 0 0 0 10 3z" />
+                    </svg>
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg border border-white/10 bg-white/[0.05] px-2 py-1 text-[11px] text-white/65 transition hover:bg-white/[0.1]"
-                    aria-label="Settings"
+                    title="Editor settings"
+                    onClick={() => setSettingsOpen(true)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/85 transition hover:bg-white/[0.12]"
                   >
-                    ⚙
+                    <svg viewBox="0 0 20 20" className="h-5 w-5 fill-current">
+                      <path d="M8.4 2.8h3.2l.4 1.5c.4.1.7.3 1 .4l1.5-.7 1.6 2.8-1.1 1.1c0 .2.1.5.1.7 0 .2 0 .5-.1.7l1.1 1.1-1.6 2.8-1.5-.7c-.3.2-.6.3-1 .4l-.4 1.5H8.4L8 15.8a6.5 6.5 0 0 1-1-.4l-1.5.7-1.6-2.8L5 12.2a6.8 6.8 0 0 1 0-1.4L3.9 9.7l1.6-2.8 1.5.7c.3-.2.6-.3 1-.4zM10 12.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4z" />
+                    </svg>
                   </button>
+
+                  <Button
+                    size="sm"
+                    onClick={() => void runAllTests('run')}
+                    disabled={isRunningAll}
+                    className="gap-2"
+                  >
+                    <span aria-hidden="true" className="inline-flex">
+                      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current">
+                        <path d="M5 3.8a1 1 0 0 1 1.53-.85l8.9 5.7a1.6 1.6 0 0 1 0 2.7l-8.9 5.7A1 1 0 0 1 5 16.2V3.8z" />
+                      </svg>
+                    </span>
+                    {isRunningAll && activeAction === 'run' ? 'Running...' : 'Run'}
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void runAllTests('submit')}
+                    disabled={isRunningAll}
+                    className={submitAccepted ? '!border-pebble-success/45 !bg-pebble-success/18 !text-pebble-success' : ''}
+                  >
+                    {isRunningAll && activeAction === 'submit' ? 'Submitting...' : submitAccepted ? 'Accepted' : 'Submit'}
+                  </Button>
                 </div>
               </div>
 
@@ -528,13 +806,18 @@ export function SessionPage() {
                   onChange={(nextValue) => onCodeChange(nextValue ?? '')}
                   options={{
                     minimap: { enabled: false },
-                    fontSize: 14,
-                    lineHeight: 21,
+                    fontSize: editorFontSize,
+                    lineHeight: 22,
                     automaticLayout: true,
-                    wordWrap: 'on',
+                    wordWrap: wordWrapEnabled ? 'on' : 'off',
                     scrollBeyondLastLine: false,
                     smoothScrolling: true,
                     overviewRulerLanes: 0,
+                    scrollbar: {
+                      horizontal: 'hidden',
+                      verticalScrollbarSize: 8,
+                      horizontalScrollbarSize: 8,
+                    },
                     padding: {
                       top: 12,
                       bottom: 12,
@@ -543,60 +826,43 @@ export function SessionPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2">
-                <p className="truncate text-xs text-white/60">
-                  Case {selectedTestIndex + 1} • {runMessage}
+              {currentFunctionConfig?.evalMode === 'function' && (
+                <p className="border-t border-white/10 px-3 py-1.5 text-xs text-white/60">
+                  Implement the function only. Input/output and testcase looping are handled automatically.
                 </p>
-                <div className="ml-auto flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => void runSelectedTest()}
-                    disabled={isRunningSingle || isSubmitting}
-                    className="gap-2"
-                  >
-                    <span aria-hidden="true" className="inline-flex">
-                      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current">
-                        <path d="M5 3.8a1 1 0 0 1 1.53-.85l8.9 5.7a1.6 1.6 0 0 1 0 2.7l-8.9 5.7A1 1 0 0 1 5 16.2V3.8z" />
-                      </svg>
-                    </span>
-                    {isRunningSingle ? 'Running...' : 'Run'}
-                  </Button>
+              )}
 
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void submitAllTests()}
-                    disabled={isSubmitting || isRunningSingle}
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit'}
-                  </Button>
-                </div>
+              <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2 text-xs text-white/70">
+                <p className="truncate">{runMessage}</p>
+                {currentIsCompleted ? (
+                  <span className="rounded-full border border-pebble-success/35 bg-pebble-success/15 px-2 py-0.5 text-[11px] text-pebble-success">
+                    Completed
+                  </span>
+                ) : null}
               </div>
             </section>
 
-            <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_340px] gap-3">
-              <TestResultsPanel
-                tests={currentUnit.tests}
-                selectedTestIndex={selectedTestIndex}
-                onSelectTest={(index) => setSelectedTestIndex(index)}
-                resultsByIndex={testResultsByIndex}
-                summaryLabel={`${passedCount}/${currentUnit.tests.length} passed • ${completedCount}/${currentUnit.tests.length} run`}
-                className="min-h-0"
-              />
-
-              <PebbleChatPanel
-                unitTitle={currentUnit.title}
-                unitConcept={currentUnit.concept}
-                codeText={currentCode}
-                runStatus={runStatus}
-                runMessage={runMessage}
-                failingSummary={failingSummary}
-                initialSummary={recentChatSummary}
-                onSummaryChange={setRecentChatSummary}
-                className="min-h-0"
-              />
-            </div>
+            <TestResultsPanel
+              tests={currentUnit.tests}
+              selectedTestIndex={selectedTestIndex}
+              onSelectTest={(index) => setSelectedTestIndex(index)}
+              resultsByIndex={testResultsByIndex}
+              summaryLabel={summaryLabel}
+              className="min-h-0"
+            />
           </div>
+
+          <PebbleChatPanel
+            unitTitle={currentUnit.title}
+            unitConcept={currentUnit.concept}
+            codeText={currentCode}
+            runStatus={runStatus}
+            runMessage={runMessage}
+            failingSummary={failingSummary}
+            initialSummary={recentChatSummary}
+            onSummaryChange={setRecentChatSummary}
+            className="h-full min-h-0"
+          />
         </div>
       </main>
 
@@ -608,6 +874,53 @@ export function SessionPage() {
         onClose={() => setDrawerOpen(false)}
         onSelectUnit={selectUnit}
       />
+
+      {settingsOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1728] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold text-white">Session settings</h2>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(false)}
+                className="rounded-lg border border-white/10 bg-white/[0.05] px-2 py-1 text-xs text-white/75 transition hover:bg-white/[0.12]"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3 text-sm text-white/80">
+              <label className="flex items-center justify-between gap-3">
+                <span>Font size</span>
+                <input
+                  type="range"
+                  min={14}
+                  max={18}
+                  step={1}
+                  value={editorFontSize}
+                  onChange={(event) => setEditorFontSize(Number(event.target.value))}
+                  className="w-40"
+                />
+              </label>
+
+              <label className="flex items-center justify-between gap-3">
+                <span>Word wrap</span>
+                <button
+                  type="button"
+                  onClick={() => setWordWrapEnabled((prev) => !prev)}
+                  className="rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/85 transition hover:bg-white/[0.12]"
+                >
+                  {wordWrapEnabled ? 'On' : 'Off'}
+                </button>
+              </label>
+
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/70">
+                Theme is fixed to Pebble dark for this prototype.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

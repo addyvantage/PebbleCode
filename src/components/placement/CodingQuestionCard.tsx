@@ -52,13 +52,13 @@ export function CodingQuestionCard({
   onRun,
 }: CodingQuestionCardProps) {
   return (
-    <Card padding="lg" className="space-y-4" interactive>
+    <Card padding="md" className="space-y-3" interactive>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">
             Coding check
           </p>
-          <h2 className="text-balance text-xl font-semibold tracking-[-0.01em] text-pebble-text-primary sm:text-2xl">
+          <h2 className="text-balance text-lg font-semibold tracking-[-0.01em] text-pebble-text-primary sm:text-xl">
             {questionNumber}. {question.prompt}
           </h2>
         </div>
@@ -80,7 +80,7 @@ export function CodingQuestionCard({
 
       <div className="overflow-hidden rounded-xl border border-pebble-border/28 bg-pebble-canvas/92">
         <Editor
-          height="320px"
+          height="300px"
           language={IDE_MONACO_LANGUAGE[language]}
           theme="vs-dark"
           value={code}
@@ -90,21 +90,32 @@ export function CodingQuestionCard({
             fontSize: 14,
             lineHeight: 22,
             automaticLayout: true,
+            wordWrap: 'on',
+            scrollBeyondLastLine: false,
+            smoothScrolling: true,
+            overviewRulerLanes: 0,
+            scrollbar: {
+              horizontal: 'hidden',
+            },
+            padding: {
+              top: 10,
+              bottom: 10,
+            },
           }}
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="neutral">{question.difficulty}</Badge>
-        <Badge variant={runStateVariant(runState)}>{runState}</Badge>
-        <span className="rounded-full border border-pebble-border/35 bg-pebble-overlay/[0.07] px-2.5 py-1 text-xs text-pebble-text-secondary">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Badge variant="neutral" className="text-[11px]">{question.difficulty}</Badge>
+        <Badge variant={runStateVariant(runState)} className="text-[11px]">{runState}</Badge>
+        <span className="rounded-full border border-pebble-border/35 bg-pebble-overlay/[0.07] px-2.5 py-1 text-[12px] text-pebble-text-secondary">
           Timeout: {question.timeoutMs}ms • Tests: {question.tests.length}
         </span>
       </div>
 
       <div className="space-y-2 rounded-xl border border-pebble-border/25 bg-pebble-canvas/72 p-3">
         {results.length === 0 ? (
-          <p className="text-xs text-pebble-text-muted">Run to evaluate testcases.</p>
+          <p className="text-sm text-pebble-text-muted">Run to evaluate testcases.</p>
         ) : (
           results.map((test, index) => (
             <div
@@ -112,16 +123,16 @@ export function CodingQuestionCard({
               className="rounded-lg border border-pebble-border/25 bg-pebble-overlay/[0.06] p-2"
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-pebble-text-primary">Test {index + 1}</p>
+                <p className="text-sm font-medium text-pebble-text-primary">Test {index + 1}</p>
                 <Badge variant={test.passed ? 'success' : 'warning'}>
                   {test.passed ? 'pass' : 'fail'}
                 </Badge>
               </div>
-              <p className="mt-1 text-[11px] text-pebble-text-secondary">input: {test.stdin || '(empty)'}</p>
-              <p className="text-[11px] text-pebble-text-secondary">expected: {normalizeOutput(test.expected)}</p>
-              <p className="text-[11px] text-pebble-text-secondary">actual: {normalizeOutput(test.actual)}</p>
+              <p className="mt-1 text-xs text-pebble-text-secondary">input: {test.stdin || '(empty)'}</p>
+              <p className="text-xs text-pebble-text-secondary">expected: {normalizeOutput(test.expected)}</p>
+              <p className="text-xs text-pebble-text-secondary">actual: {normalizeOutput(test.actual)}</p>
               {test.stderr ? (
-                <p className="mt-1 text-[11px] text-pebble-warning">stderr: {test.stderr.slice(0, 220)}</p>
+                <p className="mt-1 text-xs text-pebble-warning">stderr: {test.stderr.slice(0, 220)}</p>
               ) : null}
             </div>
           ))
