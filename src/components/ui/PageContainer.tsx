@@ -11,7 +11,7 @@ export function PageContainer({ className, ...props }: PageContainerProps) {
     <div
       className={classNames(
         // Shared shell tokens for all non-immersive pages.
-        'mx-auto w-full max-w-[1520px] px-4 md:px-6 lg:px-8 2xl:max-w-[1640px]',
+        'mx-auto w-full max-w-7xl px-4 md:px-6 2xl:max-w-[1440px]',
         className,
       )}
       {...props}

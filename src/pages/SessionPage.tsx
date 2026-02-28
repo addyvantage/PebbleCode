@@ -1014,15 +1014,15 @@ export function SessionPage() {
         setRunMessage(
           isSqlMode
             ? `${t('sql.checker.pass')} • ${t('run.passedSummary', {
-                passed: passedCount,
-                total: currentUnit.tests.length,
-                duration: durationTotal,
-              })}`
+              passed: passedCount,
+              total: currentUnit.tests.length,
+              duration: durationTotal,
+            })}`
             : t('run.passedSummary', {
-                passed: passedCount,
-                total: currentUnit.tests.length,
-                duration: durationTotal,
-              }),
+              passed: passedCount,
+              total: currentUnit.tests.length,
+              duration: durationTotal,
+            }),
         )
         if (!activeProblem) {
           setUnitProgress((prev) => markUnitCompleted(prev, currentUnit.id, durationTotal))
@@ -1046,14 +1046,14 @@ export function SessionPage() {
         const failPreview = firstFailedEntry
           ? runnerErrorSnippet
             ? t('run.runnerErrorPreview', {
-                index: firstFailedEntry.index + 1,
-                message: runnerErrorSnippet,
-              })
+              index: firstFailedEntry.index + 1,
+              message: runnerErrorSnippet,
+            })
             : t('run.failedPreview', {
-                index: firstFailedEntry.index + 1,
-                expected: firstFailedEntry.result.expected,
-                actual: normalizeOutput(firstFailedEntry.result.actual) || t('common.empty'),
-              })
+              index: firstFailedEntry.index + 1,
+              expected: firstFailedEntry.result.expected,
+              actual: normalizeOutput(firstFailedEntry.result.actual) || t('common.empty'),
+            })
           : t('run.someTestsFailed')
 
         setRunStatus('error')
@@ -1232,15 +1232,15 @@ export function SessionPage() {
 
   const constraints = currentFunctionConfig?.evalMode === 'function'
     ? [
-        t('constraints.functionMode.1'),
-        t('constraints.functionMode.2'),
-        t('constraints.functionMode.3', { count: currentUnit.tests.length }),
-      ]
+      t('constraints.functionMode.1'),
+      t('constraints.functionMode.2'),
+      t('constraints.functionMode.3', { count: currentUnit.tests.length }),
+    ]
     : [
-        t('constraints.scriptMode.1'),
-        t('constraints.scriptMode.2'),
-        t('constraints.scriptMode.3', { count: currentUnit.tests.length }),
-      ]
+      t('constraints.scriptMode.1'),
+      t('constraints.scriptMode.2'),
+      t('constraints.scriptMode.3', { count: currentUnit.tests.length }),
+    ]
   const resolvedConstraints = activeProblem?.statement.constraints ?? constraints
 
   return (
@@ -1281,11 +1281,10 @@ export function SessionPage() {
             disabled={!nextEnabled}
             title={t('topBar.nextUnit')}
             aria-label={t('a11y.nextUnit')}
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-full border bg-pebble-overlay/[0.08] text-pebble-text-primary transition hover:border-pebble-border/45 hover:bg-pebble-overlay/[0.16] disabled:cursor-not-allowed disabled:opacity-45 ${
-              allTestsPassed && nextEnabled
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-full border bg-pebble-overlay/[0.08] text-pebble-text-primary transition hover:border-pebble-border/45 hover:bg-pebble-overlay/[0.16] disabled:cursor-not-allowed disabled:opacity-45 ${allTestsPassed && nextEnabled
                 ? 'border-pebble-success/45 shadow-[0_0_0_1px_rgba(74,222,128,0.28),0_0_16px_rgba(74,222,128,0.22)]'
                 : 'border-pebble-border/30'
-            }`}
+              }`}
           >
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -1338,11 +1337,13 @@ export function SessionPage() {
             difficulty={
               activeProblem
                 ? activeProblem.difficulty
-                : selectedLevel === 'beginner'
+                : currentUnit.id === 'hello-world'
                   ? 'Easy'
-                  : selectedLevel === 'intermediate'
-                    ? 'Medium'
-                    : 'Hard'
+                  : selectedLevel === 'beginner'
+                    ? 'Easy'
+                    : selectedLevel === 'intermediate'
+                      ? 'Medium'
+                      : 'Hard'
             }
             difficultyLabel={
               activeProblem
@@ -1351,15 +1352,19 @@ export function SessionPage() {
                   : activeProblem.difficulty === 'Medium'
                     ? t('difficulty.medium')
                     : t('difficulty.hard')
-                : selectedLevel === 'beginner'
+                : currentUnit.id === 'hello-world'
                   ? t('difficulty.easy')
-                  : selectedLevel === 'intermediate'
-                    ? t('difficulty.medium')
-                    : t('difficulty.hard')
+                  : selectedLevel === 'beginner'
+                    ? t('difficulty.easy')
+                    : selectedLevel === 'intermediate'
+                      ? t('difficulty.medium')
+                      : t('difficulty.hard')
             }
             tags={activeProblem
               ? [...activeProblem.topics.slice(0, 2), `${activeProblem.estimatedMinutes}m`]
-              : [languageMeta.label, t('tags.practice'), t('tags.runtimeVerified')]}
+              : currentUnit.id === 'hello-world'
+                ? [languageMeta.label, 'stdout basics', t('tags.practice')]
+                : [languageMeta.label, t('tags.practice'), t('tags.runtimeVerified')]}
             language={sessionLanguage}
             functionMode={currentFunctionConfig?.evalMode === 'function'}
             submissions={currentUnitSubmissions}
@@ -1563,11 +1568,10 @@ export function SessionPage() {
                         aria-selected={selected}
                         aria-pressed={selected}
                         onClick={() => setTheme(mode)}
-                        className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/50 ${
-                          selected
+                        className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/50 ${selected
                             ? 'border border-pebble-accent/50 bg-pebble-accent/18 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
                             : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/[0.12]'
-                        }`}
+                          }`}
                       >
                         {selected ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : null}
                         {mode === 'dark' ? t('settings.themeDark') : t('settings.themeLight')}
@@ -1584,11 +1588,10 @@ export function SessionPage() {
                   onClick={() =>
                     setPagePrefs((prev) => ({ ...prev, reduceMotion: !prev.reduceMotion }))
                   }
-                  className={`rounded-lg border px-2.5 py-1 text-xs transition ${
-                    pagePrefs.reduceMotion
+                  className={`rounded-lg border px-2.5 py-1 text-xs transition ${pagePrefs.reduceMotion
                       ? 'border-pebble-accent/45 bg-pebble-accent/18 text-pebble-text-primary'
                       : 'border-pebble-border/35 bg-pebble-overlay/[0.08] text-pebble-text-secondary hover:bg-pebble-overlay/[0.16]'
-                  }`}
+                    }`}
                 >
                   {pagePrefs.reduceMotion ? t('actions.on') : t('actions.off')}
                 </button>
@@ -1601,11 +1604,10 @@ export function SessionPage() {
                   onClick={() =>
                     setPagePrefs((prev) => ({ ...prev, compactDensity: !prev.compactDensity }))
                   }
-                  className={`rounded-lg border px-2.5 py-1 text-xs transition ${
-                    pagePrefs.compactDensity
+                  className={`rounded-lg border px-2.5 py-1 text-xs transition ${pagePrefs.compactDensity
                       ? 'border-pebble-accent/45 bg-pebble-accent/18 text-pebble-text-primary'
                       : 'border-pebble-border/35 bg-pebble-overlay/[0.08] text-pebble-text-secondary hover:bg-pebble-overlay/[0.16]'
-                  }`}
+                    }`}
                 >
                   {pagePrefs.compactDensity ? t('settings.densityCompact') : t('settings.densityComfortable')}
                 </button>

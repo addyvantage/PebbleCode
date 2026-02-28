@@ -39,7 +39,7 @@ export function ProblemsTable({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-pebble-border/28 bg-pebble-overlay/[0.04]">
-      <div className="grid grid-cols-[56px_minmax(0,1fr)_110px_140px_88px] items-center border-b border-pebble-border/25 bg-pebble-overlay/[0.08] px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-pebble-text-muted">
+      <div className="grid grid-cols-[64px_minmax(0,1fr)_130px_140px_100px] items-center border-b border-pebble-border/25 bg-pebble-overlay/[0.08] px-4 py-2 text-[11px] uppercase tracking-[0.08em] text-pebble-text-muted">
         <span className="ltrSafe">{headings.index}</span>
         <span className={isUrdu ? 'rtlText' : ''}>{headings.title}</span>
         <span>{headings.difficulty}</span>
@@ -55,7 +55,7 @@ export function ProblemsTable({
               key={problem.id}
               type="button"
               onClick={() => onOpenProblem(problem)}
-              className="grid w-full grid-cols-[56px_minmax(0,1fr)_110px_140px_88px] items-center gap-2 border-b border-pebble-border/20 px-3 py-3 text-left transition hover:bg-pebble-overlay/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45"
+              className="grid w-full grid-cols-[64px_minmax(0,1fr)_130px_140px_100px] items-center gap-4 border-b border-pebble-border/20 px-4 py-2.5 text-left transition hover:bg-pebble-overlay/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45"
             >
               <span className="inline-flex items-center justify-center">
                 {solved ? (

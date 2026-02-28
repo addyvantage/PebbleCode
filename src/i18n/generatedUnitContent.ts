@@ -12,7 +12,7 @@ type GeneratedUnitContent = Partial<Record<LanguageCode, Record<string, Generate
 export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   bn: {
     'hello-world': {
-      title: 'হ্যালো ওয়ার্ল্ড',
+      title: 'Hello Pebble',
       concept: 'stdout বেসিক',
       prompt: 'ঠিক ফিরে: হ্যালো, Pebble!',
       description: 'এটি একটি ওয়ার্ম-আপ: বিরাম চিহ্ন অক্ষত রেখে একটি সঠিক স্ট্রিং ফিরিয়ে দিন।',
@@ -86,7 +86,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   te: {
     'hello-world': {
-      title: 'హలో వరల్డ్',
+      title: 'Hello Pebble',
       concept: 'stdout బేసిక్స్',
       prompt: 'ఖచ్చితంగా తిరిగి వెళ్ళు: హలో, Pebble!',
       description: 'ఇది సన్నాహకత: విరామ చిహ్నాలతో ఒక ఖచ్చితమైన స్ట్రింగ్‌ని తిరిగి ఇవ్వండి.',
@@ -160,7 +160,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   mr: {
     'hello-world': {
-      title: 'हॅलो वर्ल्ड',
+      title: 'Hello Pebble',
       concept: 'stdout मूलभूत',
       prompt: 'नक्की परत या: नमस्कार, Pebble!',
       description: 'हे एक वार्म-अप आहे: विरामचिन्हांसह एक अचूक स्ट्रिंग परत करा.',
@@ -234,7 +234,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   ta: {
     'hello-world': {
-      title: 'ஹலோ வேர்ல்ட்',
+      title: 'Hello Pebble',
       concept: 'stdout அடிப்படைகள்',
       prompt: 'சரியாகத் திரும்பு: வணக்கம், Pebble!',
       description: 'இது ஒரு வார்ம்-அப்: நிறுத்தற்குறிகளுடன் ஒரு சரியான சரத்தை அப்படியே திரும்பவும்.',
@@ -308,7 +308,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   ur: {
     'hello-world': {
-      title: 'ہیلو ورلڈ',
+      title: 'Hello Pebble',
       concept: 'stdout بنیادی باتیں',
       prompt: 'بالکل واپس: ہیلو، Pebble!',
       description: 'یہ ایک وارم اپ ہے: رموز اوقاف کے ساتھ ایک درست تار واپس کریں۔',
@@ -382,7 +382,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   gu: {
     'hello-world': {
-      title: 'હેલો વર્લ્ડ',
+      title: 'Hello Pebble',
       concept: 'stdout મૂળભૂત',
       prompt: 'બરાબર પાછા ફરો: હેલો, Pebble!',
       description: 'આ એક વોર્મ-અપ છે: વિરામચિહ્નો અકબંધ સાથે એક ચોક્કસ શબ્દમાળા પરત કરો.',
@@ -456,7 +456,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   kn: {
     'hello-world': {
-      title: 'ಹಲೋ ವರ್ಲ್ಡ್',
+      title: 'Hello Pebble',
       concept: 'ಸ್ಟಡೌಟ್ ಬೇಸಿಕ್ಸ್',
       prompt: 'ನಿಖರವಾಗಿ ಹಿಂತಿರುಗಿ: ಹಲೋ, Pebble!',
       description: 'ಇದು ಅಭ್ಯಾಸ: ಒಂದು ನಿಖರವಾದ ಸ್ಟ್ರಿಂಗ್ ಅನ್ನು ವಿರಾಮಚಿಹ್ನೆಯೊಂದಿಗೆ ಹಿಂತಿರುಗಿಸಿ.',
@@ -530,7 +530,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   ml: {
     'hello-world': {
-      title: 'ഹലോ വേൾഡ്',
+      title: 'Hello Pebble',
       concept: 'stdout അടിസ്ഥാനകാര്യങ്ങൾ',
       prompt: 'കൃത്യമായി മടങ്ങുക: ഹലോ, Pebble!',
       description: 'ഇതൊരു സന്നാഹമാണ്: വിരാമചിഹ്നങ്ങളോടെ ഒരു കൃത്യമായ സ്ട്രിംഗ് തിരികെ നൽകുക.',
@@ -604,7 +604,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   or: {
     'hello-world': {
-      title: 'Hello World',
+      title: 'Hello Pebble',
       concept: 'stdout basics',
       prompt: 'Return exactly: Hello, Pebble!',
       description: 'This is a warm-up: return one exact string with punctuation intact.',
@@ -678,7 +678,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   pa: {
     'hello-world': {
-      title: 'ਹੈਲੋ ਵਰਲਡ',
+      title: 'Hello Pebble',
       concept: 'stdout ਬੇਸਿਕਸ',
       prompt: 'ਬਿਲਕੁਲ ਵਾਪਸੀ: ਹੈਲੋ, Pebble!',
       description: 'ਇਹ ਇੱਕ ਵਾਰਮ-ਅੱਪ ਹੈ: ਵਿਰਾਮ ਚਿੰਨ੍ਹਾਂ ਦੇ ਨਾਲ ਇੱਕ ਸਟੀਕ ਸਤਰ ਵਾਪਸ ਕਰੋ।',
@@ -752,7 +752,7 @@ export const GENERATED_UNIT_CONTENT: GeneratedUnitContent = {
   },
   as: {
     'hello-world': {
-      title: 'নমস্কাৰ বিশ্ব',
+      title: 'Hello Pebble',
       concept: 'stdout মূল কথা',
       prompt: 'ঠিক ঘূৰি আহক: নমস্কাৰ, Pebble!',
       description: 'এইটো এটা ৱাৰ্ম-আপ: বিৰাম চিহ্ন অক্ষত অৱস্থাত এটা সঠিক ষ্ট্ৰিং ঘূৰাই দিয়ক।',

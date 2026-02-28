@@ -50,8 +50,8 @@ export function LanguageSelect({
   const selected = options[selectedIndex] ?? options[0]
   const menuSurfaceClass =
     theme === 'light'
-      ? 'border-slate-300/75 bg-white/[0.96] shadow-[0_18px_40px_rgba(15,23,42,0.16)]'
-      : 'border-white/10 bg-[linear-gradient(180deg,rgba(10,16,30,0.98)_0%,rgba(7,12,22,0.98)_100%)] shadow-[0_24px_48px_rgba(2,8,23,0.62)]'
+      ? 'border border-slate-300/75 bg-white/[0.96] shadow-[0_18px_40px_rgba(15,23,42,0.16)]'
+      : 'border border-pebble-border/40 bg-pebble-panel/95 shadow-[0_16px_48px_rgba(2,8,23,0.6)]'
 
   useEffect(() => {
     setActiveIndex(selectedIndex)
@@ -180,11 +180,10 @@ export function LanguageSelect({
           aria-label={label}
           ref={listRef}
           onKeyDown={handleListKeyDown}
-          className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[90] origin-top rounded-xl p-1.5 backdrop-blur-xl transition duration-150 ${menuSurfaceClass} ${
-            open
+          className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[90] origin-top rounded-xl p-1.5 backdrop-blur-xl transition duration-150 ${menuSurfaceClass} ${open
               ? 'pointer-events-auto scale-100 opacity-100'
               : 'pointer-events-none scale-[0.98] opacity-0'
-          }`}
+            }`}
         >
           <div className="max-h-[300px] overflow-y-auto pr-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-pebble-border/35 [&::-webkit-scrollbar-track]:bg-transparent">
             {options.map((option, index) => {
@@ -201,13 +200,12 @@ export function LanguageSelect({
                   type="button"
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => selectAt(index)}
-                  className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45 ${
-                    selectedOption
-                      ? 'border-pebble-accent/45 bg-pebble-accent/18'
+                  className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45 ${selectedOption
+                      ? 'border-pebble-accent/50 bg-pebble-accent/20'
                       : activeOption
-                        ? 'border-pebble-border/35 bg-pebble-overlay/[0.14]'
-                        : 'border-transparent bg-transparent hover:border-pebble-border/30 hover:bg-pebble-overlay/[0.1]'
-                  }`}
+                        ? 'border-pebble-border/40 bg-pebble-overlay/[0.18]'
+                        : 'border-transparent bg-transparent hover:border-pebble-border/35 hover:bg-pebble-overlay/[0.12]'
+                    }`}
                 >
                   <span className="inline-flex w-4 justify-center">
                     {selectedOption ? (

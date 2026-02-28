@@ -65,8 +65,8 @@ export function ProblemPreviewPanel({
   }
 
   const surfaceClass = theme === 'light'
-    ? 'border border-black/10 bg-white/78 shadow-[0_24px_64px_rgba(15,23,42,0.16)] backdrop-blur-xl [background-image:linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(255,255,255,0.7)_100%)]'
-    : 'border border-white/12 bg-slate-950/62 shadow-[0_24px_64px_rgba(2,8,23,0.44)] backdrop-blur-xl [background-image:linear-gradient(180deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_100%)]'
+    ? 'border border-black/10 bg-white/80 shadow-[0_32px_80px_rgba(15,23,42,0.18)] backdrop-blur-2xl [background-image:linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.75)_100%)]'
+    : 'border border-white/12 bg-slate-950/70 shadow-[0_32px_80px_rgba(2,8,23,0.5)] backdrop-blur-2xl [background-image:linear-gradient(180deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0.04)_100%)]'
 
   const panelContent = (
     <div className="flex h-full min-h-0 flex-col">
@@ -115,11 +115,10 @@ export function ProblemPreviewPanel({
                 key={language}
                 type="button"
                 onClick={() => onLanguageChange(language)}
-                className={`rounded-lg border px-2.5 py-1 text-xs transition ${
-                  selectedLanguage === language
+                className={`rounded-lg border px-2.5 py-1 text-xs transition ${selectedLanguage === language
                     ? 'border-pebble-accent/45 bg-pebble-accent/14 text-pebble-text-primary'
                     : 'border-pebble-border/32 bg-pebble-overlay/[0.07] text-pebble-text-secondary hover:bg-pebble-overlay/[0.14]'
-                }`}
+                  }`}
               >
                 {languageLabels[language]}
               </button>
@@ -159,9 +158,8 @@ export function ProblemPreviewPanel({
   return (
     <div className="fixed inset-0 z-[90]">
       <div
-        className={`absolute inset-0 backdrop-blur-md ${
-          theme === 'light' ? 'bg-white/50' : 'bg-black/40'
-        }`}
+        className={`absolute inset-0 backdrop-blur-md ${theme === 'light' ? 'bg-white/50' : 'bg-black/40'
+          }`}
         onClick={onClose}
         aria-hidden="true"
       />

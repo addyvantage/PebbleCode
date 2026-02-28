@@ -47,7 +47,7 @@ export function TrendLineChart({ data, flowLabel, loadLabel }: TrendLineChartPro
         </div>
       </div>
 
-      <div className="rounded-xl border border-pebble-border/25 bg-pebble-canvas/55 p-2">
+      <div className="relative rounded-xl border border-pebble-border/25 bg-pebble-canvas/55 p-2">
         <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-52 w-full">
           {[0, 1, 2, 3, 4].map((index) => {
             const y = PADDING_Y + (index / 4) * (HEIGHT - PADDING_Y * 2)
@@ -81,6 +81,11 @@ export function TrendLineChart({ data, flowLabel, loadLabel }: TrendLineChartPro
             strokeLinejoin="round"
           />
         </svg>
+        {data.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-sm font-medium text-pebble-text-muted">Run tests and submit to populate this chart</p>
+          </div>
+        ) : null}
       </div>
 
       {data.length > 0 ? (

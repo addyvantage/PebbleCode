@@ -2,7 +2,7 @@
   "units": [
     {
       "id": "hello-world",
-      "title": "Hello World",
+      "title": "Hello Pebble",
       "concept": "stdout basics",
       "prompt": "Return exactly: Hello, Pebble!",
       "tests": [

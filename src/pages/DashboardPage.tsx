@@ -236,7 +236,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-2.5 xl:grid-cols-12">
-        <Card padding="sm" interactive className="flex h-full flex-col space-y-3 xl:col-span-7 xl:aspect-square xl:min-h-[520px]">
+        <Card padding="sm" interactive className="flex h-full flex-col space-y-3 xl:col-span-5 min-h-[420px]">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className={`text-base font-semibold text-pebble-text-primary ${proseClass}`}>{t('insights.radar.title')}</p>
@@ -256,7 +256,7 @@ export function DashboardPage() {
           </div>
         </Card>
 
-        <div className="grid content-start gap-2.5 xl:col-span-5">
+        <div className="grid content-start gap-2.5 xl:col-span-7">
           <StreakCalendar
             dailyMap={dailyCompletions}
             streak={streakStats.streak}

@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from 'react'
 
-type CardPadding = 'sm' | 'md' | 'lg'
+type CardPadding = 'none' | 'sm' | 'md' | 'lg'
 
 type CardProps = HTMLAttributes<HTMLDivElement> & {
   padding?: CardPadding
@@ -8,6 +8,7 @@ type CardProps = HTMLAttributes<HTMLDivElement> & {
 }
 
 const paddingClasses: Record<CardPadding, string> = {
+  none: 'p-0',
   sm: 'p-4',
   md: 'p-6',
   lg: 'p-8',

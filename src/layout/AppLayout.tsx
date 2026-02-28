@@ -171,9 +171,9 @@ export function AppLayout() {
         </div>
       ) : (
         <div className={`relative flex min-h-screen flex-col ${isLandingRoute ? 'overflow-hidden' : ''}`}>
-          <header className="w-full pt-1.5 sm:pt-2">
-            <PageContainer>
-              <Card className={`p-3.5 sm:p-4 ${isLandingRoute ? 'mb-2.5' : 'mb-3.5 sm:mb-4'}`} interactive>
+          <header className="w-full px-2 pt-1.5 sm:px-4 sm:pt-2 lg:px-6">
+            <div className="mx-auto w-full max-w-[1920px]">
+              <Card className={`p-2 sm:p-3 ${isLandingRoute ? 'mb-2' : 'mb-2 sm:mb-3'}`} interactive>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <img
@@ -196,10 +196,9 @@ export function AppLayout() {
                           key={to}
                           to={to}
                           className={({ isActive }) =>
-                            `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium tracking-[0.01em] transition ${
-                              isActive
-                                ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]'
-                                : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/12 hover:text-pebble-text-primary'
+                            `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium tracking-[0.01em] transition ${isActive
+                              ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]'
+                              : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/12 hover:text-pebble-text-primary'
                             }`
                           }
                         >
@@ -263,10 +262,9 @@ export function AppLayout() {
                       key={to}
                       to={to}
                       className={({ isActive }) =>
-                        `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium tracking-[0.01em] transition ${
-                          isActive
-                            ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]'
-                            : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/12 hover:text-pebble-text-primary'
+                        `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium tracking-[0.01em] transition ${isActive
+                          ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]'
+                          : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/12 hover:text-pebble-text-primary'
                         }`
                       }
                     >
@@ -275,7 +273,7 @@ export function AppLayout() {
                   ))}
                 </nav>
               </Card>
-            </PageContainer>
+            </div>
           </header>
 
           <main className={isLandingRoute ? 'flex-1 min-h-0 overflow-hidden' : 'flex-1 pb-4'}>

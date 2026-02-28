@@ -78,27 +78,7 @@ export function StreakCalendar({
             {t('insights.streakCalendar.subtitle')}
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-1">
-          <span className="inline-flex items-center gap-1 rounded-full border border-pebble-warning/35 bg-pebble-warning/12 px-2 py-[3px] text-[10px] text-pebble-warning">
-            <Flame className="h-2.5 w-2.5" aria-hidden="true" />
-            <span className="ltrSafe font-semibold">{streak}</span>
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2 py-[3px] text-[10px] text-pebble-text-secondary">
-            <Trophy className="h-2.5 w-2.5" aria-hidden="true" />
-            <span className={isRTL ? 'rtlText' : ''}>{t('insights.streak.longest')}</span>
-            <span className="ltrSafe font-semibold text-pebble-text-primary">{longest}</span>
-          </span>
-          {isTodayComplete ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-pebble-success/35 bg-pebble-success/12 px-2 py-[3px] text-[10px] text-pebble-success">
-              <Check className="h-2.5 w-2.5" aria-hidden="true" />
-              <span className={isRTL ? 'rtlText' : ''}>{t('insights.streak.todayDone')}</span>
-            </span>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="space-y-1.5 rounded-xl border border-pebble-border/25 bg-pebble-canvas/55 p-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => setCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
@@ -107,7 +87,7 @@ export function StreakCalendar({
           >
             <ChevronLeft className="h-3 w-3" aria-hidden="true" />
           </button>
-          <p className={`text-[11px] font-medium text-pebble-text-primary ${isRTL ? 'rtlText' : ''}`}>
+          <p className={`w-[80px] text-center text-[11px] font-medium text-pebble-text-primary ${isRTL ? 'rtlText' : ''}`}>
             {monthLabel}
           </p>
           <button
@@ -119,7 +99,26 @@ export function StreakCalendar({
             <ChevronRight className="h-3 w-3" aria-hidden="true" />
           </button>
         </div>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        <span className="inline-flex items-center gap-1 rounded-full border border-pebble-warning/35 bg-pebble-warning/12 px-2 py-[3px] text-[10px] text-pebble-warning">
+          <Flame className="h-2.5 w-2.5" aria-hidden="true" />
+          <span className="ltrSafe font-semibold">{streak}</span>
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2 py-[3px] text-[10px] text-pebble-text-secondary">
+          <Trophy className="h-2.5 w-2.5" aria-hidden="true" />
+          <span className={isRTL ? 'rtlText' : ''}>{t('insights.streak.longest')}</span>
+          <span className="ltrSafe font-semibold text-pebble-text-primary">{longest}</span>
+        </span>
+        {isTodayComplete ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-pebble-success/35 bg-pebble-success/12 px-2 py-[3px] text-[10px] text-pebble-success">
+            <Check className="h-2.5 w-2.5" aria-hidden="true" />
+            <span className={isRTL ? 'rtlText' : ''}>{t('insights.streak.todayDone')}</span>
+          </span>
+        ) : null}
+      </div>
 
+      <div className="space-y-1.5 rounded-xl border border-pebble-border/25 bg-pebble-canvas/55 p-2">
         <div className="grid grid-cols-7 gap-1">
           {weekdayLabels.map((label) => (
             <span
@@ -140,11 +139,10 @@ export function StreakCalendar({
                   ? t('insights.calendar.completedCount', { count: day.count })
                   : t('insights.calendar.none')
               }
-              className={`relative flex h-5 w-5 items-center justify-center rounded-[6px] border text-[10px] transition ${
-                day.isComplete
+              className={`relative flex h-5 w-5 items-center justify-center rounded-[6px] border text-[10px] transition ${day.isComplete
                   ? 'border-pebble-success/45 bg-pebble-success/22 text-pebble-success shadow-[0_0_0_1px_rgba(74,222,128,0.12)]'
                   : 'border-pebble-border/24 bg-pebble-overlay/[0.06] text-pebble-text-secondary'
-              } ${day.isInMonth ? '' : 'opacity-45'} ${day.isToday ? 'ring-1 ring-pebble-accent/45' : ''}`}
+                } ${day.isInMonth ? '' : 'opacity-45'} ${day.isToday ? 'ring-1 ring-pebble-accent/45' : ''}`}
             >
               <span className="ltrSafe">{day.dayNumber}</span>
             </div>
