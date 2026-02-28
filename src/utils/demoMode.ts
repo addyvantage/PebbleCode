@@ -1,4 +1,5 @@
 import { storageKeys } from './storageKeys'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage'
 
 const DEMO_MODE_EVENT = 'pebble:demo-mode'
 
@@ -7,7 +8,7 @@ export function getDemoMode() {
     return false
   }
 
-  return window.localStorage.getItem(storageKeys.demoMode) === '1'
+  return safeGetItem(storageKeys.demoMode) === '1'
 }
 
 export function setDemoMode(isEnabled: boolean) {
@@ -15,7 +16,7 @@ export function setDemoMode(isEnabled: boolean) {
     return
   }
 
-  window.localStorage.setItem(storageKeys.demoMode, isEnabled ? '1' : '0')
+  safeSetItem(storageKeys.demoMode, isEnabled ? '1' : '0', { maxBytes: 32, silent: true })
   window.dispatchEvent(
     new CustomEvent<boolean>(DEMO_MODE_EVENT, {
       detail: isEnabled,

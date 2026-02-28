@@ -15,6 +15,7 @@ import {
 } from './languages'
 import { EN_STRINGS, STRINGS, type I18nKey } from './strings'
 import { createFormatters, type I18nFormatters } from './formatters'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage'
 
 type TranslateVars = Record<string, string | number>
 
@@ -49,7 +50,7 @@ function resolveInitialLanguage(): LanguageCode {
     return 'en'
   }
 
-  const stored = window.localStorage.getItem(CHAT_LANGUAGE_STORAGE_KEY)
+  const stored = safeGetItem(CHAT_LANGUAGE_STORAGE_KEY)
   return resolveLanguageCode(stored)
 }
 
@@ -67,7 +68,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') {
       return
     }
-    window.localStorage.setItem(CHAT_LANGUAGE_STORAGE_KEY, lang)
+    safeSetItem(CHAT_LANGUAGE_STORAGE_KEY, lang, { maxBytes: 64, silent: true })
     document.documentElement.setAttribute('lang', lang)
   }, [lang])
 

@@ -3,6 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { PEBBLE_CLARIFY_RULE, PEBBLE_OUTPUT_RULE } from '../../shared/pebblePromptRules'
 import { askPebble } from '../../utils/pebbleLLM'
+import { safeGetItem, safeSetJSON } from '../../lib/safeStorage'
 
 export type MascotContextData = {
   phase: string
@@ -124,7 +125,7 @@ function readStoredPosition() {
     return null
   }
 
-  const raw = window.localStorage.getItem(STORAGE_KEY)
+  const raw = safeGetItem(STORAGE_KEY)
   if (!raw) {
     return null
   }
@@ -142,7 +143,7 @@ function persistPosition(position: Position) {
     return
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(position))
+  safeSetJSON(STORAGE_KEY, position, { maxBytes: 512, silent: true })
 }
 
 function trimMemory(memory: MemoryTurn[]) {

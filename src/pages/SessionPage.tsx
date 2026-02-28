@@ -32,7 +32,7 @@ import {
   getUnitFunctionMode,
   parseHarnessCasesFromStdout,
 } from '../lib/functionMode'
-import { Check, ChevronLeft, ChevronRight, Play, RotateCcw, Settings2 } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Home, Play, RotateCcw, Settings2 } from 'lucide-react'
 import {
   loadUnitProgress,
   markUnitCompleted,
@@ -74,6 +74,7 @@ import {
   type SqlPreviewTable,
 } from '../data/problemsBank'
 import { markProblemAttempt } from '../lib/solvedProblemsStore'
+import { requestRunApi } from '../lib/runApi'
 
 type RunResponse = {
   ok: boolean
@@ -106,32 +107,6 @@ const SESSION_RUNTIME_LABEL: Record<SessionEditorLanguage, string> = {
 
 function normalizeOutput(value: string) {
   return value.replace(/\r\n/g, '\n').trim()
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function normalizeRunResponse(payload: unknown): RunResponse {
-  if (!isRecord(payload)) {
-    return {
-      ok: false,
-      exitCode: null,
-      stdout: '',
-      stderr: 'Runner returned an invalid response.',
-      timedOut: false,
-      durationMs: 0,
-    }
-  }
-
-  return {
-    ok: payload.ok === true,
-    exitCode: typeof payload.exitCode === 'number' || payload.exitCode === null ? payload.exitCode : null,
-    stdout: typeof payload.stdout === 'string' ? payload.stdout : '',
-    stderr: typeof payload.stderr === 'string' ? payload.stderr : '',
-    timedOut: payload.timedOut === true,
-    durationMs: typeof payload.durationMs === 'number' ? payload.durationMs : 0,
-  }
 }
 
 function statusVariant(status: string): 'neutral' | 'success' | 'warning' {
@@ -503,33 +478,12 @@ export function SessionPage() {
 
     const test = currentUnit.tests[index]
 
-    let payload: unknown = null
-    try {
-      const response = await fetch('/api/run', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          language: runtimeLanguage,
-          code: currentCode,
-          stdin: test.input,
-          timeoutMs: 4000,
-        }),
-      })
-      payload = await response.json().catch(() => null)
-    } catch {
-      payload = {
-        ok: false,
-        exitCode: null,
-        stdout: '',
-        stderr: 'Failed to reach /api/run.',
-        timedOut: false,
-        durationMs: 0,
-      }
-    }
-
-    const result = normalizeRunResponse(payload)
+    const result: RunResponse = await requestRunApi({
+      language: runtimeLanguage,
+      code: currentCode,
+      stdin: test.input,
+      timeoutMs: 4000,
+    })
     const expectedNormalized = normalizeOutput(test.expected)
     const actualNormalized = normalizeOutput(result.stdout)
     const passed = result.ok && expectedNormalized === actualNormalized
@@ -579,6 +533,7 @@ export function SessionPage() {
           missing_join_condition: t('sql.checker.missingJoinCondition'),
           missing_distinct: t('sql.checker.missingDistinct'),
           missing_department: t('sql.checker.missingDepartment'),
+          missing_query_shape: t('sql.checker.missingQueryShape'),
         }
         const issues = getSqlCheckerFailures(activeProblem, currentCode)
         const passed = issues.length === 0
@@ -717,33 +672,12 @@ export function SessionPage() {
             return
           }
 
-          let payload: unknown = null
-          try {
-            const response = await fetch('/api/run', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                language: runtimeLanguage,
-                code: runnableCode,
-                stdin: '',
-                timeoutMs: 4000,
-              }),
-            })
-            payload = await response.json().catch(() => null)
-          } catch {
-            payload = {
-              ok: false,
-              exitCode: null,
-              stdout: '',
-              stderr: 'Failed to reach /api/run.',
-              timedOut: false,
-              durationMs: 0,
-            }
-          }
-
-          const runResult = normalizeRunResponse(payload)
+          const runResult: RunResponse = await requestRunApi({
+            language: runtimeLanguage,
+            code: runnableCode,
+            stdin: '',
+            timeoutMs: 4000,
+          })
           durationTotal = runResult.durationMs
           const parsedHarnessCases = parseHarnessCasesFromStdout(runResult.stdout)
           const perCaseDuration = currentUnit.tests.length > 0
@@ -822,33 +756,12 @@ export function SessionPage() {
               continue
             }
 
-            let payload: unknown = null
-            try {
-              const response = await fetch('/api/run', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  language: runtimeLanguage,
-                  code: runnableCode,
-                  stdin: '',
-                  timeoutMs: 4000,
-                }),
-              })
-              payload = await response.json().catch(() => null)
-            } catch {
-              payload = {
-                ok: false,
-                exitCode: null,
-                stdout: '',
-                stderr: 'Failed to reach /api/run.',
-                timedOut: false,
-                durationMs: 0,
-              }
-            }
-
-            const runResult = normalizeRunResponse(payload)
+            const runResult: RunResponse = await requestRunApi({
+              language: runtimeLanguage,
+              code: runnableCode,
+              stdin: '',
+              timeoutMs: 4000,
+            })
             const expectedNormalized = normalizeOutput(test.expected)
             const actualNormalized = normalizeOutput(runResult.stdout)
             const passed = runResult.ok && expectedNormalized === actualNormalized
@@ -1134,10 +1047,11 @@ export function SessionPage() {
         <div className="flex min-w-0 items-center gap-2.5">
           <Link
             to="/"
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-pebble-border/30 bg-pebble-overlay/[0.09] px-3 py-1.5 text-sm font-semibold text-pebble-text-primary transition hover:bg-pebble-overlay/[0.15] active:bg-pebble-overlay/[0.2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/55"
+            aria-label={t('nav.home')}
+            title={t('nav.home')}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-pebble-border/30 bg-pebble-overlay/[0.09] text-pebble-text-primary transition hover:-translate-y-[1px] hover:bg-pebble-overlay/[0.15] active:bg-pebble-overlay/[0.2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/55"
           >
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-pebble-accent/20 text-xs">P</span>
-            Pebble
+            <Home className="h-4 w-4" aria-hidden="true" />
           </Link>
 
           <span className="hidden rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2 py-1 text-xs text-pebble-text-secondary md:inline-flex">

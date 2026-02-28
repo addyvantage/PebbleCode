@@ -1,4 +1,5 @@
 import { storageKeys } from './storageKeys'
+import { safeGetItem, safeSetJSON } from '../lib/safeStorage'
 
 export type SessionInsight = {
   sessionId: string
@@ -53,7 +54,7 @@ export function getSessionInsights() {
     return [] as SessionInsight[]
   }
 
-  const raw = window.localStorage.getItem(storageKeys.sessionInsights)
+  const raw = safeGetItem(storageKeys.sessionInsights)
   if (!raw) {
     return [] as SessionInsight[]
   }
@@ -76,6 +77,6 @@ export function appendSessionInsight(nextInsight: SessionInsight) {
   }
 
   const existing = getSessionInsights()
-  const next = [...existing, nextInsight].slice(-120)
-  window.localStorage.setItem(storageKeys.sessionInsights, JSON.stringify(next))
+  const next = [...existing, nextInsight].slice(-60)
+  safeSetJSON(storageKeys.sessionInsights, next, { maxBytes: 20 * 1024, silent: true })
 }

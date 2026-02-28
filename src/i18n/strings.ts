@@ -219,6 +219,7 @@ export const EN_STRINGS = {
   'sql.checker.missingJoinCondition': 'Missing join condition on personId.',
   'sql.checker.missingDistinct': 'Missing DISTINCT (or equivalent uniqueness handling).',
   'sql.checker.missingDepartment': 'Missing department selection logic.',
+  'sql.checker.missingQueryShape': 'Query structure is incomplete for this SQL task.',
 
   'insights.hero.title': 'Recovery insights dashboard',
   'insights.hero.subtitle':
@@ -2440,6 +2441,7 @@ const PROBLEMS_TRANSLATIONS: Partial<Record<LanguageCode, I18nDictionary>> = {
     'sql.checker.missingJoinCondition': 'personId पर join condition नहीं मिली।',
     'sql.checker.missingDistinct': 'DISTINCT (या समान logic) नहीं मिला।',
     'sql.checker.missingDepartment': 'department selection logic नहीं मिला।',
+    'sql.checker.missingQueryShape': 'इस SQL कार्य के लिए query structure अधूरा है।',
   },
   bn: {
     'nav.problems': 'সমস্যা',
@@ -2704,6 +2706,7 @@ const PROBLEMS_FALLBACK: I18nDictionary = {
   'sql.checker.missingJoinCondition': EN_STRINGS['sql.checker.missingJoinCondition'],
   'sql.checker.missingDistinct': EN_STRINGS['sql.checker.missingDistinct'],
   'sql.checker.missingDepartment': EN_STRINGS['sql.checker.missingDepartment'],
+  'sql.checker.missingQueryShape': EN_STRINGS['sql.checker.missingQueryShape'],
 }
 
 export const STRINGS: Record<LanguageCode, I18nDictionary> = {

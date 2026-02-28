@@ -1,4 +1,5 @@
 import { storageKeys } from './storageKeys'
+import { safeGetItem, safeRemoveItem, safeSetJSON } from '../lib/safeStorage'
 
 export type UserSkillLevel = 'Newbie' | 'Beginner' | 'Intermediate' | 'Professional'
 export type UserGoal =
@@ -170,7 +171,7 @@ export function getUserProfile(): UserProfile | null {
     return null
   }
 
-  const raw = window.localStorage.getItem(storageKeys.userProfile)
+  const raw = safeGetItem(storageKeys.userProfile)
   if (!raw) {
     return null
   }
@@ -184,7 +185,7 @@ export function getUserProfile(): UserProfile | null {
 
     const normalizedRaw = JSON.stringify(normalizedProfile)
     if (normalizedRaw !== raw) {
-      window.localStorage.setItem(storageKeys.userProfile, normalizedRaw)
+      safeSetJSON(storageKeys.userProfile, normalizedProfile, { maxBytes: 8 * 1024, silent: true })
     }
 
     return normalizedProfile
@@ -207,7 +208,7 @@ export function setUserProfile(profile: UserProfileInput) {
     ...(language.requestedLanguage ? { requestedLanguage: language.requestedLanguage } : {}),
   }
 
-  window.localStorage.setItem(storageKeys.userProfile, JSON.stringify(normalizedProfile))
+  safeSetJSON(storageKeys.userProfile, normalizedProfile, { maxBytes: 8 * 1024, silent: true })
 }
 
 export function clearUserProfile() {
@@ -215,7 +216,7 @@ export function clearUserProfile() {
     return
   }
 
-  window.localStorage.removeItem(storageKeys.userProfile)
+  safeRemoveItem(storageKeys.userProfile)
 }
 
 export function getLanguageSelectionForProfile(profile: UserProfile | null): UserLanguageSelection {

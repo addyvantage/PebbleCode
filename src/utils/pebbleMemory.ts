@@ -6,6 +6,7 @@ import {
   summaryMetrics,
 } from '../data/mockInsights'
 import { storageKeys } from './storageKeys'
+import { safeGetItem, safeSetJSON } from '../lib/safeStorage'
 
 const DEFAULT_USER_ID = 'local_user'
 
@@ -118,10 +119,10 @@ export function getPebbleMemory(userId = DEFAULT_USER_ID) {
     return seedMemory(userId)
   }
 
-  const raw = window.localStorage.getItem(storageKeys.memory)
+  const raw = safeGetItem(storageKeys.memory)
   if (!raw) {
     const seeded = seedMemory(userId)
-    window.localStorage.setItem(storageKeys.memory, JSON.stringify(seeded))
+    safeSetJSON(storageKeys.memory, seeded, { maxBytes: 48 * 1024, silent: true })
     return seeded
   }
 
@@ -133,16 +134,20 @@ export function getPebbleMemory(userId = DEFAULT_USER_ID) {
     return parsed
   } catch {
     const seeded = seedMemory(userId)
-    window.localStorage.setItem(storageKeys.memory, JSON.stringify(seeded))
+    safeSetJSON(storageKeys.memory, seeded, { maxBytes: 48 * 1024, silent: true })
     return seeded
   }
 }
 
 function savePebbleMemory(memory: PebbleMemory) {
-  if (typeof window === 'undefined') {
-    return
+  const compact: PebbleMemory = {
+    ...memory,
+    flowTrend30d: memory.flowTrend30d.slice(-30),
+    cognitiveLoadTrend30d: memory.cognitiveLoadTrend30d.slice(-30),
+    recentSessions: memory.recentSessions.slice(-30),
+    thenVsNowEntries: memory.thenVsNowEntries.slice(0, 8),
   }
-  window.localStorage.setItem(storageKeys.memory, JSON.stringify(memory))
+  safeSetJSON(storageKeys.memory, compact, { maxBytes: 48 * 1024, silent: true })
 }
 
 function uniqueTags(tags: string[]) {

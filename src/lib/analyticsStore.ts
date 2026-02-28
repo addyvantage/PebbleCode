@@ -1,8 +1,11 @@
 import type { PlacementLanguage } from '../data/onboardingData'
+import { safeGetJSON, safeRemoveItem, safeSetJSON } from './safeStorage'
 
 const ANALYTICS_STORAGE_KEY = 'pebble.analytics.v1'
 const ANALYTICS_EVENT_NAME = 'pebble:analytics-updated'
-const ANALYTICS_MAX_EVENTS = 2000
+const ANALYTICS_MAX_EVENTS = 320
+const ANALYTICS_PERSISTED_EVENTS = 180
+const ANALYTICS_MAX_DAILY = 60
 
 export type AnalyticsErrorType =
   | 'syntax_error'
@@ -61,6 +64,7 @@ export type AnalyticsState = {
   version: 1
   updatedAt: number
   events: AnalyticsEvent[]
+  dailySolved: Record<string, number>
 }
 
 export type RunEventInput = Omit<RunAnalyticsEvent, 'type' | 'id' | 'ts'>
@@ -72,6 +76,7 @@ const EMPTY_STATE: AnalyticsState = {
   version: 1,
   updatedAt: 0,
   events: [],
+  dailySolved: {},
 }
 
 let analyticsStateCache: AnalyticsState = EMPTY_STATE
@@ -88,137 +93,168 @@ function emitAnalyticsUpdate() {
 }
 
 function readFromStorage(): AnalyticsState {
-  if (typeof window === 'undefined') {
+  const parsed = safeGetJSON<unknown>(ANALYTICS_STORAGE_KEY, null)
+  if (!isRecord(parsed) || !Array.isArray(parsed.events)) {
     return EMPTY_STATE
   }
 
-  try {
-    const raw = window.localStorage.getItem(ANALYTICS_STORAGE_KEY)
-    if (!raw) {
-      return EMPTY_STATE
+  const events: AnalyticsEvent[] = []
+  for (const item of parsed.events.slice(-ANALYTICS_MAX_EVENTS)) {
+    if (!isRecord(item) || typeof item.type !== 'string') {
+      continue
     }
 
-    const parsed = JSON.parse(raw) as unknown
-    if (!isRecord(parsed) || !Array.isArray(parsed.events)) {
-      return EMPTY_STATE
+    const baseValid =
+      typeof item.id === 'string' &&
+      typeof item.ts === 'number' &&
+      typeof item.unitId === 'string' &&
+      typeof item.trackId === 'string' &&
+      typeof item.language === 'string'
+
+    if (!baseValid) {
+      continue
     }
 
-    const events: AnalyticsEvent[] = []
-    for (const item of parsed.events) {
-      if (!isRecord(item) || typeof item.type !== 'string') {
-        continue
-      }
-
-      const baseValid =
-        typeof item.id === 'string' &&
-        typeof item.ts === 'number' &&
-        typeof item.unitId === 'string' &&
-        typeof item.trackId === 'string' &&
-        typeof item.language === 'string'
-
-      if (!baseValid) {
-        continue
-      }
-
-      const base: AnalyticsEventBase = {
-        id: item.id as string,
-        ts: item.ts as number,
-        unitId: item.unitId as string,
-        trackId: item.trackId as string,
-        language: item.language as PlacementLanguage,
-      }
-
-      if (item.type === 'run') {
-        if (
-          typeof item.passed === 'boolean' &&
-          typeof item.passCount === 'number' &&
-          typeof item.total === 'number' &&
-          typeof item.runtimeMs === 'number' &&
-          (typeof item.exitCode === 'number' || item.exitCode === null)
-        ) {
-          events.push({
-            ...base,
-            type: 'run',
-            passed: item.passed,
-            passCount: item.passCount,
-            total: item.total,
-            runtimeMs: item.runtimeMs,
-            exitCode: item.exitCode,
-            errorType:
-              typeof item.errorType === 'string' ? (item.errorType as AnalyticsErrorType) : undefined,
-            attemptContextHash:
-              typeof item.attemptContextHash === 'string' ? item.attemptContextHash : undefined,
-          } satisfies RunAnalyticsEvent)
-        }
-        continue
-      }
-
-      if (item.type === 'submit') {
-        if (
-          typeof item.accepted === 'boolean' &&
-          typeof item.passCount === 'number' &&
-          typeof item.total === 'number' &&
-          typeof item.runtimeMs === 'number' &&
-          (typeof item.exitCode === 'number' || item.exitCode === null)
-        ) {
-          events.push({
-            ...base,
-            type: 'submit',
-            accepted: item.accepted,
-            passCount: item.passCount,
-            total: item.total,
-            runtimeMs: item.runtimeMs,
-            exitCode: item.exitCode,
-            errorType:
-              typeof item.errorType === 'string' ? (item.errorType as AnalyticsErrorType) : undefined,
-          } satisfies SubmitAnalyticsEvent)
-        }
-        continue
-      }
-
-      if (item.type === 'assist') {
-        if (item.action === 'hint' || item.action === 'explain' || item.action === 'next') {
-          events.push({
-            ...base,
-            type: 'assist',
-            action: item.action,
-          } satisfies AssistAnalyticsEvent)
-        }
-        continue
-      }
-
-      if (item.type === 'placement_skip') {
-        if (typeof item.questionId === 'string' && typeof item.questionIndex === 'number') {
-          events.push({
-            ...base,
-            type: 'placement_skip',
-            questionId: item.questionId,
-            questionIndex: item.questionIndex,
-          } satisfies PlacementSkipAnalyticsEvent)
-        }
-      }
+    const base: AnalyticsEventBase = {
+      id: item.id as string,
+      ts: item.ts as number,
+      unitId: item.unitId as string,
+      trackId: item.trackId as string,
+      language: item.language as PlacementLanguage,
     }
 
-    return {
-      version: 1,
-      updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
-      events,
+    if (item.type === 'run') {
+      if (
+        typeof item.passed === 'boolean' &&
+        typeof item.passCount === 'number' &&
+        typeof item.total === 'number' &&
+        typeof item.runtimeMs === 'number' &&
+        (typeof item.exitCode === 'number' || item.exitCode === null)
+      ) {
+        events.push({
+          ...base,
+          type: 'run',
+          passed: item.passed,
+          passCount: item.passCount,
+          total: item.total,
+          runtimeMs: item.runtimeMs,
+          exitCode: item.exitCode,
+          errorType:
+            typeof item.errorType === 'string' ? (item.errorType as AnalyticsErrorType) : undefined,
+          attemptContextHash:
+            typeof item.attemptContextHash === 'string' ? item.attemptContextHash : undefined,
+        } satisfies RunAnalyticsEvent)
+      }
+      continue
     }
-  } catch {
-    return EMPTY_STATE
+
+    if (item.type === 'submit') {
+      if (
+        typeof item.accepted === 'boolean' &&
+        typeof item.passCount === 'number' &&
+        typeof item.total === 'number' &&
+        typeof item.runtimeMs === 'number' &&
+        (typeof item.exitCode === 'number' || item.exitCode === null)
+      ) {
+        events.push({
+          ...base,
+          type: 'submit',
+          accepted: item.accepted,
+          passCount: item.passCount,
+          total: item.total,
+          runtimeMs: item.runtimeMs,
+          exitCode: item.exitCode,
+          errorType:
+            typeof item.errorType === 'string' ? (item.errorType as AnalyticsErrorType) : undefined,
+        } satisfies SubmitAnalyticsEvent)
+      }
+      continue
+    }
+
+    if (item.type === 'assist') {
+      if (item.action === 'hint' || item.action === 'explain' || item.action === 'next') {
+        events.push({
+          ...base,
+          type: 'assist',
+          action: item.action,
+        } satisfies AssistAnalyticsEvent)
+      }
+      continue
+    }
+
+    if (item.type === 'placement_skip') {
+      if (typeof item.questionId === 'string' && typeof item.questionIndex === 'number') {
+        events.push({
+          ...base,
+          type: 'placement_skip',
+          questionId: item.questionId,
+          questionIndex: item.questionIndex,
+        } satisfies PlacementSkipAnalyticsEvent)
+      }
+    }
+  }
+
+  const parsedDaily = isRecord(parsed.dailySolved) ? parsed.dailySolved : {}
+  const dailySolved: Record<string, number> = {}
+  const dailyEntries = Object.entries(parsedDaily)
+    .filter(([key, count]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && typeof count === 'number' && count >= 0)
+    .sort((left, right) => right[0].localeCompare(left[0]))
+    .slice(0, ANALYTICS_MAX_DAILY)
+  for (const [key, count] of dailyEntries) {
+    dailySolved[key] = Math.round(Number(count))
+  }
+
+  return {
+    version: 1,
+    updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
+    events,
+    dailySolved,
   }
 }
 
 function saveToStorage(state: AnalyticsState) {
-  if (typeof window === 'undefined') {
-    return
+  const persisted = {
+    version: 1 as const,
+    updatedAt: state.updatedAt,
+    events: state.events.slice(-ANALYTICS_PERSISTED_EVENTS),
+    dailySolved: state.dailySolved,
+  }
+  if (!safeSetJSON(ANALYTICS_STORAGE_KEY, persisted, { maxBytes: 24 * 1024, silent: true })) {
+    const lighter = {
+      ...persisted,
+      events: persisted.events.slice(-60),
+    }
+    safeSetJSON(ANALYTICS_STORAGE_KEY, lighter, { maxBytes: 12 * 1024, silent: true })
+  }
+}
+
+function getDailyKey(ts: number) {
+  const date = new Date(ts)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function updateDailySolved(current: Record<string, number>, event: AnalyticsEvent) {
+  const success =
+    (event.type === 'run' && event.passed) ||
+    (event.type === 'submit' && event.accepted)
+  if (!success) {
+    return current
   }
 
-  try {
-    window.localStorage.setItem(ANALYTICS_STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // Ignore quota issues in local demo mode.
+  const key = getDailyKey(event.ts)
+  const next = {
+    ...current,
+    [key]: (current[key] ?? 0) + 1,
   }
+
+  const trimmed = Object.entries(next)
+    .sort((left, right) => right[0].localeCompare(left[0]))
+    .slice(0, ANALYTICS_MAX_DAILY)
+
+  return Object.fromEntries(trimmed)
 }
 
 function appendEvent(event: AnalyticsEvent) {
@@ -227,6 +263,7 @@ function appendEvent(event: AnalyticsEvent) {
     version: 1,
     updatedAt: Date.now(),
     events: [...current.events, event].slice(-ANALYTICS_MAX_EVENTS),
+    dailySolved: updateDailySolved(current.dailySolved, event),
   }
   analyticsStateCache = nextState
   saveToStorage(nextState)
@@ -243,10 +280,7 @@ export function getAnalyticsState() {
 }
 
 export function clearAnalyticsState() {
-  if (typeof window === 'undefined') {
-    return
-  }
-  window.localStorage.removeItem(ANALYTICS_STORAGE_KEY)
+  safeRemoveItem(ANALYTICS_STORAGE_KEY)
   analyticsStateCache = EMPTY_STATE
   emitAnalyticsUpdate()
 }
@@ -447,6 +481,7 @@ export function seedDemoAnalyticsData(params: {
     version: 1,
     updatedAt: now,
     events: seeded.slice(-ANALYTICS_MAX_EVENTS),
+    dailySolved: {},
   }
   analyticsStateCache = nextState
   saveToStorage(nextState)

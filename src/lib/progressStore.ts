@@ -1,3 +1,4 @@
+import { safeGetJSON, safeSetJSON } from './safeStorage'
 const UNIT_PROGRESS_KEY = 'pebble.unitProgress.v1'
 
 export type UnitProgressEntry = {
@@ -13,53 +14,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function loadUnitProgress(): UnitProgressMap {
-  if (typeof window === 'undefined') {
+  const parsed = safeGetJSON<unknown>(UNIT_PROGRESS_KEY, null)
+  if (!isRecord(parsed)) {
     return {}
   }
 
-  try {
-    const raw = window.localStorage.getItem(UNIT_PROGRESS_KEY)
-    if (!raw) {
-      return {}
+  const normalized: UnitProgressMap = {}
+  for (const [unitId, item] of Object.entries(parsed)) {
+    if (!isRecord(item) || item.completed !== true || typeof item.lastPassedAt !== 'number') {
+      continue
     }
 
-    const parsed = JSON.parse(raw) as unknown
-    if (!isRecord(parsed)) {
-      return {}
+    normalized[unitId] = {
+      completed: true,
+      lastPassedAt: item.lastPassedAt,
+      bestRuntimeMs:
+        typeof item.bestRuntimeMs === 'number' && Number.isFinite(item.bestRuntimeMs)
+          ? item.bestRuntimeMs
+          : undefined,
     }
-
-    const normalized: UnitProgressMap = {}
-    for (const [unitId, item] of Object.entries(parsed)) {
-      if (!isRecord(item) || item.completed !== true || typeof item.lastPassedAt !== 'number') {
-        continue
-      }
-
-      normalized[unitId] = {
-        completed: true,
-        lastPassedAt: item.lastPassedAt,
-        bestRuntimeMs:
-          typeof item.bestRuntimeMs === 'number' && Number.isFinite(item.bestRuntimeMs)
-            ? item.bestRuntimeMs
-            : undefined,
-      }
-    }
-
-    return normalized
-  } catch {
-    return {}
   }
+
+  return normalized
 }
 
 export function saveUnitProgress(progress: UnitProgressMap) {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  try {
-    window.localStorage.setItem(UNIT_PROGRESS_KEY, JSON.stringify(progress))
-  } catch {
-    // Ignore quota and serialization issues in local demo mode.
-  }
+  safeSetJSON(UNIT_PROGRESS_KEY, progress, { maxBytes: 24 * 1024, silent: true })
 }
 
 export function markUnitCompleted(
@@ -84,4 +64,3 @@ export function markUnitCompleted(
     },
   } satisfies UnitProgressMap
 }
-

@@ -1,3 +1,5 @@
+import { safeGetItem, safeRemoveItem } from '../lib/safeStorage'
+
 export const storageKeys = {
   theme: 'pebble.theme.v1',
   pagePrefs: 'pebble.pagePrefs.v1',
@@ -34,12 +36,8 @@ export type LocalUserProfile = {
 }
 
 export function clearLocalStorageKeys(keys: readonly string[]) {
-  if (typeof window === 'undefined') {
-    return
-  }
-
   for (const key of keys) {
-    window.localStorage.removeItem(key)
+    safeRemoveItem(key)
   }
 }
 
@@ -59,9 +57,8 @@ export function getLocalUserProfile(): LocalUserProfile {
     }
   }
 
-  const name = window.localStorage.getItem(storageKeys.userName) || 'Addy'
-  const personaSummary =
-    window.localStorage.getItem(storageKeys.personaSummary) || 'Not set'
+  const name = safeGetItem(storageKeys.userName) || 'Addy'
+  const personaSummary = safeGetItem(storageKeys.personaSummary) || 'Not set'
 
   return {
     name,

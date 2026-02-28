@@ -9,6 +9,7 @@ import {
   getStarterCodeForLanguage,
   type IdeRunLanguage,
 } from './runtimeLanguages'
+import { requestRunApi } from '../../lib/runApi'
 
 export type PythonRunResponse = {
   ok: boolean
@@ -84,38 +85,12 @@ export function PythonIDE({
 
     setIsRunning(true)
     try {
-      const response = await fetch('/api/run', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          language,
-          code,
-          stdin: '',
-          timeoutMs: 4000,
-        }),
+      const result: PythonRunResponse = await requestRunApi({
+        language: language === 'c' ? 'cpp' : language,
+        code,
+        stdin: '',
+        timeoutMs: 4000,
       })
-
-      if (!response.ok) {
-        const raw = await response.text().catch(() => '')
-        const result = createErrorResult(
-          `Runner request failed (${response.status}). ${raw.slice(0, 240) || 'No response body.'}`,
-        )
-        setRunResult(result)
-        onRunComplete?.(result, code)
-        return
-      }
-
-      const payload = (await response.json()) as Partial<PythonRunResponse>
-      const result: PythonRunResponse = {
-        ok: payload.ok === true,
-        exitCode: typeof payload.exitCode === 'number' || payload.exitCode === null ? payload.exitCode : null,
-        stdout: typeof payload.stdout === 'string' ? payload.stdout : '',
-        stderr: typeof payload.stderr === 'string' ? payload.stderr : '',
-        timedOut: payload.timedOut === true,
-        durationMs: typeof payload.durationMs === 'number' ? payload.durationMs : 0,
-      }
       setRunResult(result)
       onRunComplete?.(result, code)
     } catch (error) {

@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react'
 import { storageKeys } from '../../utils/storageKeys'
+import { safeGetItem, safeSetItem } from '../../lib/safeStorage'
 
 export type Theme = 'dark' | 'light'
 
@@ -27,12 +28,12 @@ function resolveInitialTheme(): Theme {
     return 'dark'
   }
 
-  const storedTheme = window.localStorage.getItem(storageKeys.theme)
+  const storedTheme = safeGetItem(storageKeys.theme)
   if (isTheme(storedTheme)) {
     return storedTheme
   }
 
-  const legacyTheme = window.localStorage.getItem('pebble_theme')
+  const legacyTheme = safeGetItem('pebble_theme')
   if (isTheme(legacyTheme)) {
     return legacyTheme
   }
@@ -53,7 +54,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     applyThemeClass(theme)
-    window.localStorage.setItem(storageKeys.theme, theme)
+    safeSetItem(storageKeys.theme, theme, { maxBytes: 256, silent: true })
   }, [theme])
 
   const setTheme = useCallback((nextTheme: Theme) => {

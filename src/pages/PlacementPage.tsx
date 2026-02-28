@@ -26,15 +26,7 @@ import { savePebblePlacement } from '../utils/pebbleUserState'
 import { useBodyScrollLock } from '../utils/useBodyScrollLock'
 import { useI18n } from '../i18n/useI18n'
 import { logPlacementSkipEvent } from '../lib/analyticsStore'
-
-type RunResponse = {
-  ok: boolean
-  exitCode: number | null
-  stdout: string
-  stderr: string
-  timedOut: boolean
-  durationMs: number
-}
+import { requestRunApi } from '../lib/runApi'
 
 type CodingRunState = {
   code: string
@@ -48,32 +40,6 @@ type PlacementFlowQuestion =
 
 function normalizeOutput(value: string) {
   return value.replace(/\r\n/g, '\n').trim()
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function normalizeRunResponse(payload: unknown): RunResponse {
-  if (!isRecord(payload)) {
-    return {
-      ok: false,
-      exitCode: null,
-      stdout: '',
-      stderr: 'Runner returned an invalid response.',
-      timedOut: false,
-      durationMs: 0,
-    }
-  }
-
-  return {
-    ok: payload.ok === true,
-    exitCode: typeof payload.exitCode === 'number' || payload.exitCode === null ? payload.exitCode : null,
-    stdout: typeof payload.stdout === 'string' ? payload.stdout : '',
-    stderr: typeof payload.stderr === 'string' ? payload.stderr : '',
-    timedOut: payload.timedOut === true,
-    durationMs: typeof payload.durationMs === 'number' ? payload.durationMs : 0,
-  }
 }
 
 function buildQuestionFlow(mcq: PlacementMcqQuestion[], coding: PlacementCodingQuestion[]): PlacementFlowQuestion[] {
@@ -190,36 +156,12 @@ export function PlacementPage() {
 
     try {
       for (const test of question.tests) {
-        let payload: unknown = null
-
-        try {
-          const runtimeLanguage = language === 'c' ? 'cpp' : language
-          const response = await fetch('/api/run', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              language: runtimeLanguage,
-              code: current.code,
-              stdin: test.stdin,
-              timeoutMs: question.timeoutMs,
-            }),
-          })
-
-          payload = await response.json().catch(() => null)
-        } catch {
-          payload = {
-            ok: false,
-            exitCode: null,
-            stdout: '',
-            stderr: 'Runner request failed.',
-            timedOut: false,
-            durationMs: 0,
-          }
-        }
-
-        const normalized = normalizeRunResponse(payload)
+        const normalized = await requestRunApi({
+          language,
+          code: current.code,
+          stdin: test.stdin,
+          timeoutMs: question.timeoutMs,
+        })
         const expected = normalizeOutput(test.expected)
         const actual = normalizeOutput(normalized.stdout)
         const passed = normalized.ok && expected === actual

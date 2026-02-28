@@ -1,4 +1,5 @@
 import { storageKeys } from './storageKeys'
+import { safeGetItem, safeRemoveItem, safeSetJSON } from '../lib/safeStorage'
 
 export type TaskProgress = {
   completedTaskIds: string[]
@@ -56,7 +57,7 @@ function persistTaskProgress(progress: TaskProgress) {
     return
   }
 
-  window.localStorage.setItem(storageKeys.taskProgress, JSON.stringify(progress))
+  safeSetJSON(storageKeys.taskProgress, progress, { maxBytes: 16 * 1024, silent: true })
 }
 
 export function getTaskProgress(): TaskProgress {
@@ -67,7 +68,7 @@ export function getTaskProgress(): TaskProgress {
     }
   }
 
-  const raw = window.localStorage.getItem(storageKeys.taskProgress)
+  const raw = safeGetItem(storageKeys.taskProgress)
   if (!raw) {
     return {
       completedTaskIds: [],
@@ -88,7 +89,7 @@ export function getTaskProgress(): TaskProgress {
 
     const normalizedRaw = JSON.stringify(normalized)
     if (normalizedRaw !== raw) {
-      window.localStorage.setItem(storageKeys.taskProgress, normalizedRaw)
+      safeSetJSON(storageKeys.taskProgress, normalized, { maxBytes: 16 * 1024, silent: true })
     }
 
     return normalized
@@ -141,5 +142,5 @@ export function clearTaskProgress(): void {
     return
   }
 
-  window.localStorage.removeItem(storageKeys.taskProgress)
+  safeRemoveItem(storageKeys.taskProgress)
 }

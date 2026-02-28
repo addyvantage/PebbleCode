@@ -7,12 +7,26 @@ import {
   type RunRequestBody,
 } from '../../server/runner.ts'
 
+export const config = {
+  runtime: 'nodejs',
+  api: {
+    bodyParser: {
+      sizeLimit: '200kb',
+    },
+  },
+}
+const MAX_BODY_CHARS = 120_000
+
 function sendJson(
   res: { status: (code: number) => { json: (payload: unknown) => void }; json: (payload: unknown) => void },
   status: number,
   payload: unknown,
 ) {
-  res.status(status).json(payload)
+  try {
+    res.status(status).json(payload)
+  } catch {
+    res.json(payload)
+  }
 }
 
 async function readBody(req: { body?: unknown; on?: (event: string, cb: (chunk: Buffer) => void) => void }) {
@@ -85,6 +99,9 @@ async function runViaLambda(body: {
         Payload: new TextEncoder().encode(JSON.stringify(body)),
       }),
     )
+    console.info(
+      `[api/run] lambda status=${invokeResult.StatusCode ?? 'n/a'} functionError=${invokeResult.FunctionError ?? 'none'}`,
+    )
 
     const payloadText = decodeLambdaPayload(invokeResult.Payload)
     if (invokeResult.FunctionError) {
@@ -103,6 +120,25 @@ async function runViaLambda(body: {
   }
 }
 
+function buildErrorResponse(stderr: string) {
+  return {
+    ok: false,
+    exitCode: null,
+    stdout: '',
+    stderr,
+    timedOut: false,
+    durationMs: 0,
+  }
+}
+
+function getCodeLength(body: unknown) {
+  if (!body || typeof body !== 'object') {
+    return 0
+  }
+  const code = (body as { code?: unknown }).code
+  return typeof code === 'string' ? code.length : 0
+}
+
 export default async function handler(
   req: {
     method?: string
@@ -115,64 +151,49 @@ export default async function handler(
     setHeader?: (name: string, value: string) => void
   },
 ) {
-  if (req.method !== 'POST') {
-    res.setHeader?.('Allow', 'POST')
-    sendJson(res, 405, {
-      ok: false,
-      exitCode: null,
-      stdout: '',
-      stderr: 'Method not allowed. Use POST.',
-      timedOut: false,
-      durationMs: 0,
-    })
-    return
-  }
-
-  const rawBody = await readBody(req)
-  let body: RunRequestBody
   try {
-    body = rawBody ? (JSON.parse(rawBody) as RunRequestBody) : {}
-  } catch {
-    sendJson(res, 400, {
-      ok: false,
-      exitCode: null,
-      stdout: '',
-      stderr: 'Invalid JSON body.',
-      timedOut: false,
-      durationMs: 0,
-    })
-    return
-  }
+    if (req.method !== 'POST') {
+      res.setHeader?.('Allow', 'POST')
+      sendJson(res, 405, buildErrorResponse('Method not allowed. Use POST.'))
+      return
+    }
 
-  const normalized = normalizeRunRequest(body)
-  if (!normalized.ok) {
-    sendJson(res, normalized.status, {
-      ok: false,
-      exitCode: null,
-      stdout: '',
-      stderr: normalized.error,
-      timedOut: false,
-      durationMs: 0,
-    })
-    return
-  }
+    const rawBody = await readBody(req)
+    if (rawBody.length > MAX_BODY_CHARS) {
+      sendJson(res, 413, buildErrorResponse('Request body too large.'))
+      return
+    }
+    let body: RunRequestBody
+    try {
+      body = rawBody ? (JSON.parse(rawBody) as RunRequestBody) : {}
+    } catch {
+      sendJson(res, 400, buildErrorResponse('Invalid JSON body.'))
+      return
+    }
 
-  try {
+    const normalized = normalizeRunRequest(body)
+    if (!normalized.ok) {
+      sendJson(res, normalized.status, buildErrorResponse(normalized.error))
+      return
+    }
+
     const mode = getRunnerMode()
+    console.info(
+      `[api/run] request mode=${mode} lang=${normalized.value.language} codeChars=${getCodeLength(body)} timeoutMs=${normalized.value.timeoutMs}`,
+    )
+
     const result = mode === 'local'
       ? await runCodeLocally(normalized.value)
       : await runViaLambda(normalized.value)
 
+    console.info(
+      `[api/run] success lang=${normalized.value.language} ok=${result.ok} exit=${result.exitCode} timedOut=${result.timedOut} durationMs=${result.durationMs}`,
+    )
     sendJson(res, 200, result)
   } catch (error) {
     const message = error instanceof Error ? `${error.name}: ${error.message}` : 'Runner invoke failed.'
-    sendJson(res, 502, {
-      ok: false,
-      exitCode: null,
-      stdout: '',
-      stderr: message,
-      timedOut: false,
-      durationMs: 0,
-    })
+    const stack = error instanceof Error ? error.stack ?? error.message : String(error)
+    console.error('[api/run] unhandled failure', stack)
+    sendJson(res, 502, buildErrorResponse(message))
   }
 }

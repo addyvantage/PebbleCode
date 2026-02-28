@@ -1,4 +1,5 @@
 import { storageKeys } from '../utils/storageKeys'
+import { safeGetJSON, safeSetJSON } from './safeStorage'
 
 export type PagePrefs = {
   reduceMotion: boolean
@@ -19,22 +20,14 @@ export function loadPagePrefs(): PagePrefs {
     return DEFAULT_PREFS
   }
 
-  try {
-    const raw = window.localStorage.getItem(storageKeys.pagePrefs)
-    if (!raw) {
-      return DEFAULT_PREFS
-    }
-    const parsed = JSON.parse(raw) as unknown
-    if (!isRecord(parsed)) {
-      return DEFAULT_PREFS
-    }
-
-    return {
-      reduceMotion: parsed.reduceMotion === true,
-      compactDensity: parsed.compactDensity === true,
-    }
-  } catch {
+  const parsed = safeGetJSON<unknown>(storageKeys.pagePrefs, null)
+  if (!isRecord(parsed)) {
     return DEFAULT_PREFS
+  }
+
+  return {
+    reduceMotion: parsed.reduceMotion === true,
+    compactDensity: parsed.compactDensity === true,
   }
 }
 
@@ -43,10 +36,5 @@ export function savePagePrefs(prefs: PagePrefs) {
     return
   }
 
-  try {
-    window.localStorage.setItem(storageKeys.pagePrefs, JSON.stringify(prefs))
-  } catch {
-    // Ignore localStorage write errors for demo mode.
-  }
+  safeSetJSON(storageKeys.pagePrefs, prefs, { maxBytes: 1024, silent: true })
 }
-

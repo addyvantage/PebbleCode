@@ -7,6 +7,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
 import type { LanguageCode, LanguageOption } from '../../i18n/languages'
+import { useTheme } from '../../hooks/useTheme'
 
 type LanguageSelectProps = {
   value: LanguageCode
@@ -34,6 +35,7 @@ export function LanguageSelect({
   options,
   label,
 }: LanguageSelectProps) {
+  const { theme } = useTheme()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLDivElement | null>(null)
   const optionRefs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -46,6 +48,10 @@ export function LanguageSelect({
   const [activeIndex, setActiveIndex] = useState(selectedIndex)
 
   const selected = options[selectedIndex] ?? options[0]
+  const menuSurfaceClass =
+    theme === 'light'
+      ? 'border-slate-300/75 bg-white/[0.96] shadow-[0_18px_40px_rgba(15,23,42,0.16)]'
+      : 'border-white/10 bg-[linear-gradient(180deg,rgba(10,16,30,0.98)_0%,rgba(7,12,22,0.98)_100%)] shadow-[0_24px_48px_rgba(2,8,23,0.62)]'
 
   useEffect(() => {
     setActiveIndex(selectedIndex)
@@ -144,12 +150,12 @@ export function LanguageSelect({
     <div ref={containerRef} className="space-y-2">
       <p className="text-sm font-medium text-pebble-text-primary">{label}</p>
 
-      <div className="relative">
+      <div className={`relative ${open ? 'z-[80]' : 'z-10'}`}>
         <button
           type="button"
           aria-haspopup="listbox"
           aria-expanded={open}
-          className="flex w-full items-center justify-between gap-3 rounded-xl border border-pebble-border/38 bg-pebble-overlay/[0.08] px-3 py-2.5 text-left transition hover:bg-pebble-overlay/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45"
+          className="inline-flex h-11 w-full items-center justify-between gap-3 rounded-xl border border-pebble-border/38 bg-pebble-overlay/[0.08] px-3 text-left transition hover:bg-pebble-overlay/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45"
           onClick={() => setOpen((current) => !current)}
           onKeyDown={handleTriggerKeyDown}
         >
@@ -161,10 +167,12 @@ export function LanguageSelect({
               {selected?.romanizedName}
             </span>
           </span>
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 text-pebble-text-secondary transition ${open ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          />
+          <span className="inline-flex h-5 w-5 items-center justify-center">
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-pebble-text-secondary transition ${open ? 'rotate-180' : ''}`}
+              aria-hidden="true"
+            />
+          </span>
         </button>
 
         <div
@@ -172,13 +180,13 @@ export function LanguageSelect({
           aria-label={label}
           ref={listRef}
           onKeyDown={handleListKeyDown}
-          className={`absolute left-0 right-0 top-[calc(100%+8px)] z-30 origin-top rounded-xl border border-pebble-border/38 bg-pebble-panel/96 p-1.5 shadow-[0_14px_36px_rgba(2,8,23,0.28)] backdrop-blur-xl transition duration-150 ${
+          className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[90] origin-top rounded-xl p-1.5 backdrop-blur-xl transition duration-150 ${menuSurfaceClass} ${
             open
               ? 'pointer-events-auto scale-100 opacity-100'
               : 'pointer-events-none scale-[0.98] opacity-0'
           }`}
         >
-          <div className="max-h-72 overflow-y-auto pr-1">
+          <div className="max-h-[300px] overflow-y-auto pr-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-pebble-border/35 [&::-webkit-scrollbar-track]:bg-transparent">
             {options.map((option, index) => {
               const selectedOption = option.code === value
               const activeOption = index === activeIndex
@@ -195,10 +203,10 @@ export function LanguageSelect({
                   onClick={() => selectAt(index)}
                   className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45 ${
                     selectedOption
-                      ? 'border-pebble-accent/45 bg-pebble-accent/14'
+                      ? 'border-pebble-accent/45 bg-pebble-accent/18'
                       : activeOption
-                        ? 'border-pebble-border/35 bg-pebble-overlay/[0.12]'
-                        : 'border-transparent bg-transparent hover:border-pebble-border/28 hover:bg-pebble-overlay/[0.1]'
+                        ? 'border-pebble-border/35 bg-pebble-overlay/[0.14]'
+                        : 'border-transparent bg-transparent hover:border-pebble-border/30 hover:bg-pebble-overlay/[0.1]'
                   }`}
                 >
                   <span className="inline-flex w-4 justify-center">

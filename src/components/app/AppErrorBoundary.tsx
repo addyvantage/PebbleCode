@@ -2,6 +2,7 @@ import { AlertTriangle, RefreshCcw } from 'lucide-react'
 import type { ContextType, ErrorInfo, ReactNode } from 'react'
 import { Component } from 'react'
 import { I18nContext } from '../../i18n/I18nProvider'
+import { safeClearPrefix } from '../../lib/safeStorage'
 
 type AppErrorBoundaryProps = {
   children: ReactNode
@@ -13,16 +14,7 @@ type AppErrorBoundaryState = {
 }
 
 function clearPebbleLocalData() {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  const keys = Object.keys(window.localStorage)
-  for (const key of keys) {
-    if (key.startsWith('pebble.') || key.startsWith('pebble:')) {
-      window.localStorage.removeItem(key)
-    }
-  }
+  safeClearPrefix(['pebble.', 'pebble:'])
 }
 
 export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
@@ -55,6 +47,10 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     window.location.reload()
   }
 
+  handleReload = () => {
+    window.location.reload()
+  }
+
   render() {
     if (!this.state.hasError) {
       return this.props.children
@@ -81,14 +77,24 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
             </p>
           ) : null}
 
-          <button
-            type="button"
-            onClick={this.handleReset}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-pebble-border/35 bg-pebble-overlay/[0.08] px-3 py-2 text-sm text-pebble-text-primary transition hover:bg-pebble-overlay/[0.16]"
-          >
-            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
-            {resetLabel}
-          </button>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={this.handleReload}
+              className="inline-flex items-center gap-2 rounded-xl border border-pebble-border/35 bg-pebble-overlay/[0.08] px-3 py-2 text-sm text-pebble-text-primary transition hover:bg-pebble-overlay/[0.16]"
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              Reload
+            </button>
+            <button
+              type="button"
+              onClick={this.handleReset}
+              className="inline-flex items-center gap-2 rounded-xl border border-pebble-border/35 bg-pebble-overlay/[0.08] px-3 py-2 text-sm text-pebble-text-primary transition hover:bg-pebble-overlay/[0.16]"
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              {resetLabel}
+            </button>
+          </div>
         </div>
       </div>
     )

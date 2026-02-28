@@ -185,7 +185,8 @@ export function ProblemsPage() {
         isUrdu={isUrdu}
       />
 
-      <Card padding="sm" interactive className="space-y-2.5">
+      <div className={`grid gap-3 ${previewProblem ? 'lg:grid-cols-[minmax(0,1fr)_460px]' : ''}`}>
+        <Card padding="sm" interactive className="space-y-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <label className="relative min-w-[280px] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pebble-text-muted" aria-hidden="true" />
@@ -231,7 +232,7 @@ export function ProblemsPage() {
             }}
           />
 
-          <label className="relative">
+          <label className="relative inline-flex h-10">
             <select
               value={filters.difficulty}
               onChange={(event) =>
@@ -240,7 +241,7 @@ export function ProblemsPage() {
                   difficulty: event.target.value as ProblemsFilterState['difficulty'],
                 }))
               }
-              className="h-10 appearance-none rounded-xl border border-pebble-border/32 bg-pebble-overlay/[0.08] pl-3 pr-9 text-sm text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45"
+              className="h-full appearance-none rounded-xl border border-pebble-border/32 bg-pebble-overlay/[0.08] pl-3 pr-9 text-sm text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45"
               aria-label={t('problems.filters.difficulty')}
             >
               <option value="any">{t('problems.filters.anyDifficulty')}</option>
@@ -251,11 +252,11 @@ export function ProblemsPage() {
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pebble-text-secondary" aria-hidden="true" />
           </label>
 
-          <label className="relative">
+          <label className="relative inline-flex h-10">
             <select
               value={sortMode}
               onChange={(event) => setSortMode(event.target.value as SortMode)}
-              className="h-10 appearance-none rounded-xl border border-pebble-border/32 bg-pebble-overlay/[0.08] pl-3 pr-9 text-sm text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45"
+              className="h-full appearance-none rounded-xl border border-pebble-border/32 bg-pebble-overlay/[0.08] pl-3 pr-9 text-sm text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45"
               aria-label={t('problems.sort.label')}
             >
               <option value="newest">{t('problems.sort.newest')}</option>
@@ -285,25 +286,52 @@ export function ProblemsPage() {
           </div>
         </div>
 
-        <ProblemsTable
-          rows={filteredProblems}
-          solvedMap={solvedMap}
-          emptyLabel={t('problems.empty')}
-          openLabel={t('problems.openProblem')}
-          headings={{
-            index: t('problems.table.index'),
-            title: t('problems.table.title'),
-            difficulty: t('problems.table.difficulty'),
-            acceptance: t('problems.table.acceptance'),
-            action: t('problems.table.action'),
-          }}
-          difficultyLabels={difficultyLabels}
-          onOpenProblem={openPreview}
-          isUrdu={isUrdu}
-        />
-      </Card>
+          <ProblemsTable
+            rows={filteredProblems}
+            solvedMap={solvedMap}
+            emptyLabel={t('problems.empty')}
+            openLabel={t('problems.openProblem')}
+            headings={{
+              index: t('problems.table.index'),
+              title: t('problems.table.title'),
+              difficulty: t('problems.table.difficulty'),
+              acceptance: t('problems.table.acceptance'),
+              action: t('problems.table.action'),
+            }}
+            difficultyLabels={difficultyLabels}
+            onOpenProblem={openPreview}
+            isUrdu={isUrdu}
+          />
+        </Card>
+
+        {previewProblem ? (
+          <div className="hidden lg:block">
+            <ProblemPreviewPanel
+              mode="docked"
+              open={Boolean(previewProblem)}
+              problem={previewProblem}
+              selectedLanguage={previewLanguage}
+              onLanguageChange={setPreviewLanguage}
+              onClose={() => setPreviewProblem(null)}
+              onStart={startProblem}
+              labels={{
+                preview: t('problems.preview'),
+                start: t('problems.start'),
+                language: t('problems.filters.language'),
+                time: t('problems.timeLabel'),
+                skills: t('problems.skillsLabel'),
+                close: t('actions.close'),
+              }}
+              difficultyLabels={difficultyLabels}
+              languageLabels={languageLabels}
+              isUrdu={isUrdu}
+            />
+          </div>
+        ) : null}
+      </div>
 
       <ProblemPreviewPanel
+        mode="overlay"
         open={Boolean(previewProblem)}
         problem={previewProblem}
         selectedLanguage={previewLanguage}

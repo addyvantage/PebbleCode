@@ -1,5 +1,8 @@
+import { safeGetJSON, safeSetJSON } from './safeStorage'
+
 const SOLVED_PROBLEMS_STORAGE_KEY = 'pebble.solvedProblems.v1'
 const SOLVED_PROBLEMS_EVENT = 'pebble:solved-problems-updated'
+const MAX_SOLVED_ENTRIES = 500
 
 export type SolvedProblemEntry = {
   solvedAt: number
@@ -21,60 +24,52 @@ function emitUpdate() {
   window.dispatchEvent(new CustomEvent(SOLVED_PROBLEMS_EVENT))
 }
 
+function compactSolvedMap(map: SolvedProblemsMap) {
+  const rows = Object.entries(map).sort(
+    (left, right) => (right[1]?.solvedAt ?? 0) - (left[1]?.solvedAt ?? 0),
+  )
+  return Object.fromEntries(rows.slice(0, MAX_SOLVED_ENTRIES)) as SolvedProblemsMap
+}
+
 export function loadSolvedProblems(): SolvedProblemsMap {
   return solvedProblemsCache
 }
 
 function readSolvedProblemsFromStorage(): SolvedProblemsMap {
-  if (typeof window === 'undefined') {
+  const parsed = safeGetJSON<unknown>(SOLVED_PROBLEMS_STORAGE_KEY, null)
+  if (!isRecord(parsed)) {
     return {}
   }
 
-  try {
-    const raw = window.localStorage.getItem(SOLVED_PROBLEMS_STORAGE_KEY)
-    if (!raw) {
-      return {}
+  const next: SolvedProblemsMap = {}
+  for (const [problemId, value] of Object.entries(parsed)) {
+    if (!isRecord(value)) {
+      continue
     }
-
-    const parsed = JSON.parse(raw) as unknown
-    if (!isRecord(parsed)) {
-      return {}
+    const solvedAt = typeof value.solvedAt === 'number' ? value.solvedAt : 0
+    const attempts = typeof value.attempts === 'number' ? value.attempts : 0
+    if (attempts <= 0 && solvedAt <= 0) {
+      continue
     }
-
-    const next: SolvedProblemsMap = {}
-    for (const [problemId, value] of Object.entries(parsed)) {
-      if (!isRecord(value)) {
-        continue
-      }
-      const solvedAt = typeof value.solvedAt === 'number' ? value.solvedAt : 0
-      const attempts = typeof value.attempts === 'number' ? value.attempts : 0
-      if (attempts <= 0 && solvedAt <= 0) {
-        continue
-      }
-      next[problemId] = {
-        solvedAt,
-        attempts: Math.max(1, attempts || (solvedAt > 0 ? 1 : 0)),
-      }
+    next[problemId] = {
+      solvedAt,
+      attempts: Math.max(1, attempts || (solvedAt > 0 ? 1 : 0)),
     }
+  }
 
-    return next
-  } catch {
-    return {}
+  return compactSolvedMap(next)
+}
+
+function saveSolvedProblemsToStorage(map: SolvedProblemsMap) {
+  if (!safeSetJSON(SOLVED_PROBLEMS_STORAGE_KEY, map, { maxBytes: 40 * 1024, silent: true })) {
+    const lighter = Object.fromEntries(Object.entries(map).slice(0, 240)) as SolvedProblemsMap
+    safeSetJSON(SOLVED_PROBLEMS_STORAGE_KEY, lighter, { maxBytes: 20 * 1024, silent: true })
   }
 }
 
 export function saveSolvedProblems(map: SolvedProblemsMap) {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  try {
-    window.localStorage.setItem(SOLVED_PROBLEMS_STORAGE_KEY, JSON.stringify(map))
-  } catch {
-    // Ignore quota errors in prototype mode.
-  }
-
-  solvedProblemsCache = { ...map }
+  solvedProblemsCache = compactSolvedMap(map)
+  saveSolvedProblemsToStorage(solvedProblemsCache)
   emitUpdate()
 }
 

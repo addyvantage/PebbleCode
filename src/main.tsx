@@ -6,8 +6,16 @@ import App from './App.tsx'
 import { ThemeProvider } from './providers/theme/ThemeProvider'
 import { I18nProvider } from './i18n/I18nProvider'
 import { AppErrorBoundary } from './components/app/AppErrorBoundary'
+import { recoverPebbleStorageOnBoot } from './lib/safeStorage'
 
-createRoot(document.getElementById('root')!).render(
+recoverPebbleStorageOnBoot()
+
+const rootElement = document.getElementById('root')
+if (!rootElement) {
+  throw new Error('Missing root element')
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <I18nProvider>
       <ThemeProvider>

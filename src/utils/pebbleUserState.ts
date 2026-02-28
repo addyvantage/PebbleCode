@@ -1,4 +1,5 @@
 import type { PlacementLanguage, PlacementLevel, StartUnit } from '../data/onboardingData'
+import { safeGetItem, safeSetJSON } from '../lib/safeStorage'
 
 const PEBBLE_USER_STATE_KEY = 'pebbleUserState'
 
@@ -42,7 +43,7 @@ export function getPebbleUserState(): PebbleUserState {
     return {}
   }
 
-  const raw = window.localStorage.getItem(PEBBLE_USER_STATE_KEY)
+  const raw = safeGetItem(PEBBLE_USER_STATE_KEY)
   if (!raw) {
     return {}
   }
@@ -73,7 +74,7 @@ export function savePebbleOnboarding(input: { language: PlacementLanguage; level
     },
   }
 
-  window.localStorage.setItem(PEBBLE_USER_STATE_KEY, JSON.stringify(next))
+  safeSetJSON(PEBBLE_USER_STATE_KEY, next, { maxBytes: 16 * 1024, silent: true })
 }
 
 export function savePebblePlacement(input: {
@@ -106,7 +107,7 @@ export function savePebblePlacement(input: {
     },
   }
 
-  window.localStorage.setItem(PEBBLE_USER_STATE_KEY, JSON.stringify(next))
+  safeSetJSON(PEBBLE_USER_STATE_KEY, next, { maxBytes: 16 * 1024, silent: true })
 }
 
 export function savePebbleCurriculumProgress(input: {
@@ -134,5 +135,5 @@ export function savePebbleCurriculumProgress(input: {
     },
   }
 
-  window.localStorage.setItem(PEBBLE_USER_STATE_KEY, JSON.stringify(next))
+  safeSetJSON(PEBBLE_USER_STATE_KEY, next, { maxBytes: 16 * 1024, silent: true })
 }
