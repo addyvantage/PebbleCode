@@ -7,8 +7,8 @@ import {
   normalizeRunRequest,
   normalizeRunnerResponse,
   type RunRequestBody,
-} from './runnerShared.ts'
-import { runCodeLocally } from './runnerLocal.ts'
+} from '../api/run/runnerShared.ts'
+import { runCodeLocally } from '../api/run/runnerLocal.ts'
 
 dotenv.config({ path: '.env.local' })
 
