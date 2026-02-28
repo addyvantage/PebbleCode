@@ -3,9 +3,8 @@ import {
   decodeLambdaPayload,
   normalizeRunRequest,
   normalizeRunnerResponse,
-  runCodeLocally,
   type RunRequestBody,
-} from '../../server/runner'
+} from '../../server/runnerShared'
 
 export const config = {
   runtime: 'nodejs',
@@ -254,6 +253,7 @@ export default async function handler(
 
     let result
     if (mode === 'local') {
+      const { runCodeLocally } = await import('../../server/runnerLocal')
       result = await runCodeLocally(normalized.value)
     } else if (hasRunnerUrl) {
       result = await runViaRunnerUrl(normalized.value)

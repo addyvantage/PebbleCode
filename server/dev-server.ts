@@ -6,9 +6,9 @@ import {
   decodeLambdaPayload,
   normalizeRunRequest,
   normalizeRunnerResponse,
-  runCodeLocally,
   type RunRequestBody,
-} from './runner.ts'
+} from './runnerShared.ts'
+import { runCodeLocally } from './runnerLocal.ts'
 
 dotenv.config({ path: '.env.local' })
 
