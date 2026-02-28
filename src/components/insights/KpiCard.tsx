@@ -58,7 +58,7 @@ export function KpiCard({ title, value, suffix, trend, icon: Icon }: KpiCardProp
       </div>
       <div>
         <p className="text-[1.65rem] font-bold leading-none tracking-tight text-pebble-text-primary">
-          {formattedValue}
+          <span className="ltrSafe">{formattedValue}</span>
           {suffix ? <span className="ml-1 text-xs font-medium tracking-normal text-pebble-text-secondary">{suffix}</span> : null}
         </p>
         {trend ? <p className="mt-1 text-xs text-pebble-text-secondary">{trend}</p> : <div className="h-4" />}

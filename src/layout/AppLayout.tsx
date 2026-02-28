@@ -30,6 +30,7 @@ export function AppLayout() {
   const [demoMode, setDemoModeState] = useState(() => getDemoMode())
   const [profile, setProfile] = useState(() => getLocalUserProfile())
   const [showStoragePressureNotice, setShowStoragePressureNotice] = useState(false)
+  const [nowTick, setNowTick] = useState(() => Date.now())
   const profileButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const personaLabel = useMemo(() => {
@@ -41,7 +42,7 @@ export function AppLayout() {
     () => selectDailyCompletions(analyticsState.events, timeZone),
     [analyticsState.events, timeZone],
   )
-  const todayKey = useMemo(() => dateKeyForTimeZone(Date.now(), timeZone), [analyticsState.updatedAt, timeZone])
+  const todayKey = useMemo(() => dateKeyForTimeZone(nowTick, timeZone), [nowTick, timeZone])
   const currentStreak = useMemo(
     () => selectCurrentStreak(dailyCompletions, todayKey),
     [dailyCompletions, todayKey],
@@ -128,6 +129,11 @@ export function AppLayout() {
   }, [])
 
   useEffect(() => {
+    const id = window.setInterval(() => setNowTick(Date.now()), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  useEffect(() => {
     return subscribeStoragePressure(() => {
       setShowStoragePressureNotice(true)
     })
@@ -197,7 +203,7 @@ export function AppLayout() {
                           to={to}
                           className={({ isActive }) =>
                             `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium tracking-[0.01em] transition ${isActive
-                              ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]'
+                              ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_22px_rgba(2,8,23,0.18)]'
                               : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/12 hover:text-pebble-text-primary'
                             }`
                           }
@@ -263,7 +269,7 @@ export function AppLayout() {
                       to={to}
                       className={({ isActive }) =>
                         `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium tracking-[0.01em] transition ${isActive
-                          ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]'
+                          ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_22px_rgba(2,8,23,0.18)]'
                           : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/12 hover:text-pebble-text-primary'
                         }`
                       }

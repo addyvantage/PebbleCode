@@ -68,7 +68,7 @@ const CODE_LANGUAGE_SUPPORT: ProblemLanguage[] = ['python', 'javascript', 'java'
 
 const GENERIC_STARTERS: Record<Exclude<ProblemLanguage, 'sql'>, string> = {
   python: `def solve():\n    # TODO: implement\n    pass\n\nif __name__ == "__main__":\n    solve()\n`,
-  javascript: `function solve(input) {\n  // TODO: implement\n  return \"\";\n}\n\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf8');\nprocess.stdout.write(String(solve(input)));\n`,
+  javascript: `function solve(input) {\n  // TODO: implement\n  return "";\n}\n\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf8');\nprocess.stdout.write(String(solve(input)));\n`,
   java: `import java.io.*;\n\npublic class Main {\n  public static void main(String[] args) throws Exception {\n    BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n    // TODO: implement\n  }\n}\n`,
   cpp: `#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\n\nint main() {\n  // TODO: implement\n  return 0;\n}\n`,
 }
@@ -457,9 +457,9 @@ const SQL_ADDITIONAL_SEEDS: AdditionalSqlSeed[] = [
     keySkills: ['not in', 'subquery'],
     summary: 'Find customers who placed no orders this year.',
     description: 'Use a subquery or left join to identify inactive accounts.',
-    constraints: ['Return list of emails.'],
+    constraints: ['Return list of customerIds.'],
     tables: SQL_CUSTOMER_ORDER_TABLES,
-    expectedResult: { columns: ['email'], rows: [] },
+    expectedResult: { columns: ['customerId'], rows: [] },
     requiredTokens: ['select', 'where', 'not in']
   },
   {
@@ -483,11 +483,11 @@ const SQL_ADDITIONAL_SEEDS: AdditionalSqlSeed[] = [
     acceptanceRate: 72,
     estimatedMinutes: 10,
     keySkills: ['count', 'having'],
-    summary: 'List users who made >5 purchases.',
-    description: 'Group orders by user and filter using HAVING count > 5.',
+    summary: 'List users who made >1 purchases.',
+    description: 'Group orders by user and filter using HAVING count > 1.',
     constraints: ['Sort descending by order count.'],
     tables: SQL_CUSTOMER_ORDER_TABLES,
-    expectedResult: { columns: ['user_id', 'total_orders'], rows: [] },
+    expectedResult: { columns: ['customerId', 'total_orders'], rows: [['1', '2']] },
     requiredTokens: ['select', 'count', 'group by', 'having']
   },
   {
@@ -1088,7 +1088,7 @@ const SQL_ADDITIONAL_SEEDS: AdditionalSqlSeed[] = [
     tables: SQL_CUSTOMER_ORDER_TABLES,
     expectedResult: {
       columns: ['weekday', 'revenue'],
-      rows: [['Sun', '900'], ['Sun', '2500']],
+      rows: [['Sun', '2500'], ['Tue', '1200'], ['Sat', '900']],
     },
     requiredTokens: ['select', 'sum', 'group by', 'orderdate', 'status'],
   },
@@ -1580,12 +1580,27 @@ export function getDefaultProblemLanguage(problem: ProblemDefinition): ProblemLa
   return problem.languageSupport[0] ?? 'python'
 }
 
+function normalizeSqlQuery(query: string) {
+  return query
+    .toLowerCase()
+    .replace(/--.*$/gm, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/[.,;()]/g, ' ')
+    .replace(/=/g, ' = ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function includesAnyPattern(normalized: string, patterns: string[]) {
+  return patterns.some((pattern) => normalized.includes(pattern))
+}
+
 export function getSqlCheckerFailures(problem: ProblemDefinition, query: string): string[] {
   if (problem.kind !== 'sql' || !problem.sqlMeta) {
     return []
   }
 
-  const normalized = query.toLowerCase().replace(/\s+/g, ' ')
+  const normalized = normalizeSqlQuery(query)
 
   if (problem.sqlMeta.checkerId === 'combine_two_tables') {
     const issues: string[] = []
@@ -1595,13 +1610,20 @@ export function getSqlCheckerFailures(problem: ProblemDefinition, query: string)
     if (!(normalized.includes('firstname') && normalized.includes('lastname') && normalized.includes('city') && normalized.includes('state'))) {
       issues.push('missing_columns')
     }
-    if (!(normalized.includes('from person') || normalized.includes('from person p'))) {
+    if (!includesAnyPattern(normalized, ['from person', 'from person p'])) {
       issues.push('missing_from_person')
     }
     if (!(normalized.includes('left join') && normalized.includes('address'))) {
       issues.push('missing_left_join')
     }
-    if (!(normalized.includes('person.personid = address.personid') || normalized.includes('p.personid = a.personid') || normalized.includes('personid = address.personid') || normalized.includes('p.personid= a.personid') || normalized.includes('p.personid=a.personid'))) {
+    if (!includesAnyPattern(normalized, [
+      'on p personid = a personid',
+      'on person personid = address personid',
+      'on p personid = address personid',
+      'on personid = personid',
+      'person personid = address personid',
+      'p personid = a personid',
+    ])) {
       issues.push('missing_join_condition')
     }
     return issues
@@ -1640,7 +1662,7 @@ export function getSqlCheckerFailures(problem: ProblemDefinition, query: string)
 
   if (problem.sqlMeta.checkerId === 'generic_sql') {
     const requiredTokens = problem.sqlMeta.requiredTokens ?? []
-    const missingRequiredToken = requiredTokens.some((token) => !normalized.includes(token.toLowerCase()))
+    const missingRequiredToken = requiredTokens.some((token) => !normalized.includes(normalizeSqlQuery(token)))
     if (!missingRequiredToken) {
       return []
     }

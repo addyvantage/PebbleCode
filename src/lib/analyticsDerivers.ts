@@ -216,12 +216,15 @@ export function selectMonthGrid(
   year: number,
   month: number,
   timeZone = resolveLocalTimeZone(),
+  weekStartsOn = 1,
+  nowTs = Date.now(),
 ): MonthGrid {
   const firstOfMonth = new Date(year, month, 1)
-  const dayOfWeek = firstOfMonth.getDay()
-  const mondayIndex = (dayOfWeek + 6) % 7
-  const gridStart = new Date(year, month, 1 - mondayIndex)
-  const todayKey = dateKeyForTimeZone(Date.now(), timeZone)
+  const firstDayOfWeek = firstOfMonth.getDay()
+  const normalizedWeekStart = ((Math.trunc(weekStartsOn) % 7) + 7) % 7
+  const startOffset = (firstDayOfWeek - normalizedWeekStart + 7) % 7
+  const gridStart = new Date(year, month, 1 - startOffset)
+  const todayKey = dateKeyForTimeZone(nowTs, timeZone)
 
   const weeks: MonthGridDay[][] = []
   for (let week = 0; week < 6; week += 1) {

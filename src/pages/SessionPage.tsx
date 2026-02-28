@@ -106,7 +106,7 @@ const SESSION_MONACO_LANGUAGE: Record<SessionEditorLanguage, string> = {
   cpp: 'cpp',
   java: 'java',
   c: 'c',
-  sql: 'sql',
+  sql: 'plaintext',
 }
 
 const SESSION_RUNTIME_LABEL: Record<SessionEditorLanguage, string> = {
@@ -193,7 +193,8 @@ function formatSqlPreviewTable(table: SqlPreviewTable) {
 export function SessionPage() {
   const { lang: uiLanguage, t, format } = useI18n()
   const [searchParams] = useSearchParams()
-  const storedState = useMemo(() => getPebbleUserState(), [])
+  const analyticsState = useSyncExternalStore(subscribeAnalytics, getAnalyticsState, getAnalyticsState)
+  const storedState = useMemo(() => getPebbleUserState(), [analyticsState.updatedAt])
   const queryUnit = searchParams.get('unit')
   const queryProblemId = searchParams.get('problem')
 
@@ -268,6 +269,7 @@ export function SessionPage() {
 
   const [runStatus, setRunStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
   const [runMessage, setRunMessage] = useState(t('run.evaluateAll'))
+  const [nowTick, setNowTick] = useState(() => Date.now())
   const [selectedTestIndex, setSelectedTestIndex] = useState(0)
   const [testResultsByIndex, setTestResultsByIndex] = useState<Record<number, UnitTestResultItem>>({})
   const [isRunningAll, setIsRunningAll] = useState(false)
@@ -310,15 +312,14 @@ export function SessionPage() {
       ? sessionLanguage
       : selectedLanguage
   const trackId = `${selectedLanguage}:${selectedLevel}`
-  const analyticsState = useSyncExternalStore(subscribeAnalytics, getAnalyticsState, getAnalyticsState)
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
   const dailyCompletions = useMemo(
     () => selectDailyCompletions(analyticsState.events, timeZone),
     [analyticsState.events, timeZone],
   )
   const todayKey = useMemo(
-    () => dateKeyForTimeZone(Date.now(), timeZone),
-    [analyticsState.updatedAt, timeZone],
+    () => dateKeyForTimeZone(nowTick, timeZone),
+    [nowTick, timeZone],
   )
   const currentStreak = useMemo(
     () => selectCurrentStreak(dailyCompletions, todayKey),
@@ -347,6 +348,11 @@ export function SessionPage() {
       setRunMessage(t('run.evaluateAll'))
     }
   }, [runStatus, t])
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick(Date.now()), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
 
   useEffect(() => {
     return () => {

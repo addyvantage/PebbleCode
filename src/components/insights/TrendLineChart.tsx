@@ -11,6 +11,7 @@ const WIDTH = 760
 const HEIGHT = 190
 const PADDING_X = 24
 const PADDING_Y = 18
+const PLACEHOLDER_PATH = toPolyline([42, 44, 43, 45, 44, 46, 45])
 
 function toPolyline(values: number[]) {
   if (values.length === 0) {
@@ -34,7 +35,6 @@ export function TrendLineChart({ data, flowLabel, loadLabel }: TrendLineChartPro
   const flowPath = useMemo(() => toPolyline(flowValues), [flowValues])
   const loadPath = useMemo(() => toPolyline(loadValues), [loadValues])
   const hasData = data.length > 0
-  const placeholderPath = useMemo(() => toPolyline([42, 44, 43, 45, 44, 46, 45]), [])
 
   return (
     <div className="space-y-2.5 rounded-xl border border-pebble-border/26 bg-pebble-overlay/[0.05] p-3">
@@ -119,7 +119,7 @@ export function TrendLineChart({ data, flowLabel, loadLabel }: TrendLineChartPro
             </>
           ) : (
             <polyline
-              points={placeholderPath}
+              points={PLACEHOLDER_PATH}
               fill="none"
               stroke="rgba(var(--pebble-border), 0.34)"
               strokeWidth="1.8"

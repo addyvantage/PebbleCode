@@ -57,6 +57,7 @@ export function DashboardPage() {
   const [demoMode, setDemoMode] = useState(() => getDemoMode())
   const [units, setUnits] = useState<CurriculumUnit[]>([])
   const [unitsLoading, setUnitsLoading] = useState(true)
+  const [nowTick, setNowTick] = useState(() => Date.now())
 
   const analyticsState = useSyncExternalStore(subscribeAnalytics, getAnalyticsState, getAnalyticsState)
   const pebbleState = useMemo(() => getPebbleUserState(), [analyticsState.updatedAt])
@@ -79,6 +80,11 @@ export function DashboardPage() {
 
   useEffect(() => {
     return subscribeDemoMode((value) => setDemoMode(value))
+  }, [])
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick(Date.now()), 60_000)
+    return () => window.clearInterval(id)
   }, [])
 
   useEffect(() => {
@@ -126,7 +132,7 @@ export function DashboardPage() {
     () => selectDailyCompletions(analyticsState.events, timeZone),
     [analyticsState.events, timeZone],
   )
-  const todayKey = useMemo(() => dateKeyForTimeZone(Date.now(), timeZone), [analyticsState.updatedAt, timeZone])
+  const todayKey = useMemo(() => dateKeyForTimeZone(nowTick, timeZone), [nowTick, timeZone])
   const streakStats = useMemo(
     () => selectCurrentStreak(dailyCompletions, todayKey),
     [dailyCompletions, todayKey],

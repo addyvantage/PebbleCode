@@ -1,5 +1,5 @@
 import { Check, ChevronLeft, ChevronRight, Flame, Trophy } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n/useI18n'
 import { getLanguageOption } from '../../i18n/languages'
 import {
@@ -42,21 +42,37 @@ export function StreakCalendar({
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
+  const [nowTick, setNowTick] = useState(() => Date.now())
+  const weekStart = useMemo(() => {
+    try {
+      // @ts-expect-error weekInfo is not available in all TS lib versions.
+      const info = new Intl.Locale(locale).weekInfo
+      if (typeof info?.firstDay === 'number') {
+        return info.firstDay
+      }
+    } catch {
+      // Fallback below.
+    }
+    return 1
+  }, [locale])
+  const weekStartJs = useMemo(() => (weekStart % 7), [weekStart])
 
   const monthGrid = useMemo(
-    () => selectMonthGrid(dailyMap, cursor.getFullYear(), cursor.getMonth(), timeZone),
-    [cursor, dailyMap, timeZone],
+    () => selectMonthGrid(dailyMap, cursor.getFullYear(), cursor.getMonth(), timeZone, weekStartJs, nowTick),
+    [cursor, dailyMap, timeZone, weekStartJs, nowTick],
   )
 
   const weekdayLabels = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, index) =>
+    () => {
+      const orderedWeekdays = Array.from({ length: 7 }, (_, index) => (weekStartJs + index) % 7)
+      return orderedWeekdays.map((weekday) =>
         new Intl.DateTimeFormat(locale, {
           weekday: 'short',
           timeZone: 'UTC',
-        }).format(addDays(WEEKDAY_BASE, index)),
-      ),
-    [locale],
+        }).format(addDays(WEEKDAY_BASE, (weekday + 6) % 7)),
+      )
+    },
+    [locale, weekStartJs],
   )
 
   const monthLabel = useMemo(
@@ -72,6 +88,11 @@ export function StreakCalendar({
     () => Object.values(dailyMap).filter((entry) => entry.completed).length,
     [dailyMap],
   )
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick(Date.now()), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
 
   return (
     <div className={classNames('space-y-2.5', className)}>
@@ -126,9 +147,9 @@ export function StreakCalendar({
 
       <div className="space-y-1.5 rounded-xl border border-pebble-border/25 bg-pebble-canvas/55 p-2">
         <div className="grid grid-cols-7 gap-1">
-          {weekdayLabels.map((label) => (
+          {weekdayLabels.map((label, index) => (
             <span
-              key={label}
+              key={`${label}-${index}`}
               className={`text-center text-[11px] font-medium text-pebble-text-muted ${isRTL ? 'rtlText' : ''}`}
             >
               {label}
@@ -150,6 +171,9 @@ export function StreakCalendar({
                 : 'border-pebble-border/25 bg-pebble-overlay/[0.05] text-pebble-text-secondary hover:bg-pebble-overlay/[0.1]'
               } ${day.isInMonth ? '' : 'opacity-40'} ${day.isToday ? 'ring-2 ring-pebble-accent/35' : ''}`}
             >
+              {day.isComplete && day.count > 1 ? (
+                <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-pebble-success/80" />
+              ) : null}
               <span className="ltrSafe">{day.dayNumber}</span>
             </div>
           ))}
