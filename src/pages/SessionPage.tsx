@@ -32,7 +32,7 @@ import {
   getUnitFunctionMode,
   parseHarnessCasesFromStdout,
 } from '../lib/functionMode'
-import { ChevronLeft, ChevronRight, Play, RotateCcw, Settings2 } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Play, RotateCcw, Settings2 } from 'lucide-react'
 import {
   loadUnitProgress,
   markUnitCompleted,
@@ -47,6 +47,7 @@ import {
 } from '../lib/submissionsStore'
 import { useBodyScrollLock } from '../utils/useBodyScrollLock'
 import { useTheme } from '../hooks/useTheme'
+import { loadPagePrefs, savePagePrefs, type PagePrefs } from '../lib/pagePrefsStore'
 
 type RunResponse = {
   ok: boolean
@@ -177,7 +178,9 @@ export function SessionPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [pageSettingsOpen, setPageSettingsOpen] = useState(false)
+  const [sessionSettingsOpen, setSessionSettingsOpen] = useState(false)
+  const [pagePrefs, setPagePrefs] = useState<PagePrefs>(() => loadPagePrefs())
 
   const [currentUnitIndex, setCurrentUnitIndex] = useState(0)
   const [draftByUnitId, setDraftByUnitId] = useState<Record<string, string>>({})
@@ -227,8 +230,17 @@ export function SessionPage() {
   }, [unitProgress])
 
   useEffect(() => {
+    savePagePrefs(pagePrefs)
+  }, [pagePrefs])
+
+  useEffect(() => {
     saveSubmissions(submissionsByUnit)
   }, [submissionsByUnit])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle('reduced-motion', pagePrefs.reduceMotion)
+  }, [pagePrefs.reduceMotion])
 
   useEffect(() => {
     let mounted = true
@@ -753,7 +765,7 @@ export function SessionPage() {
 
   if (isLoading) {
     return (
-      <section className="h-[100vh] overflow-hidden bg-[#070b14] p-3">
+      <section className="h-[100vh] overflow-hidden bg-pebble-deep p-3">
         <Card className="space-y-2" padding="md" interactive>
           <p className="text-sm font-medium text-pebble-text-primary">Loading curriculum...</p>
           <p className="text-sm text-pebble-text-secondary">Preparing {languageMeta.label} path.</p>
@@ -764,7 +776,7 @@ export function SessionPage() {
 
   if (loadError || !currentUnit) {
     return (
-      <section className="h-[100vh] overflow-hidden bg-[#070b14] p-3">
+      <section className="h-[100vh] overflow-hidden bg-pebble-deep p-3">
         <Card className="space-y-2" padding="md" interactive>
           <p className="text-sm font-medium text-pebble-warning">Unable to load this session.</p>
           <p className="text-sm text-pebble-text-secondary">{loadError || 'No units found.'}</p>
@@ -799,18 +811,18 @@ export function SessionPage() {
       ]
 
   return (
-    <section className="h-[100vh] overflow-hidden bg-[#070b14] text-white">
-      <header className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-white/10 bg-white/[0.02] px-4">
+    <section className={`session-shell h-[100vh] overflow-hidden ${pagePrefs.compactDensity ? 'text-[13px]' : ''}`}>
+      <header className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-pebble-border/25 bg-pebble-overlay/[0.04] px-4">
         <div className="flex min-w-0 items-center gap-2.5">
           <Link
             to="/"
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-white/[0.12] active:bg-white/[0.15] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/55"
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-pebble-border/30 bg-pebble-overlay/[0.09] px-3 py-1.5 text-sm font-semibold text-pebble-text-primary transition hover:bg-pebble-overlay/[0.15] active:bg-pebble-overlay/[0.2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/55"
           >
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-pebble-accent/20 text-xs">P</span>
             Pebble
           </Link>
 
-          <span className="hidden rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-xs text-white/70 md:inline-flex">
+          <span className="hidden rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2 py-1 text-xs text-pebble-text-secondary md:inline-flex">
             {languageMeta.label} • {levelLabel}
           </span>
         </div>
@@ -821,20 +833,20 @@ export function SessionPage() {
             onClick={moveToPreviousUnit}
             disabled={!previousEnabled}
             title="Previous question"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-white/85 transition hover:border-white/20 hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-pebble-border/30 bg-pebble-overlay/[0.08] text-pebble-text-primary transition hover:border-pebble-border/45 hover:bg-pebble-overlay/[0.16] disabled:cursor-not-allowed disabled:opacity-45"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
-          <p className="max-w-[420px] truncate px-1 text-sm font-semibold text-white">{currentUnit.title}</p>
+          <p className="max-w-[420px] truncate px-1 text-sm font-semibold text-pebble-text-primary">{currentUnit.title}</p>
           <button
             type="button"
             onClick={moveToNextUnit}
             disabled={!nextEnabled}
             title="Next question"
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-white/[0.05] text-white/85 transition hover:border-white/20 hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-45 ${
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-full border bg-pebble-overlay/[0.08] text-pebble-text-primary transition hover:border-pebble-border/45 hover:bg-pebble-overlay/[0.16] disabled:cursor-not-allowed disabled:opacity-45 ${
               allTestsPassed && nextEnabled
                 ? 'border-pebble-success/45 shadow-[0_0_0_1px_rgba(74,222,128,0.28),0_0_16px_rgba(74,222,128,0.22)]'
-                : 'border-white/10'
+                : 'border-pebble-border/30'
             }`}
           >
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -847,15 +859,15 @@ export function SessionPage() {
             variant="secondary"
             size="sm"
             title="Page settings"
-            onClick={() => setSettingsOpen(true)}
-            className="h-8 w-8 rounded-lg border-white/20 bg-white/[0.05] p-0 text-white/85 hover:border-white/35 hover:bg-white/[0.12]"
+            onClick={() => setPageSettingsOpen(true)}
+            className="h-8 w-8 rounded-full border-pebble-border/30 bg-pebble-overlay/[0.08] p-0 text-pebble-text-primary hover:border-pebble-border/45 hover:bg-pebble-overlay/[0.16]"
           >
-            <Settings2 className="h-4 w-4" aria-hidden="true" />
+            <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
           </Button>
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-sm text-white/85 transition hover:bg-white/[0.12]"
+            className="rounded-xl border border-pebble-border/30 bg-pebble-overlay/[0.08] px-3 py-1.5 text-sm text-pebble-text-primary transition hover:bg-pebble-overlay/[0.16]"
           >
             ☰ Units
           </button>
@@ -887,15 +899,15 @@ export function SessionPage() {
               gridTemplateRows: 'minmax(0,1fr) clamp(280px,33vh,360px)',
             }}
           >
-            <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.03]">
-              <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
+            <section className="session-panel flex min-h-0 flex-col overflow-hidden">
+              <div className="flex items-center justify-between gap-3 border-b border-pebble-border/25 px-3 py-2">
                 <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-[0.08em] text-white/55">Code</p>
-                  <p className="truncate text-sm font-medium text-white">{currentUnit.title}</p>
+                  <p className="text-xs uppercase tracking-[0.08em] text-pebble-text-muted">Code</p>
+                  <p className="truncate text-sm font-medium text-pebble-text-primary">{currentUnit.title}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/80">
+                  <span className="rounded-full border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2.5 py-1 text-xs text-pebble-text-primary">
                     {LANGUAGE_RUNTIME_LABEL[selectedLanguage]}
                   </span>
                   {currentFunctionConfig?.evalMode === 'function' && (
@@ -909,7 +921,7 @@ export function SessionPage() {
                     size="sm"
                     title="Reset code"
                     onClick={handleResetCode}
-                    className="h-9 w-9 rounded-xl border-white/20 bg-white/[0.06] p-0 text-white/90 hover:border-white/35 hover:bg-white/[0.14]"
+                    className="h-9 w-9 rounded-xl border-pebble-border/35 bg-pebble-overlay/[0.09] p-0 text-pebble-text-primary hover:border-pebble-border/50 hover:bg-pebble-overlay/[0.16]"
                   >
                     <RotateCcw className="h-4 w-4" aria-hidden="true" />
                   </Button>
@@ -918,8 +930,8 @@ export function SessionPage() {
                     variant="secondary"
                     size="sm"
                     title="Editor settings"
-                    onClick={() => setSettingsOpen(true)}
-                    className="h-9 w-9 rounded-xl border-white/20 bg-white/[0.06] p-0 text-white/90 hover:border-white/35 hover:bg-white/[0.14]"
+                    onClick={() => setSessionSettingsOpen(true)}
+                    className="h-9 w-9 rounded-xl border-pebble-border/35 bg-pebble-overlay/[0.09] p-0 text-pebble-text-primary hover:border-pebble-border/50 hover:bg-pebble-overlay/[0.16]"
                   >
                     <Settings2 className="h-4 w-4" aria-hidden="true" />
                   </Button>
@@ -950,7 +962,7 @@ export function SessionPage() {
                 <Editor
                   height="100%"
                   language={IDE_MONACO_LANGUAGE[selectedLanguage]}
-                  theme="vs-dark"
+                  theme={theme === 'light' ? 'vs' : 'vs-dark'}
                   value={currentCode}
                   onChange={(nextValue) => onCodeChange(nextValue ?? '')}
                   options={{
@@ -976,12 +988,12 @@ export function SessionPage() {
               </div>
 
               {currentFunctionConfig?.evalMode === 'function' && (
-                <p className="border-t border-white/10 px-3 py-1.5 text-xs text-white/60">
+                <p className="border-t border-pebble-border/25 px-3 py-1.5 text-xs text-pebble-text-secondary">
                   Implement the function only. Input/output and testcase looping are handled automatically.
                 </p>
               )}
 
-              <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2 text-xs text-white/70">
+              <div className="flex items-center justify-between gap-2 border-t border-pebble-border/25 px-3 py-2 text-xs text-pebble-text-secondary">
                 <p className="truncate">{runMessage}</p>
                 {currentIsCompleted ? (
                   <span className="rounded-full border border-pebble-success/35 bg-pebble-success/15 px-2 py-0.5 text-[11px] text-pebble-success">
@@ -1024,45 +1036,105 @@ export function SessionPage() {
         onSelectUnit={selectUnit}
       />
 
-      {settingsOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1728] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+      {pageSettingsOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-pebble-border/35 bg-pebble-panel/95 p-4 shadow-[0_20px_60px_rgba(2,8,23,0.32)]">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-white">Session settings</h2>
+              <h2 className="text-base font-semibold text-pebble-text-primary">Page settings</h2>
               <button
                 type="button"
-                onClick={() => setSettingsOpen(false)}
-                className="rounded-lg border border-white/10 bg-white/[0.05] px-2 py-1 text-xs text-white/75 transition hover:bg-white/[0.12]"
+                onClick={() => setPageSettingsOpen(false)}
+                className="rounded-lg border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2 py-1 text-xs text-pebble-text-secondary transition hover:bg-pebble-overlay/[0.16]"
               >
                 Close
               </button>
             </div>
 
-            <div className="mt-4 space-y-3 text-sm text-white/80">
-              <label className="flex items-center justify-between gap-3">
-                <span>Theme</span>
-                <div className="inline-flex rounded-lg border border-white/10 bg-white/[0.04] p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setTheme('dark')}
-                    className={`rounded-md px-2.5 py-1 text-xs transition ${
-                      theme === 'dark' ? 'bg-white/14 text-white' : 'text-white/70 hover:bg-white/[0.08]'
-                    }`}
-                  >
-                    Dark
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTheme('light')}
-                    className={`rounded-md px-2.5 py-1 text-xs transition ${
-                      theme === 'light' ? 'bg-white/14 text-white' : 'text-white/70 hover:bg-white/[0.08]'
-                    }`}
-                  >
-                    Light
-                  </button>
+            <div className="mt-4 space-y-3 text-sm text-pebble-text-secondary">
+              <div className="space-y-1.5">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">Theme</span>
+                <div
+                  role="tablist"
+                  aria-label="Theme mode"
+                  className="grid grid-cols-2 gap-2 rounded-xl border border-pebble-border/30 bg-pebble-overlay/[0.06] p-1"
+                >
+                  {(['dark', 'light'] as const).map((mode) => {
+                    const selected = theme === mode
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        role="tab"
+                        aria-selected={selected}
+                        aria-pressed={selected}
+                        onClick={() => setTheme(mode)}
+                        className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/50 ${
+                          selected
+                            ? 'border border-pebble-accent/50 bg-pebble-accent/18 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
+                            : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/[0.12]'
+                        }`}
+                      >
+                        {selected ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : null}
+                        {mode === 'dark' ? 'Dark' : 'Light'}
+                      </button>
+                    )
+                  })}
                 </div>
+              </div>
+
+              <label className="flex items-center justify-between gap-3">
+                <span>Reduce motion</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPagePrefs((prev) => ({ ...prev, reduceMotion: !prev.reduceMotion }))
+                  }
+                  className={`rounded-lg border px-2.5 py-1 text-xs transition ${
+                    pagePrefs.reduceMotion
+                      ? 'border-pebble-accent/45 bg-pebble-accent/18 text-pebble-text-primary'
+                      : 'border-pebble-border/35 bg-pebble-overlay/[0.08] text-pebble-text-secondary hover:bg-pebble-overlay/[0.16]'
+                  }`}
+                >
+                  {pagePrefs.reduceMotion ? 'On' : 'Off'}
+                </button>
               </label>
 
+              <label className="flex items-center justify-between gap-3">
+                <span>Density</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPagePrefs((prev) => ({ ...prev, compactDensity: !prev.compactDensity }))
+                  }
+                  className={`rounded-lg border px-2.5 py-1 text-xs transition ${
+                    pagePrefs.compactDensity
+                      ? 'border-pebble-accent/45 bg-pebble-accent/18 text-pebble-text-primary'
+                      : 'border-pebble-border/35 bg-pebble-overlay/[0.08] text-pebble-text-secondary hover:bg-pebble-overlay/[0.16]'
+                  }`}
+                >
+                  {pagePrefs.compactDensity ? 'Compact' : 'Comfortable'}
+                </button>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sessionSettingsOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-pebble-border/35 bg-pebble-panel/95 p-4 shadow-[0_20px_60px_rgba(2,8,23,0.32)]">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold text-pebble-text-primary">Session settings</h2>
+              <button
+                type="button"
+                onClick={() => setSessionSettingsOpen(false)}
+                className="rounded-lg border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2 py-1 text-xs text-pebble-text-secondary transition hover:bg-pebble-overlay/[0.16]"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3 text-sm text-pebble-text-secondary">
               <label className="flex items-center justify-between gap-3">
                 <span>Font size</span>
                 <input
@@ -1072,7 +1144,7 @@ export function SessionPage() {
                   step={1}
                   value={editorFontSize}
                   onChange={(event) => setEditorFontSize(Number(event.target.value))}
-                  className="w-40"
+                  className="w-40 accent-blue-500"
                 />
               </label>
 
@@ -1081,7 +1153,7 @@ export function SessionPage() {
                 <button
                   type="button"
                   onClick={() => setWordWrapEnabled((prev) => !prev)}
-                  className="rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/85 transition hover:bg-white/[0.12]"
+                  className="rounded-lg border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2.5 py-1 text-xs text-pebble-text-primary transition hover:bg-pebble-overlay/[0.16]"
                 >
                   {wordWrapEnabled ? 'On' : 'Off'}
                 </button>

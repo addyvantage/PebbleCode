@@ -42,9 +42,9 @@ export function TestResultsPanel({
 
   return (
     <Card padding="sm" className={`flex h-full min-h-0 flex-col gap-2.5 ${className ?? ''}`} interactive>
-      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-1.5">
-        <p className="text-sm font-semibold text-white">Testcases</p>
-        <p className="text-xs text-white/75">{summaryLabel}</p>
+      <div className="flex items-center justify-between gap-2 border-b border-pebble-border/25 pb-1.5">
+        <p className="text-sm font-semibold text-pebble-text-primary">Testcases</p>
+        <p className="text-xs text-pebble-text-secondary">{summaryLabel}</p>
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -58,8 +58,8 @@ export function TestResultsPanel({
               onClick={() => onSelectTest(index)}
               className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
                 isSelected
-                  ? 'border-pebble-accent/45 bg-pebble-accent/12 text-white'
-                  : 'border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.1]'
+                  ? 'border-pebble-accent/45 bg-pebble-accent/12 text-pebble-text-primary'
+                  : 'border-pebble-border/30 bg-pebble-overlay/[0.06] text-pebble-text-secondary hover:bg-pebble-overlay/[0.12]'
               }`}
             >
               Case {index + 1}
@@ -67,15 +67,15 @@ export function TestResultsPanel({
                 <span
                   className={`h-1.5 w-1.5 rounded-full ${result.passed ? 'bg-pebble-success' : 'bg-pebble-warning'}`}
                 />
-              ) : <span className="h-1.5 w-1.5 rounded-full bg-white/35" />}
+              ) : <span className="h-1.5 w-1.5 rounded-full bg-pebble-text-secondary/55" />}
             </button>
           )
         })}
       </div>
 
-      <div className="min-h-0 flex-1 rounded-xl border border-white/10 bg-black/20 p-2.5">
+      <div className="min-h-0 flex-1 rounded-xl border border-pebble-border/30 bg-pebble-canvas/45 p-2.5">
         {!selectedTest ? (
-          <p className="text-sm text-white/65">No testcases configured.</p>
+          <p className="text-sm text-pebble-text-secondary">No testcases configured.</p>
         ) : (
           <div className="grid h-full content-start gap-2">
             <FieldBlock label="Input" value={selectedTest.input || '(empty)'} />
@@ -97,8 +97,8 @@ export function TestResultsPanel({
                 >
                   {selectedResult.passed ? 'pass' : 'fail'}
                 </span>
-                <span className="text-white/70">runtime {selectedResult.durationMs}ms</span>
-                <span className="text-white/70">exit {selectedResult.exitCode ?? 'null'}</span>
+                <span className="text-pebble-text-secondary">runtime {selectedResult.durationMs}ms</span>
+                <span className="text-pebble-text-secondary">exit {selectedResult.exitCode ?? 'null'}</span>
                 {selectedResult.timedOut ? (
                   <span className="rounded-full border border-pebble-warning/35 bg-pebble-warning/10 px-2 py-0.5 text-pebble-warning">
                     timed out
@@ -131,7 +131,7 @@ function FieldBlock({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] uppercase tracking-[0.06em] text-white/55">{label}</p>
+        <p className="text-[11px] uppercase tracking-[0.06em] text-pebble-text-muted">{label}</p>
         {status && (
           <span
             className={`rounded-full border px-2 py-0.5 text-[10px] ${
@@ -139,7 +139,7 @@ function FieldBlock({
                 ? 'border-pebble-success/35 bg-pebble-success/15 text-pebble-success'
                 : status === 'fail'
                   ? 'border-pebble-warning/35 bg-pebble-warning/15 text-pebble-warning'
-                  : 'border-white/10 bg-white/[0.04] text-white/65'
+                  : 'border-pebble-border/30 bg-pebble-overlay/[0.06] text-pebble-text-secondary'
             }`}
           >
             {status}
@@ -150,7 +150,7 @@ function FieldBlock({
         className={`rounded-lg border px-2 py-1.5 font-mono text-[12px] leading-relaxed ${
           warning
             ? 'border-pebble-warning/35 bg-pebble-warning/10 text-pebble-warning'
-            : 'border-white/10 bg-black/30 text-white/85'
+            : 'border-pebble-border/30 bg-pebble-canvas/55 text-pebble-text-primary'
         }`}
       >
         <p className="[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:8] overflow-hidden whitespace-pre-wrap break-words">

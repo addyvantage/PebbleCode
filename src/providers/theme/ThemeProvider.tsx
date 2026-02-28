@@ -44,6 +44,7 @@ function applyThemeClass(theme: Theme) {
   const root = document.documentElement
   root.classList.remove('theme-dark', 'theme-light')
   root.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light')
+  root.setAttribute('data-theme', theme)
   root.style.colorScheme = theme
 }
 

@@ -26,10 +26,12 @@
                 : 'dark'
 
           root.classList.add(nextTheme === 'light' ? 'theme-light' : 'theme-dark')
+          root.setAttribute('data-theme', nextTheme)
           root.style.colorScheme = nextTheme
           window.localStorage.setItem(storageKey, nextTheme)
         } catch {
           root.classList.add('theme-dark')
+          root.setAttribute('data-theme', 'dark')
           root.style.colorScheme = 'dark'
         }
       })()

@@ -1,5 +1,6 @@
 export const storageKeys = {
   theme: 'pebble.theme.v1',
+  pagePrefs: 'pebble.pagePrefs.v1',
   demoMode: 'pebble_demo_mode',
   memory: 'pebble_memory_v1',
   sessionInsights: 'pebble_session_insights',
@@ -22,6 +23,7 @@ const localUserKeys = [
 
 const appKeys = [
   storageKeys.theme,
+  storageKeys.pagePrefs,
   storageKeys.demoMode,
   ...localUserKeys,
 ] as const

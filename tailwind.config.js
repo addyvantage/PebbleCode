@@ -11,7 +11,7 @@ export default {
           canvas: 'rgb(var(--pebble-canvas) / <alpha-value>)',
           border: 'rgb(var(--pebble-border) / <alpha-value>)',
           overlay: 'rgb(var(--pebble-overlay) / <alpha-value>)',
-          accent: '#3B82F6',
+          accent: 'rgb(var(--pebble-accent) / <alpha-value>)',
           success: '#10B981',
           warning: '#F59E0B',
           'text-primary': 'rgb(var(--pebble-text-primary) / <alpha-value>)',
@@ -20,7 +20,7 @@ export default {
         },
       },
       boxShadow: {
-        glass: '0 20px 48px rgba(2, 8, 23, 0.32)',
+        glass: 'var(--pebble-shadow)',
       },
       fontFamily: {
         sans: ['"Space Grotesk"', 'ui-sans-serif', 'sans-serif'],
