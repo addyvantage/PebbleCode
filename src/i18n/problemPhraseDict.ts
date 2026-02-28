@@ -74,6 +74,7 @@ function buildCommonSqlEntries(pack: SqlPhrasePack): PhraseEntry[] {
     ['Return null when no second value exists.', pack.ifNotExistReturnNull],
     ['Use distinct salary values.', pack.useDistinctValues],
     ['A one-row table with column SecondHighestSalary.', `${pack.oneRowTable} SecondHighestSalary.`],
+    ['A single-row table with column SecondHighestSalary.', `${pack.oneRowTable} SecondHighestSalary.`],
     ['Write a SQL query to', pack.writeSqlQueryTo],
     ['Write a SQL query', pack.writeSqlQuery],
     ['Return null', pack.returnNull],

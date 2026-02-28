@@ -2955,6 +2955,21 @@ const PROBLEM_EXTRA_LABELS: Record<LanguageCode, { sqlChip: string; subqueryChip
   },
 }
 
+const SESSION_HELPER_LABELS: Partial<Record<LanguageCode, { runEvaluateAll: string }>> = {
+  hi: { runEvaluateAll: 'सभी टेस्टकेस जाँचने के लिए चलाएँ।' },
+  bn: { runEvaluateAll: 'সব টেস্টকেস যাচাই করতে চালান।' },
+  te: { runEvaluateAll: 'అన్ని టెస్ట్‌కేస్‌లను తనిఖీ చేయడానికి నడపండి.' },
+  mr: { runEvaluateAll: 'सर्व टेस्टकेस तपासण्यासाठी चालवा.' },
+  ta: { runEvaluateAll: 'அனைத்து சோதனைகளையும் சரிபார்க்க இயக்கவும்.' },
+  ur: { runEvaluateAll: 'تمام ٹیسٹ کیسز جانچنے کے لیے چلائیں۔' },
+  gu: { runEvaluateAll: 'બધા ટેસ્ટકેસ ચકાસવા માટે ચલાવો.' },
+  kn: { runEvaluateAll: 'ಎಲ್ಲಾ ಪರೀಕ್ಷಾ ಪ್ರಕರಣಗಳನ್ನು ಪರಿಶೀಲಿಸಲು ಚಾಲನೆ ಮಾಡಿ.' },
+  ml: { runEvaluateAll: 'എല്ലാ ടെസ്റ്റ്കേസുകളും പരിശോധിക്കാൻ പ്രവർത്തിപ്പിക്കുക.' },
+  or: { runEvaluateAll: 'ସମସ୍ତ ଟେଷ୍ଟକେସ୍ ଯାଞ୍ଚ ପାଇଁ ଚଲାନ୍ତୁ।' },
+  pa: { runEvaluateAll: 'ਸਾਰੇ ਟੈਸਟਕੇਸ ਜਾਂਚਣ ਲਈ ਚਲਾਓ।' },
+  as: { runEvaluateAll: 'সকলো টেষ্টকেছ যাচাই কৰিবলৈ চলাওক।' },
+}
+
 for (const languageCode of Object.keys(STRINGS) as LanguageCode[]) {
   const dictionary = STRINGS[languageCode]
 
@@ -2967,4 +2982,9 @@ for (const languageCode of Object.keys(STRINGS) as LanguageCode[]) {
   dictionary['problem.chip.subquery'] = dictionary['problem.chip.subquery'] ?? labels.subqueryChip
   dictionary['problem.minuteSuffix'] = dictionary['problem.minuteSuffix'] ?? labels.minuteSuffix
   dictionary['session.sqlStarterComment'] = dictionary['session.sqlStarterComment'] ?? labels.sqlStarterComment
+
+  const sessionLabels = SESSION_HELPER_LABELS[languageCode]
+  if (sessionLabels?.runEvaluateAll) {
+    dictionary['run.evaluateAll'] = sessionLabels.runEvaluateAll
+  }
 }

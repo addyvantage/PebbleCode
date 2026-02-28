@@ -1,6 +1,7 @@
 import { toTopicId } from '../data/problemsBank'
 import type { LanguageCode } from './languages'
-import { translateProse } from './problemAutoTranslate'
+import { applyPhraseDictionary, detectLatinWords, type PhraseEntry } from './noMixText'
+import { getProblemPhraseDict } from './problemPhraseDict'
 
 type TopicLabels = {
   en: string
@@ -84,9 +85,27 @@ export function localizeTopicLabel(topicLabelOrId: string, lang: LanguageCode) {
     return translated
   }
 
-  return translateProse(english, lang)
+  const fallback = applyPhraseDictionary(english, getProblemPhraseDict(lang))
+  return detectLatinWords(fallback) ? english : fallback
 }
 
 export function localizeTopicLabels(topics: string[], lang: LanguageCode) {
   return topics.map((topic) => localizeTopicLabel(topic, lang))
+}
+
+export function getTopicPhraseEntries(lang: LanguageCode): readonly PhraseEntry[] {
+  if (lang === 'en') {
+    return []
+  }
+
+  const entries: PhraseEntry[] = []
+  for (const topic of Object.values(TOPIC_LABELS_BY_ID)) {
+    const english = topic.en
+    const localized = topic[lang]
+    if (!localized || localized === english) {
+      continue
+    }
+    entries.push([english, localized])
+  }
+  return entries.sort((a, b) => b[0].length - a[0].length)
 }

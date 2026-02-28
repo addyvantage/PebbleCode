@@ -4,7 +4,8 @@ import {
   type ProblemExample,
 } from '../data/problemsBank'
 import type { LanguageCode } from './languages'
-import { translateProse, translateStatementBlock } from './problemAutoTranslate'
+import { translateParagraph, translateSentence, translateStatementBlock } from './problemAutoTranslate'
+import { detectLatinWords } from './noMixText'
 import { localizeTopicLabels } from './topicCatalog'
 import enRaw from './problemCopy/en.json'
 import hiRaw from './problemCopy/hi.json'
@@ -66,45 +67,6 @@ const PROBLEM_COPY_BY_LANG: Record<LanguageCode, ProblemCopyDictionary> = {
   or: orCopy,
   pa: paCopy,
   as: asCopy,
-}
-
-function hasNonLatinCharacters(value: string) {
-  return /[^\u0000-\u024f]/.test(value)
-}
-
-function looksLikeIdentifierSnippet(value: string) {
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return false
-  }
-  if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(trimmed)) {
-    return true
-  }
-  if (/^[A-Za-z_][A-Za-z0-9_]*\s*\([^\)\n]*\)$/.test(trimmed)) {
-    return true
-  }
-  if (/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+$/.test(trimmed)) {
-    return true
-  }
-  return false
-}
-
-function shouldTranslateField(value: string) {
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return false
-  }
-  if (hasNonLatinCharacters(trimmed)) {
-    return false
-  }
-  if (looksLikeIdentifierSnippet(trimmed)) {
-    return false
-  }
-  if (!/\s/.test(trimmed)) {
-    return false
-  }
-  const letters = (trimmed.match(/[A-Za-z]/g) ?? []).length
-  return letters >= 4
 }
 
 function localizeStringList(
@@ -187,21 +149,59 @@ function applyAutoTranslation(problem: ProblemDefinition, lang: LanguageCode): P
   const statement = translateStatementBlock(problem.statement, lang)
   const translatedExamples = statement.examples.map((example) => ({
     ...example,
-    explanation: example.explanation && shouldTranslateField(example.explanation)
-      ? translateProse(example.explanation, lang)
-      : example.explanation,
+    explanation: example.explanation ? translateSentence(example.explanation, lang) : example.explanation,
   }))
 
-  return {
+  const localizedProblem = {
     ...problem,
-    title: shouldTranslateField(problem.title) ? translateProse(problem.title, lang) : problem.title,
+    title: translateParagraph(problem.title, lang),
     topics: localizeTopicLabels(problem.topics, lang),
-    keySkills: problem.keySkills.map((skill) => translateProse(skill, lang)),
+    keySkills: problem.keySkills.map((skill) => translateSentence(skill, lang)),
     statement: {
       ...statement,
       examples: translatedExamples,
     },
   }
+
+  if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
+    const latinLeakages: string[] = []
+    const fields: Array<[string, string | undefined]> = [
+      ['title', localizedProblem.title],
+      ['statement.summary', localizedProblem.statement.summary],
+      ['statement.description', localizedProblem.statement.description],
+      ['statement.input', localizedProblem.statement.input],
+      ['statement.output', localizedProblem.statement.output],
+      ['statement.schemaText', localizedProblem.statement.schemaText],
+    ]
+
+    for (const [field, value] of fields) {
+      if (value && detectLatinWords(value)) {
+        latinLeakages.push(field)
+      }
+    }
+
+    localizedProblem.statement.constraints.forEach((constraint, index) => {
+      if (detectLatinWords(constraint)) {
+        latinLeakages.push(`statement.constraints[${index}]`)
+      }
+    })
+
+    localizedProblem.statement.examples.forEach((example, index) => {
+      if (example.explanation && detectLatinWords(example.explanation)) {
+        latinLeakages.push(`statement.examples[${index}].explanation`)
+      }
+    })
+
+    if (latinLeakages.length > 0) {
+      console.warn('[i18n][no-mix] latin leakage detected', {
+        problemId: localizedProblem.id,
+        lang,
+        fields: latinLeakages,
+      })
+    }
+  }
+
+  return localizedProblem
 }
 
 export function getLocalizedProblem(problem: ProblemDefinition, lang: LanguageCode): ProblemDefinition {
