@@ -1,0 +1,24 @@
+{
+  "name": "pebble-infra",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AWS CDK v2 infrastructure: S3 + CloudFront hosting for Pebble frontend",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.130.0",
+    "constructs": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "aws-cdk": "^2.130.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
