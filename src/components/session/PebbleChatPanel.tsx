@@ -40,6 +40,28 @@ type PebbleChatPanelProps = {
   className?: string
 }
 
+function renderMarkdown(text: string): ReactNode {
+  // Split on **bold** and `code` tokens, preserve everything else as plain text.
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-semibold text-pebble-text-primary">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code key={i} className="rounded bg-pebble-overlay/[0.15] px-0.5 font-mono text-[0.85em]">
+          {part.slice(1, -1)}
+        </code>
+      )
+    }
+    return part
+  })
+}
+
 const TYPE_MIN = 1
 const TYPE_MAX = 3
 const TYPE_MS = 26
@@ -514,7 +536,7 @@ export function PebbleChatPanel({
                 {t('chat.usingRunOutputTag')}
               </p>
             )}
-            <p className={`whitespace-pre-wrap ${isUrdu ? 'rtlText' : ''}`}>{message.text}</p>
+            <p className={`whitespace-pre-wrap ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(message.text)}</p>
           </div>
         ))}
 
@@ -529,7 +551,7 @@ export function PebbleChatPanel({
             <p className="mb-1 inline-flex rounded-full border border-pebble-border/35 px-2 py-0.5 text-[10px] uppercase tracking-[0.04em] text-pebble-text-secondary">
               {t('chat.typing')}
             </p>
-            <p className={`whitespace-pre-wrap ${isUrdu ? 'rtlText' : ''}`}>{typedDraft}</p>
+            <p className={`whitespace-pre-wrap ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(typedDraft)}</p>
           </div>
         )}
       </div>
