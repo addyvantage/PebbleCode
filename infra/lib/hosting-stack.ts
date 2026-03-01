@@ -5,6 +5,11 @@ import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 
 export class HostingStack extends cdk.Stack {
+  // Exposed so PipelineStack can reference these resources directly
+  // (CDK handles the cross-stack CloudFormation export/import automatically).
+  public readonly siteBucket: s3.Bucket;
+  public readonly distribution: cloudfront.Distribution;
+
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -22,7 +27,7 @@ export class HostingStack extends cdk.Stack {
     // S3 Bucket — fully private, no public access, no website hosting endpoint.
     // CloudFront accesses it via Origin Access Control (OAC), not a public URL.
     // -------------------------------------------------------------------------
-    const siteBucket = new s3.Bucket(this, "SiteBucket", {
+    this.siteBucket = new s3.Bucket(this, "SiteBucket", {
       // Block every form of public access at the bucket and object levels.
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
 
@@ -82,12 +87,12 @@ export class HostingStack extends cdk.Stack {
     //   • Grants cloudfront.amazonaws.com s3:GetObject on the bucket via bucket policy
     //   • No public bucket access is required
     // -------------------------------------------------------------------------
-    const distribution = new cloudfront.Distribution(this, "Distribution", {
+    this.distribution = new cloudfront.Distribution(this, "Distribution", {
       comment: "Pebble prototype — S3+CloudFront via OAC",
 
       // The S3 origin uses OAC — the CDK L2 handles policy attachment automatically.
       defaultBehavior: {
-        origin: origins.S3BucketOrigin.withOriginAccessControl(siteBucket),
+        origin: origins.S3BucketOrigin.withOriginAccessControl(this.siteBucket),
 
         // Redirect plain HTTP to HTTPS; no HTTP-only viewers allowed.
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -107,7 +112,7 @@ export class HostingStack extends cdk.Stack {
         // Vite outputs all bundled assets under /assets/.
         // These filenames include a content hash so they're immutable — use long TTL.
         "/assets/*": {
-          origin: origins.S3BucketOrigin.withOriginAccessControl(siteBucket),
+          origin: origins.S3BucketOrigin.withOriginAccessControl(this.siteBucket),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
@@ -155,19 +160,19 @@ export class HostingStack extends cdk.Stack {
     // AWS Console under CloudFormation → PebbleHostingStack → Outputs.
     // -------------------------------------------------------------------------
     new cdk.CfnOutput(this, "CloudFrontDistributionDomainName", {
-      value: distribution.distributionDomainName,
+      value: this.distribution.distributionDomainName,
       description: "CloudFront distribution domain (use as your site URL)",
       exportName: "PebbleCloudFrontDomain",
     });
 
     new cdk.CfnOutput(this, "CloudFrontDistributionId", {
-      value: distribution.distributionId,
+      value: this.distribution.distributionId,
       description: "CloudFront distribution ID (needed for cache invalidations)",
       exportName: "PebbleCloudFrontDistributionId",
     });
 
     new cdk.CfnOutput(this, "S3BucketName", {
-      value: siteBucket.bucketName,
+      value: this.siteBucket.bucketName,
       description: "S3 bucket name (target for aws s3 sync)",
       exportName: "PebbleS3BucketName",
     });

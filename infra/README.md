@@ -148,12 +148,13 @@ No `cdk deploy` is needed unless you change infrastructure (the CDK stack itself
 ```
 infra/
 ├── bin/
-│   └── infra.ts            # CDK app entry point
+│   └── infra.ts            # CDK app entry point (HostingStack + PipelineStack)
 ├── lib/
-│   └── hosting-stack.ts    # S3 + CloudFront stack definition
+│   ├── hosting-stack.ts    # S3 + CloudFront stack
+│   └── pipeline-stack.ts   # CodePipeline CI/CD stack
 ├── scripts/
-│   └── deploy-frontend.sh  # Build → S3 sync → CloudFront invalidation
-├── cdk.json                # CDK config + feature flags
+│   └── deploy-frontend.sh  # Manual deploy fallback (build → S3 sync → invalidation)
+├── cdk.json                # CDK config + feature flags + GitHub defaults
 ├── package.json
 ├── tsconfig.json
 └── README.md               # this file
@@ -161,12 +162,108 @@ infra/
 
 ---
 
-## Estimated AWS costs (us-east-1, low traffic)
+## Auto Deploy (CI/CD)
+
+Once set up, every push to `main` automatically builds and deploys the frontend:
+
+```
+GitHub push → CodeStar Connection → CodePipeline → CodeBuild → S3 sync → CloudFront invalidation
+```
+
+### Prerequisites
+
+Everything from the manual deploy section, plus:
+- A GitHub App connection (CodeStar Connection) created in the AWS Console.
+
+### Step 1 — Create a GitHub App connection
+
+1. Open **AWS Console → Developer Tools → Connections** (in `ap-south-1`)
+   - Direct URL: `https://ap-south-1.console.aws.amazon.com/codesuite/settings/connections`
+2. Click **Create connection** → choose **GitHub**
+3. Enter a connection name (e.g. `pebble-github`)
+4. Click **Connect to GitHub** → authorize the AWS Connector GitHub App for your account/org
+5. Click **Connect** — the connection will show status **Pending**
+6. Copy the **Connection ARN** — it looks like:
+   ```
+   arn:aws:codestar-connections:ap-south-1:389593335956:connection/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+   ```
+   You will need this ARN in Step 3.
+
+> **Important:** The connection stays **Pending** until you activate it (Step 5 below). The pipeline will not run until it is **Available**.
+
+### Step 2 — Install CDK dependencies
+
+```bash
+cd infra && npm ci
+```
+
+### Step 3 — Deploy both stacks
+
+Pass the CodeStar Connection ARN via `--context`. The GitHub owner/repo/branch already default to the right values in `cdk.json`.
+
+```bash
+cd infra
+npx cdk deploy --all \
+  --context codestarConnectionArn=arn:aws:codestar-connections:ap-south-1:389593335956:connection/YOUR-UUID
+```
+
+This deploys (or updates) two CloudFormation stacks:
+- `PebbleHostingStack` — S3 + CloudFront (unchanged from before)
+- `PebblePipelineStack` — CodePipeline + CodeBuild + IAM roles
+
+Stack outputs include:
+```
+PebblePipelineStack.PipelineName       = PebbleFrontendPipeline
+PebblePipelineStack.PipelineConsoleUrl = https://ap-south-1.console.aws.amazon.com/codesuite/...
+```
+
+### Step 4 — Activate the GitHub connection
+
+After the pipeline stack deploys, the connection must be manually activated once:
+
+1. Go to **AWS Console → Developer Tools → Connections**
+2. Find your connection (status: **Pending**)
+3. Click **Update pending connection**
+4. Authorize in the GitHub OAuth popup
+5. Status changes to **Available** ✓
+
+### Step 5 — Trigger and verify
+
+Push any change to the `main` branch:
+
+```bash
+git commit --allow-empty -m "trigger pipeline"
+git push origin main
+```
+
+Then watch the pipeline:
+1. Open the `PipelineConsoleUrl` from the stack output
+2. **Source** stage turns green in ~10 seconds (GitHub checkout)
+3. **Build** stage takes ~3–4 minutes (npm ci + vite build + s3 sync + invalidation)
+4. Refresh `https://d17oosn01y6068.cloudfront.net` — changes are live
+
+### Overriding GitHub context
+
+To use a different repo or branch without editing `cdk.json`:
+
+```bash
+npx cdk deploy --all \
+  --context codestarConnectionArn=arn:aws:codestar-connections:... \
+  --context githubOwner=myorg \
+  --context githubRepo=my-fork \
+  --context githubBranch=production
+```
+
+---
+
+## Estimated AWS costs (ap-south-1, low traffic)
 
 | Service | Approx. cost |
 |---|---|
 | S3 storage (< 1 GB) | < $0.03 / month |
-| CloudFront (PriceClass 100, < 10 GB egress) | < $1 / month |
+| CloudFront (PriceClass 200, < 10 GB egress) | < $1 / month |
 | CloudFront invalidations (first 1,000 paths/month) | Free |
+| CodePipeline (1 active pipeline) | $1 / month |
+| CodeBuild (< 100 build-minutes/month) | Free tier |
 
 Costs scale with traffic. See [CloudFront pricing](https://aws.amazon.com/cloudfront/pricing/) for details.
