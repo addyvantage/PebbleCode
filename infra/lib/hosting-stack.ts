@@ -4,13 +4,24 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 
+export interface HostingStackProps extends cdk.StackProps {
+  /**
+   * Domain name of the API Gateway HTTP API (without protocol).
+   * When provided, a CloudFront behavior is added that forwards /api/* requests
+   * to this origin — bypassing the S3 bucket entirely.
+   *
+   * Example: "abc123.execute-api.ap-south-1.amazonaws.com"
+   */
+  apiOriginDomain?: string;
+}
+
 export class HostingStack extends cdk.Stack {
   // Exposed so PipelineStack can reference these resources directly
   // (CDK handles the cross-stack CloudFormation export/import automatically).
   public readonly siteBucket: s3.Bucket;
   public readonly distribution: cloudfront.Distribution;
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props?: HostingStackProps) {
     super(scope, id, props);
 
     // -------------------------------------------------------------------------
@@ -119,6 +130,33 @@ export class HostingStack extends cdk.Stack {
           cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
           cachePolicy: assetsCachePolicy,
         },
+
+        // API Gateway backend — only wired when apiOriginDomain is provided.
+        //
+        // Key properties:
+        //   • ALLOW_ALL: forwards POST + OPTIONS (preflight) from the browser
+        //   • CACHING_DISABLED: API responses must never be cached at the edge
+        //   • ALL_VIEWER_EXCEPT_HOST_HEADER: forwards Content-Type and other
+        //     viewer headers to the origin (Host header is replaced with the
+        //     API Gateway domain to avoid SNI mismatch)
+        //
+        // IMPORTANT: The global 403/404 → index.html error responses do NOT
+        // apply to requests that hit API Gateway successfully (API GW returns
+        // 200/400/500). Lambda handlers must never return 403 or 404.
+        ...(props?.apiOriginDomain
+          ? {
+              "/api/*": {
+                origin: new origins.HttpOrigin(props.apiOriginDomain),
+                allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+                viewerProtocolPolicy:
+                  cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                compress: false,
+                cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+                originRequestPolicy:
+                  cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+              },
+            }
+          : {}),
       },
 
       // Serve index.html when the viewer requests the root path.

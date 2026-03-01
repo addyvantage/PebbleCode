@@ -269,9 +269,9 @@ export async function askPebble(input: AskPebbleInput): Promise<string> {
       console.error('[pebble-llm]', error.name, error.message)
       const status = getStatusFromMessage(error.message)
       if (status) {
-        return `Pebble request failed (status ${status}). Open console / Vercel logs.`
+        return `Pebble request failed (status ${status}). Check browser console for details.`
       }
-      return `Pebble request failed. Open console / Vercel logs. (${error.name})`
+      return `Pebble request failed. Check browser console for details. (${error.name})`
     }
     return 'Pebble hit a temporary issue. Try again.'
   }

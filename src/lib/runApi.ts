@@ -176,7 +176,7 @@ export async function requestRunApi(
       status: 'internal_error',
       exitCode: null,
       stdout: '',
-      stderr: 'Failed to reach /api/run. Check network or Vercel function logs.',
+      stderr: 'Failed to reach /api/run. Check browser console or CloudWatch for details.',
       timedOut: false,
       durationMs: 0,
     }
