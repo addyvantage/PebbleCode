@@ -329,15 +329,21 @@ html {
   }
 }
 
-/* PatternText: pure CSS so Tailwind can't strip pseudo-elements */
+/* PatternText: brand-locked blue shimmer effect */
 .pebble-pattern-text {
   position: relative;
   display: inline-block;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.02em;
-  color: rgb(var(--pebble-text-primary));
-  text-shadow: 0.02em 0.02em 0 rgb(var(--pebble-canvas));
+  /* Brand lock: Navy Blue */
+  color: #0f2952;
+}
+
+/* Specific override for dark mode to keep it readable but still brand-blue */
+.theme-dark .pebble-pattern-text {
+  color: #60a5fa;
+  /* A slightly more vibrant blue for dark mode readability while staying brand-consistent */
 }
 
 .pebble-pattern-text::after {
@@ -353,15 +359,34 @@ html {
   -webkit-background-clip: text;
   color: transparent;
 
-  /* diagonal pattern uses currentColor so theme just works */
+  /* light blue shimmer */
   background-image: linear-gradient(45deg,
       transparent 45%,
-      currentColor 45%,
-      currentColor 55%,
+      #3b82f6 45%,
+      #3b82f6 55%,
       transparent 55%);
 
   animation: shadanim 14s linear infinite;
-  opacity: 0.9;
+  opacity: 0.8;
+}
+
+.theme-dark .pebble-pattern-text::after {
+  background-image: linear-gradient(45deg,
+      transparent 45%,
+      #93c5fd 45%,
+      #93c5fd 55%,
+      transparent 55%);
+}
+
+
+.headline-shimmer {
+  --base-color: #1d4ed8;          /* deep blue (blue-700) text fill */
+  --base-gradient-color: #1e3a8a; /* darker navy (blue-900) shimmer wave */
+}
+
+.theme-dark .headline-shimmer {
+  --base-color: #60a5fa;          /* bright blue (blue-400) — readable on dark bg */
+  --base-gradient-color: #ffffff; /* white shimmer wave — metallic highlight in dark mode */
 }
 
 /* ensure full animation path exists */

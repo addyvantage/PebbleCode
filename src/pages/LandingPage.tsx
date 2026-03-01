@@ -62,13 +62,7 @@ export function LandingPage() {
             <div className="flex min-h-0 flex-col justify-center gap-2 xl:gap-2.5">
               <Badge className="w-fit">{t('landing.badge')}</Badge>
 
-              <div
-                style={{
-                  '--base-color': '#0c1b4d',
-                  '--base-gradient-color': '#1338be',
-                } as React.CSSProperties}
-                className="dark:[--base-color:#bfdbfe] dark:[--base-gradient-color:#f0f9ff]"
-              >
+              <div className="headline-shimmer">
                 <h1
                   className={`max-w-[32ch] text-balance text-3xl font-semibold tracking-tight leading-[1.15] md:text-4xl xl:text-[2.8rem] ${isUrdu ? 'rtlText' : ''}`}
                 >
@@ -148,9 +142,9 @@ export function LandingPage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1.12fr_0.88fr] lg:gap-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.12fr_0.88fr] lg:gap-4">
           <TodayPlanCard />
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-4">
             <Card className="relative overflow-hidden p-3 flex flex-col justify-center bg-pebble-overlay/[0.05]" interactive>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -195,11 +189,11 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {bentoCards.map((card) => {
             const Icon = card.icon
             return (
-              <Card key={card.title} padding="sm" className={`h-full p-5 lg:p-6 ${bentoCardClass}`} interactive>
+              <Card key={card.title} padding="sm" className={`h-full p-8 lg:p-10 ${bentoCardClass} min-h-[200px] flex items-center`} interactive>
                 {/* Premium floating glass interior elements */}
                 <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-500 opacity-0 group-hover:opacity-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1px_1px_rgba(0,0,0,0.05)] [background-image:linear-gradient(135deg,rgba(255,255,255,0.08)_0%,transparent_40%,transparent_70%,rgba(0,0,0,0.04)_100%)]">
                   {/* Subtle corner glow */}
@@ -210,20 +204,20 @@ export function LandingPage() {
                 <span aria-hidden="true" className="pointer-events-none absolute inset-0 transition-transform duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] translate-x-[-150%] opacity-0 group-hover:opacity-100 group-hover:translate-x-[150%] bg-gradient-to-tr from-transparent via-white/[0.06] to-transparent" />
 
                 <div className="relative z-10 flex items-center gap-5">
-                  <span className="shrink-0 flex h-12 w-12 relative items-center justify-center rounded-[12px] border border-pebble-border/20 bg-pebble-overlay/[0.04] text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-500 group-hover:bg-pebble-overlay/[0.08] group-hover:border-pebble-border/40 group-hover:text-pebble-accent group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_20px_rgba(0,0,0,0.12)]">
-                    <span className="absolute inset-0 rounded-[12px] bg-pebble-accent/20 blur-[8px] transition-opacity duration-500 opacity-0 group-hover:opacity-100" />
-                    <Icon className="relative z-10 h-6 w-6 transition-transform duration-500 group-hover:scale-[1.15]" aria-hidden="true" />
+                  <span className="shrink-0 flex h-16 w-16 relative items-center justify-center rounded-[14px] border border-pebble-border/20 bg-pebble-overlay/[0.04] text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-500 group-hover:bg-pebble-overlay/[0.08] group-hover:border-pebble-border/40 group-hover:text-pebble-accent group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_20px_rgba(0,0,0,0.12)]">
+                    <span className="absolute inset-0 rounded-[14px] bg-pebble-accent/20 blur-[10px] transition-opacity duration-500 opacity-0 group-hover:opacity-100" />
+                    <Icon className="relative z-10 h-8 w-8 transition-transform duration-500 group-hover:scale-[1.15]" aria-hidden="true" />
                   </span>
-                  <div className="space-y-1.5 min-w-0">
-                    <h3 className={`text-[17px] font-semibold tracking-tight truncate text-pebble-text-primary transition-colors duration-500 group-hover:text-pebble-accent ${isUrdu ? 'rtlText' : ''}`}>{card.title}</h3>
-                    <p className={`text-[14px] leading-[1.5] text-pebble-text-secondary line-clamp-2 transition-colors duration-500 group-hover:text-pebble-text-primary/95 ${isUrdu ? 'rtlText' : ''}`}>{card.detail}</p>
+                  <div className="space-y-2.5 min-w-0">
+                    <h3 className={`text-[19px] font-semibold tracking-tight text-pebble-text-primary transition-colors duration-500 group-hover:text-pebble-accent ${isUrdu ? 'rtlText' : ''}`}>{card.title}</h3>
+                    <p className={`text-[15px] leading-relaxed text-pebble-text-secondary transition-colors duration-500 group-hover:text-pebble-text-primary/95 ${isUrdu ? 'rtlText' : ''}`}>{card.detail}</p>
                   </div>
                 </div>
               </Card>
             )
           })}
         </div>
-      </div >
-    </section >
+      </div>
+    </section>
   )
 }

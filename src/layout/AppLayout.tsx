@@ -178,10 +178,9 @@ export function AppLayout() {
                     />
                     <div className="min-w-0 translate-y-0.5 sm:translate-y-1">
                       <div className="relative">
-                        <div className="pointer-events-none absolute -inset-3 rounded-full bg-pebble-accent/10 blur-xl" />
                         <PatternText
                           text="Pebble"
-                          className="relative select-none text-2xl font-bold sm:text-3xl"
+                          className="relative select-none text-2xl font-black sm:text-4xl tracking-tighter"
                         />
                       </div>
                       <p className="mt-0.5 text-xs text-pebble-text-secondary sm:text-[13px]">
