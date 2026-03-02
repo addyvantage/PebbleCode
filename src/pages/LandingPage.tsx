@@ -193,7 +193,7 @@ export function LandingPage() {
           {bentoCards.map((card) => {
             const Icon = card.icon
             return (
-              <Card key={card.title} padding="sm" className={`h-full p-8 lg:p-10 ${bentoCardClass} min-h-[200px] flex items-center`} interactive>
+              <Card key={card.title} padding="sm" className={`h-full p-8 lg:p-10 ${bentoCardClass} min-h-[160px] flex items-center`} interactive>
                 {/* Premium floating glass interior elements */}
                 <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-500 opacity-0 group-hover:opacity-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1px_1px_rgba(0,0,0,0.05)] [background-image:linear-gradient(135deg,rgba(255,255,255,0.08)_0%,transparent_40%,transparent_70%,rgba(0,0,0,0.04)_100%)]">
                   {/* Subtle corner glow */}
