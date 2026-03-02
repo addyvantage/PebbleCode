@@ -6,6 +6,7 @@ import { askPebble } from '../../utils/pebbleLLM'
 import { ArrowUp, Check, Globe, Settings2 } from 'lucide-react'
 import { LANGUAGES, type LanguageCode } from '../../i18n/languages'
 import { useI18n } from '../../i18n/useI18n'
+import { useTheme } from '../../hooks/useTheme'
 import { StruggleNudgeBar, type StruggleNudgeAction } from './StruggleNudgeBar'
 import type { StruggleContextSummary, StruggleLevel } from '../../lib/struggleEngine'
 
@@ -141,6 +142,9 @@ export function PebbleChatPanel({
 }: PebbleChatPanelProps) {
   const { lang, setLang, t, isRTL } = useI18n()
   const isUrdu = isRTL
+  const { theme } = useTheme()
+  const dark = theme === 'dark'
+  const [avatarHovered, setAvatarHovered] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -419,15 +423,23 @@ export function PebbleChatPanel({
     <CardLayout className={className} dir="ltr">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <div className="relative inline-flex h-20 w-20 shrink-0 items-center justify-center">
-            {/* Circular neon blue glow */}
-            <span
-              className="absolute inset-[20%] rounded-full blur-md"
-              style={{ background: 'rgba(56,189,248,0.85)' }}
-              aria-hidden="true"
-            />
-            <BrandLogo className="relative h-16 w-16 select-none object-contain pointer-events-none"
-            />
+          <div
+            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-[box-shadow,transform] duration-300 motion-reduce:transition-none"
+            style={{
+              background: dark ? '#1D2235' : '#E8EEFA',
+              boxShadow: avatarHovered
+                ? dark
+                  ? '0 0 0 1px rgba(180,195,230,0.12), 0 0 14px 6px rgba(96,165,250,0.40), 0 0 28px 12px rgba(59,130,246,0.24), 0 0 44px 20px rgba(79,107,196,0.14)'
+                  : '0 0 0 1px rgba(55,72,110,0.16), 0 0 14px 6px rgba(29,78,216,0.22), 0 0 28px 12px rgba(15,34,90,0.12), 0 0 44px 20px rgba(29,78,216,0.07)'
+                : dark
+                  ? '0 0 0 1px rgba(180,195,230,0.12), 0 0 10px 4px rgba(96,165,250,0.30), 0 0 22px 9px rgba(59,130,246,0.18), 0 0 34px 16px rgba(79,107,196,0.10)'
+                  : '0 0 0 1px rgba(55,72,110,0.16), 0 0 10px 4px rgba(29,78,216,0.17), 0 0 22px 9px rgba(15,34,90,0.09), 0 0 34px 16px rgba(29,78,216,0.05)',
+              transform: avatarHovered ? 'scale(1.02)' : 'scale(1)',
+            }}
+            onMouseEnter={() => setAvatarHovered(true)}
+            onMouseLeave={() => setAvatarHovered(false)}
+          >
+            <BrandLogo className="h-9 w-9 select-none object-contain pointer-events-none" />
           </div>
           <div>
             <p className={`text-base font-semibold text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>{t('chat.title')}</p>
