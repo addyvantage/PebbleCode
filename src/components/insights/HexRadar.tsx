@@ -17,6 +17,12 @@ const RINGS = 5
 const LABEL_OFFSET = 32
 const LABEL_EDGE_PADDING = 12
 
+// Pill label constants
+const LABEL_FONT_SIZE = 14       // up from 13px
+const LABEL_CHAR_WIDTH = 8.0     // avg char width at 14px semi-bold
+const PILL_PAD_X = 10            // horizontal inner padding
+const PILL_PAD_Y = 5             // vertical inner padding
+
 function toPoint(index: number, total: number, score01: number) {
   const angle = (-Math.PI / 2) + (index / total) * Math.PI * 2
   const radius = OUTER_RADIUS * score01
@@ -85,8 +91,9 @@ export function HexRadar({
       currentFill: dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.18)',
       currentStroke: dark ? 'rgba(255, 255, 255, 0.74)' : 'rgba(15, 23, 42, 0.66)',
       previousStroke: dark ? 'rgb(var(--pebble-accent) / 0.58)' : 'rgb(var(--pebble-accent) / 0.52)',
-      labelFill: dark ? 'rgb(var(--pebble-text-primary) / 0.97)' : 'rgb(var(--pebble-text-primary) / 0.9)',
-      labelStroke: dark ? 'rgb(var(--pebble-canvas) / 0.78)' : 'rgba(255, 255, 255, 0.7)',
+      labelFill: dark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 25, 55, 0.88)',
+      pillBg: dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(20, 30, 60, 0.07)',
+      pillBorder: dark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(20, 30, 60, 0.15)',
       currentDotFill: dark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.9)',
       currentDotStroke: dark ? 'rgb(var(--pebble-canvas) / 0.9)' : 'rgb(var(--pebble-canvas) / 0.85)',
       centerDot: dark ? 'rgb(var(--pebble-border) / 0.8)' : 'rgb(var(--pebble-border) / 0.85)',
@@ -179,22 +186,52 @@ export function HexRadar({
           const rawY = point.y + (dy / vectorLength) * LABEL_OFFSET
           const labelX = Math.min(SIZE - LABEL_EDGE_PADDING, Math.max(LABEL_EDGE_PADDING, rawX))
           const labelY = Math.min(SIZE - LABEL_EDGE_PADDING, Math.max(LABEL_EDGE_PADDING, rawY))
+
+          const anchor = Math.abs(dx) < 20 ? 'middle' : dx > 0 ? 'start' : 'end'
+          const domBaseline = Math.abs(dy) < 16 ? 'middle' : dy > 0 ? 'hanging' : 'auto'
+
+          const pillW = label.length * LABEL_CHAR_WIDTH + PILL_PAD_X * 2
+          const pillH = LABEL_FONT_SIZE + PILL_PAD_Y * 2
+
+          // Align pill rect x with text anchor
+          const rectX = anchor === 'middle'
+            ? labelX - pillW / 2
+            : anchor === 'start'
+              ? labelX - PILL_PAD_X
+              : labelX - pillW + PILL_PAD_X
+
+          // Align pill rect y with dominantBaseline
+          const rectY = domBaseline === 'middle'
+            ? labelY - pillH / 2
+            : domBaseline === 'hanging'
+              ? labelY - PILL_PAD_Y
+              : labelY - LABEL_FONT_SIZE * 0.85 - PILL_PAD_Y
+
           return (
-            <text
-              key={`label-${axisOrder[index]}`}
-              x={labelX}
-              y={labelY}
-              textAnchor={Math.abs(dx) < 20 ? 'middle' : dx > 0 ? 'start' : 'end'}
-              dominantBaseline={Math.abs(dy) < 16 ? 'middle' : dy > 0 ? 'hanging' : 'auto'}
-              fill={chartStyle.labelFill}
-              fontSize="13"
-              fontWeight="650"
-              stroke={chartStyle.labelStroke}
-              strokeWidth="0.8"
-              paintOrder="stroke"
-            >
-              {label}
-            </text>
+            <g key={`label-${axisOrder[index]}`}>
+              <rect
+                x={rectX}
+                y={rectY}
+                width={pillW}
+                height={pillH}
+                rx={999}
+                ry={999}
+                fill={chartStyle.pillBg}
+                stroke={chartStyle.pillBorder}
+                strokeWidth={1}
+              />
+              <text
+                x={labelX}
+                y={labelY}
+                textAnchor={anchor}
+                dominantBaseline={domBaseline}
+                fill={chartStyle.labelFill}
+                fontSize={LABEL_FONT_SIZE}
+                fontWeight="650"
+              >
+                {label}
+              </text>
+            </g>
           )
         })}
       </svg>
