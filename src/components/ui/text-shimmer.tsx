@@ -30,12 +30,9 @@ export function TextShimmer({
         <Component
             className={cn(
                 "relative inline-block bg-[length:250%_100%,auto] bg-clip-text text-transparent",
-                "[background-image:linear-gradient(110deg,transparent_35%,var(--base-gradient-color,#1d4ed8)_50%,transparent_65%),linear-gradient(var(--base-color,#0f2952),var(--base-color,#0f2952))]",
+                "[background-image:linear-gradient(110deg,transparent_28%,var(--base-gradient-color,#e2eaff)_50%,transparent_72%),linear-gradient(var(--base-color,#a8bef5),var(--base-color,#a8bef5))]",
                 "[background-repeat:no-repeat,no-repeat]",
                 'motion-safe:[animation:shimmer_var(--shimmer-duration,2.6s)_linear_infinite]',
-                // brand locked colors: navy base, vibrant blue shimmer
-                '[--base-color:#0c1b4d]',
-                '[--base-gradient-color:#2563eb]',
                 className
             )}
             style={

@@ -379,14 +379,33 @@ html {
 }
 
 
+/* ── Hero headline shimmer ──────────────────────────────────────────────────
+ * HOW TO TUNE:
+ *   Speed:     `duration` prop on <TextShimmer> in LandingPage.tsx (seconds)
+ *   Intensity: rgba alpha on --base-gradient-color (0 = invisible, 1 = solid)
+ *   Colors:    --base-color (text fill), --base-gradient-color (sweep peak)
+ * ─────────────────────────────────────────────────────────────────────────── */
 .headline-shimmer {
-  --base-color: #1d4ed8;          /* deep blue (blue-700) text fill */
-  --base-gradient-color: #1e3a8a; /* darker navy (blue-900) shimmer wave */
+  /* PRESET: Satin Blue — light mode */
+  --base-color: #1e3a8a;                       /* deep navy fill */
+  --base-gradient-color: rgba(37, 99, 235, 0.65); /* bright blue sweep */
 }
 
 .theme-dark .headline-shimmer {
-  --base-color: #60a5fa;          /* bright blue (blue-400) — readable on dark bg */
-  --base-gradient-color: #ffffff; /* white shimmer wave — metallic highlight in dark mode */
+  /* PRESET: Satin Blue — dark mode on #3a3f54 (contrast ≥ 7:1, WCAG AAA) */
+  --base-color: #c9d8f8;                            /* soft silver-blue fill */
+  --base-gradient-color: rgba(255, 255, 255, 0.72); /* soft white satin sweep */
+
+  /* ── Preset options (uncomment to switch) ──────────────────────────────
+   *
+   * PEARL ICE — near-white base, higher contrast, more ethereal
+   * --base-color: #e0eaff;
+   * --base-gradient-color: rgba(255, 255, 255, 0.88);
+   *
+   * OBSIDIAN STEEL — desaturated grey, editorial/minimal look
+   * --base-color: #a8b4cc;
+   * --base-gradient-color: rgba(220, 225, 240, 0.60);
+   * ─────────────────────────────────────────────────────────────────────── */
 }
 
 /* ensure full animation path exists */
