@@ -392,20 +392,30 @@ html {
 }
 
 .theme-dark .headline-shimmer {
-  /* PRESET: Satin Blue — dark mode on #3a3f54 (contrast ≥ 7:1, WCAG AAA) */
-  --base-color: #c9d8f8;                            /* soft silver-blue fill */
-  --base-gradient-color: rgba(255, 255, 255, 0.72); /* soft white satin sweep */
+  /* Text fill: soft silver-blue — 7:1 contrast on #3a3f54 (WCAG AAA) */
+  --base-color: #c9d8f8;
+}
 
-  /* ── Preset options (uncomment to switch) ──────────────────────────────
-   *
-   * PEARL ICE — near-white base, higher contrast, more ethereal
-   * --base-color: #e0eaff;
-   * --base-gradient-color: rgba(255, 255, 255, 0.88);
-   *
-   * OBSIDIAN STEEL — desaturated grey, editorial/minimal look
-   * --base-color: #a8b4cc;
-   * --base-gradient-color: rgba(220, 225, 240, 0.60);
-   * ─────────────────────────────────────────────────────────────────────── */
+/* Dark-mode shimmer band: deep-blue 5-stop gradient on #3a3f54
+ * Core: #3D7BFF — saturated royal blue, visible without neon/glow
+ * Edge: rgba(31,79,214,0.52) — softer #1F4FD6 falloff for smooth taper
+ *
+ * HOW TO TUNE:
+ *   Core color:  #2F6BFF (deeper) · #3D7BFF (current) · #5B8FFF (softer)
+ *   Edge alpha:  0.3–0.6 (lower = more gradual falloff)
+ *   Band width:  move 38%/62% stops (closer = narrower, further = wider)
+ *   Speed:       `duration` prop on <TextShimmer> in LandingPage.tsx      */
+.theme-dark .headline-shimmer span {
+  background-image:
+    linear-gradient(
+      110deg,
+      transparent 30%,
+      rgba(31, 79, 214, 0.52) 38%,
+      #3D7BFF 50%,
+      rgba(31, 79, 214, 0.52) 62%,
+      transparent 70%
+    ),
+    linear-gradient(var(--base-color, #a8bef5), var(--base-color, #a8bef5));
 }
 
 /* ensure full animation path exists */
@@ -442,6 +452,12 @@ html {
   .coachmark-arrow,
   .coachmark-tip {
     animation: none;
+  }
+
+  /* Freeze dark-mode headline shimmer to solid base fill — no moving band */
+  .theme-dark .headline-shimmer span {
+    background-image: linear-gradient(var(--base-color, #a8bef5), var(--base-color, #a8bef5));
+    background-size: auto;
   }
 }
 
