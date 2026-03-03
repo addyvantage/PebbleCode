@@ -226,7 +226,7 @@ export class BackendStack extends cdk.Stack {
       cors: [
         {
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.HEAD],
-          allowedOrigins: ['*'],
+          allowedOrigins: ['http://localhost:5173', 'https://*.cloudfront.net'],
           allowedHeaders: ['*'],
           exposedHeaders: ['ETag'],
           maxAge: 3000,
@@ -259,6 +259,11 @@ export class BackendStack extends cdk.Stack {
     api.addRoutes({
       path: '/api/avatar/presign',
       methods: [apigwv2.HttpMethod.POST, apigwv2.HttpMethod.OPTIONS],
+      integration: profileIntegration,
+    })
+    api.addRoutes({
+      path: '/api/avatar/url',
+      methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.OPTIONS],
       integration: profileIntegration,
     })
 

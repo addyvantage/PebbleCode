@@ -209,6 +209,28 @@ async function handleAvatarPresign(
   return respond(200, { uploadUrl, key })
 }
 
+async function handleAvatarUrl(
+  identity: Identity,
+  key: string | undefined,
+): Promise<APIGatewayProxyResultV2> {
+  if (!AVATARS_BUCKET) {
+    return respond(500, { error: 'Avatar storage not configured (AVATARS_BUCKET_NAME missing)' })
+  }
+  if (!key) {
+    return respond(400, { error: 'Missing avatar key' })
+  }
+  if (!key.startsWith(`avatars/${identity.userId}/`)) {
+    return respond(401, { error: 'Unauthorized avatar key' })
+  }
+
+  const url = await getSignedUrl(
+    s3,
+    new GetObjectCommand({ Bucket: AVATARS_BUCKET, Key: key }),
+    { expiresIn: 3600 },
+  )
+  return respond(200, { url })
+}
+
 // ── Main handler ─────────────────────────────────────────────────────────────
 
 export const handler = async (
@@ -234,6 +256,10 @@ export const handler = async (
     }
     if (method === 'POST' && path === '/api/avatar/presign') {
       return await handleAvatarPresign(identity, event.body ?? null)
+    }
+    if (method === 'GET' && path === '/api/avatar/url') {
+      const key = event.queryStringParameters?.['key']
+      return await handleAvatarUrl(identity, key)
     }
     // No matching route — return 200 with error (NOT 404, see note above)
     return respond(200, { error: `No handler for ${method} ${path}` })

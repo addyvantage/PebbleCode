@@ -13,18 +13,35 @@ export function ProfilePage() {
     const [username, setUsername] = useState('')
     const [bio, setBio] = useState('')
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+    const [avatarVersion, setAvatarVersion] = useState<number | null>(null)
     const [saving, setSaving] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
+    const fetchAvatarUrl = useCallback(async (key: string) => {
+        if (!idToken) return null
+        const res = await fetch(`/api/avatar/url?key=${encodeURIComponent(key)}`, {
+            headers: { Authorization: `Bearer ${idToken}` },
+        })
+        if (!res.ok) return null
+        const data = await res.json() as { url?: string }
+        return typeof data.url === 'string' && data.url ? data.url : null
+    }, [idToken])
+
     useEffect(() => {
         if (profile) {
             setUsername(profile.username ?? '')
             setBio(profile.bio ?? '')
-            setAvatarPreview(profile.avatarUrl ?? null)
+            const baseUrl = profile.avatarUrl ?? null
+            if (!baseUrl) {
+                setAvatarPreview(null)
+                return
+            }
+            const version = avatarVersion ?? Date.now()
+            setAvatarPreview(`${baseUrl}${baseUrl.includes('?') ? '&' : '?'}v=${version}`)
         }
-    }, [profile])
+    }, [profile, avatarVersion])
 
     const handleAvatarUpload = useCallback(async (file: File) => {
         if (!idToken) return
@@ -66,7 +83,7 @@ export function ProfilePage() {
             if (!uploadRes.ok) throw new Error(`S3 upload failed (HTTP ${uploadRes.status})`)
 
             // 3. Update profile with new avatar key
-            await fetch('/api/profile', {
+            const profileRes = await fetch('/api/profile', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -74,9 +91,16 @@ export function ProfilePage() {
                 },
                 body: JSON.stringify({ username, bio, avatarKey: key }),
             })
+            if (!profileRes.ok) throw new Error(`Failed to save avatar key (HTTP ${profileRes.status})`)
 
             // 4. Instant preview
-            setAvatarPreview(URL.createObjectURL(file))
+            const resolvedUrl = await fetchAvatarUrl(key)
+            const version = Date.now()
+            const cacheBustedUrl = resolvedUrl
+                ? `${resolvedUrl}${resolvedUrl.includes('?') ? '&' : '?'}v=${version}`
+                : URL.createObjectURL(file)
+            setAvatarVersion(version)
+            setAvatarPreview(cacheBustedUrl)
             await refreshProfile()
             setMessage({ type: 'success', text: 'Avatar updated!' })
         } catch (err: any) {
@@ -86,7 +110,7 @@ export function ProfilePage() {
         } finally {
             setUploading(false)
         }
-    }, [idToken, username, bio, refreshProfile])
+    }, [idToken, username, bio, fetchAvatarUrl, refreshProfile])
 
     async function handleSave() {
         if (!idToken) return

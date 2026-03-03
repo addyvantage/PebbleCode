@@ -15,7 +15,9 @@ export type UserProfile = {
     username: string
     email: string
     bio: string
+    avatarKey?: string | null
     avatarUrl: string | null
+    updatedAt?: string
     role: 'user' | 'admin'
 }
 
@@ -55,19 +57,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true)
     const configured = isCognitoConfigured()
 
+    const fetchAvatarUrl = useCallback(async (token: string, key: string) => {
+        const res = await fetch(`/api/avatar/url?key=${encodeURIComponent(key)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return null
+        const data = await res.json() as { url?: string }
+        return typeof data.url === 'string' ? data.url : null
+    }, [])
+
     const fetchProfile = useCallback(async (token: string) => {
         try {
             const res = await fetch('/api/profile', {
                 headers: { Authorization: `Bearer ${token}` },
             })
             if (res.ok) {
-                const data = await res.json()
-                setProfile(data as UserProfile)
+                const data = await res.json() as UserProfile
+                let avatarUrl: string | null = data.avatarUrl ?? null
+                if (data.avatarKey) {
+                    avatarUrl = await fetchAvatarUrl(token, data.avatarKey)
+                }
+                setProfile({ ...data, avatarUrl })
             }
         } catch {
             // Profile fetch failed — user is authed but profile not yet created
         }
-    }, [])
+    }, [fetchAvatarUrl])
 
     const refreshProfile = useCallback(async () => {
         if (idToken) await fetchProfile(idToken)

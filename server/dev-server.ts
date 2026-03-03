@@ -645,6 +645,45 @@ app.post('/api/avatar/presign', async (req: Request, res: Response) => {
   }
 })
 
+app.get('/api/avatar/url', async (req: Request, res: Response) => {
+  const identity = extractUserId(req)
+  if (!identity) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+
+  const key = String(req.query.key ?? '')
+  if (!key) {
+    res.status(400).json({ error: 'Missing avatar key' })
+    return
+  }
+  if (!key.startsWith(`avatars/${identity.userId}/`)) {
+    res.status(401).json({ error: 'Unauthorized avatar key' })
+    return
+  }
+
+  const awsRegion = process.env.AWS_REGION
+  if (!awsRegion || !AVATARS_BUCKET) {
+    res.status(500).json({ error: 'Avatar storage not configured for signed GET URLs' })
+    return
+  }
+
+  try {
+    const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3')
+    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
+    const s3 = new S3Client({ region: awsRegion })
+    const url = await getSignedUrl(
+      s3,
+      new GetObjectCommand({ Bucket: AVATARS_BUCKET, Key: key }),
+      { expiresIn: 3600 },
+    )
+    res.status(200).json({ url })
+  } catch (err) {
+    console.error('[dev-api] Failed to generate avatar GET URL:', err)
+    res.status(500).json({ error: 'Failed to generate avatar URL' })
+  }
+})
+
 // ── Dev avatar upload stub (offline / no-S3 mode) ────────────────────────────
 // Accepts the PUT that ProfilePage sends after receiving the fake presigned URL.
 // Must be under /api/ so the Vite proxy forwards it — an absolute localhost:3001
