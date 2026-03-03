@@ -101,6 +101,28 @@ export class BackendStack extends cdk.Stack {
       },
     })
 
+    // ── Profile Lambda (TypeScript / Node 20) ─────────────────────────────────
+    //
+    // Handles GET /api/profile, PUT /api/profile, POST /api/avatar/presign.
+    // Registering these routes in API Gateway is essential: without them, API GW
+    // returns 404 → CloudFront remaps 404 → 200 + index.html, so the client gets
+    // HTML instead of JSON ("Unexpected token '<'...").
+    //
+    // IMPORTANT: The Lambda itself never returns HTTP 403 or 404 for the same
+    // reason (see respond() helper in the Lambda source).
+    const profileFn = new NodejsFunction(this, 'PebbleProfileFunction', {
+      functionName: 'PebbleProfileFunction',
+      description: 'Pebble profile — GET/PUT profile, POST avatar presign',
+      entry: path.join(__dirname, '../lambda/profile/index.ts'),
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_20_X,
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      bundling: {
+        externalModules: ['@aws-sdk/*'],
+      },
+    })
+
     // ── HTTP API (API Gateway v2) ──────────────────────────────────────────────
     //
     // Routes are exposed at the $default stage (no stage prefix in the URL).
@@ -138,6 +160,11 @@ export class BackendStack extends cdk.Stack {
       methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.HEAD],
       integration: new HttpLambdaIntegration('HealthIntegration', healthFn),
     })
+
+    // Profile + avatar presign routes — wired after profilesTable and avatarsBucket
+    // are declared below so we can use their .grantReadWriteData() / .grantReadWrite()
+    // methods. We declare the routes here to keep API Gateway setup together, and
+    // apply grants after the resource declarations.
 
     // Export the bare domain (no protocol, no trailing slash) for use as a
     // CloudFront HttpOrigin. API Gateway $default stage has no path prefix.
@@ -207,6 +234,32 @@ export class BackendStack extends cdk.Stack {
       ],
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+    })
+
+    // ── Profile Lambda: API Gateway routes + IAM grants ───────────────────────
+
+    // Environment variables the Lambda needs at runtime
+    profileFn.addEnvironment('PROFILES_TABLE_NAME', profilesTable.tableName)
+    profileFn.addEnvironment('AVATARS_BUCKET_NAME', avatarsBucket.bucketName)
+    if (process.env.ADMIN_EMAILS) {
+      profileFn.addEnvironment('ADMIN_EMAILS', process.env.ADMIN_EMAILS)
+    }
+
+    // Least-privilege grants
+    profilesTable.grantReadWriteData(profileFn)
+    avatarsBucket.grantReadWrite(profileFn)
+
+    // Register routes with API Gateway
+    const profileIntegration = new HttpLambdaIntegration('ProfileIntegration', profileFn)
+    api.addRoutes({
+      path: '/api/profile',
+      methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.PUT, apigwv2.HttpMethod.OPTIONS],
+      integration: profileIntegration,
+    })
+    api.addRoutes({
+      path: '/api/avatar/presign',
+      methods: [apigwv2.HttpMethod.POST, apigwv2.HttpMethod.OPTIONS],
+      integration: profileIntegration,
     })
 
     // ── Outputs ───────────────────────────────────────────────────────────────
