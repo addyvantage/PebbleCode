@@ -50,7 +50,7 @@ interface NoiseConfig {
   scale: number
 }
 
-interface EtherealShadowProps {
+export interface EtherealShadowProps {
   sizing?: 'fill' | 'stretch'
   color?: string
   animation?: AnimationConfig

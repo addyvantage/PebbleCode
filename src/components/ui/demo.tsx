@@ -1,4 +1,4 @@
-import { EtherealShadow } from '@/components/ui/EtherealShadow'
+import { EtherealShadow } from './EtherealShadow'
 
 const DemoOne = () => {
   return (
