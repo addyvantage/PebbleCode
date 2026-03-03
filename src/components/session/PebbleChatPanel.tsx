@@ -3,18 +3,21 @@ import { Badge } from '../ui/Badge'
 import { BrandLogo } from '../ui/BrandLogo'
 import { Button } from '../ui/Button'
 import { askPebble } from '../../utils/pebbleLLM'
-import { ArrowUp, Check, Globe, Settings2 } from 'lucide-react'
+import { askPebbleAgent, type AgentResponse, type HelpTier } from '../../utils/pebbleAgentClient'
+import { ArrowUp, Check, Globe, Lightbulb, Search, Settings2, Wrench } from 'lucide-react'
 import { LANGUAGES, type LanguageCode } from '../../i18n/languages'
 import { useI18n } from '../../i18n/useI18n'
 import { useTheme } from '../../hooks/useTheme'
 import { StruggleNudgeBar, type StruggleNudgeAction } from './StruggleNudgeBar'
 import type { StruggleContextSummary, StruggleLevel } from '../../lib/struggleEngine'
+import { telemetry } from '../../lib/telemetry'
 
 type ChatMessage = {
   id: string
   role: 'user' | 'assistant'
   text: string
   usedRunOutput?: boolean
+  agentResponse?: AgentResponse
 }
 
 type PebbleChatPanelProps = {
@@ -62,6 +65,82 @@ function renderMarkdown(text: string): ReactNode {
     }
     return part
   })
+}
+
+function formatAgentResponse(response: AgentResponse): string {
+  const parts: string[] = []
+  if (response.reasoning_brief) parts.push(response.reasoning_brief)
+  if (response.hints.length > 0) parts.push('Hints:\n' + response.hints.map(h => `• ${h}`).join('\n'))
+  if (response.steps.length > 0) parts.push('Steps:\n' + response.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'))
+  if (response.patch_suggestion) parts.push('Suggested fix:\n' + response.patch_suggestion)
+  return parts.join('\n\n') || 'No response.'
+}
+
+function AgentResponseView({ response }: { response: AgentResponse }) {
+  return (
+    <div className="space-y-2">
+      {/* Tier badge */}
+      <span className="inline-flex rounded-full border border-pebble-accent/40 bg-pebble-accent/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-pebble-accent">
+        T{response.tier} • {response.intent}
+      </span>
+
+      {/* Reasoning */}
+      {response.reasoning_brief && (
+        <p className="text-pebble-text-secondary">{response.reasoning_brief}</p>
+      )}
+
+      {/* Hints */}
+      {response.hints.length > 0 && (
+        <div>
+          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">Hints</p>
+          <ul className="space-y-0.5">
+            {response.hints.map((hint, i) => (
+              <li key={i} className="flex gap-1.5">
+                <span className="mt-0.5 h-1 w-1 shrink-0 rounded-full bg-pebble-accent/60" />
+                <span>{renderMarkdown(hint)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Steps */}
+      {response.steps.length > 0 && (
+        <div>
+          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">Next steps</p>
+          <ol className="space-y-0.5">
+            {response.steps.map((step, i) => (
+              <li key={i} className="flex gap-1.5">
+                <span className="shrink-0 text-[10px] font-bold text-pebble-accent">{i + 1}.</span>
+                <span>{renderMarkdown(step)}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {/* Patch suggestion */}
+      {response.patch_suggestion && (
+        <div>
+          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">Suggested fix</p>
+          <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-pebble-border/25 bg-pebble-overlay/[0.06] p-2 font-mono text-[11px] text-pebble-text-primary">
+            {response.patch_suggestion}
+          </pre>
+        </div>
+      )}
+
+      {/* Safety flags */}
+      {response.safety_flags.length > 0 && response.safety_flags.some(f => f !== 'local_fallback') && (
+        <div className="flex flex-wrap gap-1">
+          {response.safety_flags.filter(f => f !== 'local_fallback').map((flag, i) => (
+            <span key={i} className="rounded-full border border-pebble-warning/40 bg-pebble-warning/12 px-1.5 py-0.5 text-[9px] font-medium text-pebble-warning">
+              {flag}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 const TYPE_MIN = 1
@@ -157,6 +236,9 @@ export function PebbleChatPanel({
   const [typedDraft, setTypedDraft] = useState('')
   const [lastAsked, setLastAsked] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [selectedTier, setSelectedTier] = useState<HelpTier>(1)
+  const [useAgentMode, _setUseAgentMode] = useState(true)
+  const [agentError, setAgentError] = useState<string | null>(null)
 
   const abortRef = useRef<AbortController | null>(null)
   const typingTimerRef = useRef<number | null>(null)
@@ -288,59 +370,125 @@ export function PebbleChatPanel({
 
       const usesRunOutput = hasRunContext
       const helpTier =
-        options?.helpTier ?? (struggleLevel >= 3 ? 3 : struggleLevel >= 2 ? 2 : 1)
+        options?.helpTier ?? selectedTier
       const struggleContext = getStruggleContext?.() ?? {
         level: struggleLevel,
         runFailStreak: runStatus === 'error' ? 1 : 0,
         timeStuckSeconds: 0,
         lastErrorType: null,
       }
+
+      const isUserMessage = appendUser
+      if (isUserMessage) {
+        telemetry.track('pebble_chat.message_sent', {
+          messageType: 'user'
+        }, {
+          page: 'session',
+          problemId: problemId,
+          language: language
+        })
+      }
+
       const codeNow = (getLiveCode?.() ?? liveCode).trimEnd()
-      const prompt = buildPrompt({
-        question,
-        unitTitle,
-        unitConcept,
-        language,
-        runStatus,
-        runMessage,
-        failingSummary,
-        recentSummary,
-        helpTier,
-        struggleContext,
-        chatLanguage: lang,
-        chatLanguageLabel: selectedLanguageOption.nativeName,
-      })
+
+      // 13 s hard timeout — aborts the controller so pebbleAgentClient returns
+      // its built-in AbortError fallback instead of hanging forever.
+      const timeoutId = window.setTimeout(() => controller.abort(), 13_000)
+
+      setAgentError(null)
 
       try {
-        const answer = await askPebble({
-          prompt,
-          signal: controller.signal,
-          context: {
-            taskTitle: unitTitle,
-            codeText: codeNow.length > 6000 ? `${codeNow.slice(0, 6000)}\n...[trimmed]` : codeNow,
+        if (useAgentMode) {
+          // ── Agent mode: structured JSON response ──────────────────────
+          const agentResult = await askPebbleAgent({
+            tier: helpTier,
+            question,
+            codeExcerpt: codeNow.length > 3000 ? `${codeNow.slice(0, 3000)}\n...[trimmed]` : codeNow,
+            language,
             runStatus,
             runMessage,
+            failingSummary,
+            unitTitle,
+            unitConcept,
+            struggleContext,
+            signal: controller.signal,
+          })
+
+          if (requestIdRef.current !== requestId) return
+
+          // Format as readable text for the typewriter
+          const formattedText = formatAgentResponse(agentResult)
+          setAssistantState('idle')
+          // Push with agent response metadata attached
+          clearTyping()
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `assistant-${Date.now()}`,
+              role: 'assistant',
+              text: formattedText,
+              usedRunOutput: usesRunOutput,
+              agentResponse: agentResult,
+            },
+          ])
+        } else {
+          // ── Legacy mode: plain text ───────────────────────────────────
+          const prompt = buildPrompt({
+            question,
+            unitTitle,
+            unitConcept,
             language,
-            unitId,
-            problemId: problemId ?? undefined,
+            runStatus,
+            runMessage,
+            failingSummary,
+            recentSummary,
             helpTier,
             struggleContext,
-            currentErrorKey: null,
-            nudgeVisible: nudgeLevel !== null,
-            guidedActive: false,
-            struggleScore: Math.min(100, Math.max(10, struggleContext.level * 30 + struggleContext.runFailStreak * 6)),
-            repeatErrorCount: struggleContext.runFailStreak,
-            errorHistory: failingSummary ? [failingSummary] : [],
-          },
-        })
+            chatLanguage: lang,
+            chatLanguageLabel: selectedLanguageOption.nativeName,
+          })
 
-        if (requestIdRef.current !== requestId) {
-          return
+          const answer = await askPebble({
+            prompt,
+            signal: controller.signal,
+            context: {
+              taskTitle: unitTitle,
+              codeText: codeNow.length > 6000 ? `${codeNow.slice(0, 6000)}\n...[trimmed]` : codeNow,
+              runStatus,
+              runMessage,
+              language,
+              unitId,
+              problemId: problemId ?? undefined,
+              helpTier,
+              struggleContext,
+              currentErrorKey: null,
+              nudgeVisible: nudgeLevel !== null,
+              guidedActive: false,
+              struggleScore: Math.min(100, Math.max(10, struggleContext.level * 30 + struggleContext.runFailStreak * 6)),
+              repeatErrorCount: struggleContext.runFailStreak,
+              errorHistory: failingSummary ? [failingSummary] : [],
+            },
+          })
+
+          if (requestIdRef.current !== requestId) return
+          setAssistantState('idle')
+          pushAssistantWithTypewriter(answer, requestId, usesRunOutput)
         }
 
+        telemetry.track('pebble_chat.response_received', {
+          messageType: 'assistant'
+        }, {
+          page: 'session',
+          problemId: problemId,
+          language: language
+        })
+      } catch (err) {
+        if (requestIdRef.current !== requestId) return
+        const msg = err instanceof Error ? err.message : 'Something went wrong.'
         setAssistantState('idle')
-        pushAssistantWithTypewriter(answer, requestId, usesRunOutput)
+        setAgentError(msg)
       } finally {
+        window.clearTimeout(timeoutId)
         if (abortRef.current === controller) {
           abortRef.current = null
         }
@@ -357,14 +505,18 @@ export function PebbleChatPanel({
       nudgeLevel,
       problemId,
       pushAssistantWithTypewriter,
+      clearTyping,
       recentSummary,
       runMessage,
       runStatus,
       struggleLevel,
+      selectedTier,
+      useAgentMode,
       selectedLanguageOption.nativeName,
       unitId,
       unitConcept,
       unitTitle,
+      setAgentError,
     ],
   )
 
@@ -526,6 +678,31 @@ export function PebbleChatPanel({
             </button>
           ))}
         </div>
+
+        {/* Tier selector pills */}
+        <div className="flex items-center gap-1">
+          {([1, 2, 3] as const).map((tier) => (
+            <button
+              key={tier}
+              type="button"
+              onClick={() => setSelectedTier(tier)}
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${selectedTier === tier
+                ? 'border border-pebble-accent/50 bg-pebble-accent/20 text-pebble-text-primary'
+                : 'border border-pebble-border/25 bg-pebble-overlay/[0.05] text-pebble-text-secondary hover:bg-pebble-overlay/[0.12]'
+                }`}
+            >
+              T{tier}
+            </button>
+          ))}
+          <span
+            key={selectedTier}
+            className="ml-1.5 inline-flex items-center gap-1 rounded-full border border-pebble-border/35 bg-pebble-accent/[0.10] px-2 py-0.5 text-[10px] font-medium text-pebble-text-primary motion-safe:animate-[tierFadeIn_150ms_ease-out]"
+          >
+            {selectedTier === 1 ? <Lightbulb className="h-3 w-3 text-pebble-accent" /> : selectedTier === 2 ? <Search className="h-3 w-3 text-pebble-accent" /> : <Wrench className="h-3 w-3 text-pebble-accent" />}
+            {selectedTier === 1 ? 'Hint only' : selectedTier === 2 ? 'Explain + Approach' : 'Full fix'}
+          </span>
+        </div>
+
         <p className={`text-[10px] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
           {hasRunContext ? t('chat.helperGrounded') : t('chat.helperUnlock')}
         </p>
@@ -545,13 +722,40 @@ export function PebbleChatPanel({
                 {t('chat.usingRunOutputTag')}
               </p>
             )}
-            <p className={`whitespace-pre-wrap ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(message.text)}</p>
+            {message.agentResponse ? (
+              <AgentResponseView response={message.agentResponse} />
+            ) : (
+              <p className={`whitespace-pre-wrap ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(message.text)}</p>
+            )}
           </div>
         ))}
 
         {assistantState === 'thinking' && (
           <div className={`mr-auto max-w-[95%] rounded-xl border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2.5 py-1.5 text-xs text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>
-            {t('chat.thinking')}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex gap-0.5">
+                <span className="h-1 w-1 animate-pulse rounded-full bg-pebble-accent/70" style={{ animationDelay: '0ms' }} />
+                <span className="h-1 w-1 animate-pulse rounded-full bg-pebble-accent/70" style={{ animationDelay: '200ms' }} />
+                <span className="h-1 w-1 animate-pulse rounded-full bg-pebble-accent/70" style={{ animationDelay: '400ms' }} />
+              </span>
+              {useAgentMode ? 'Agent thinking…' : t('chat.thinking')}
+            </span>
+          </div>
+        )}
+
+        {agentError && assistantState === 'idle' && (
+          <div className="mr-auto max-w-[95%] rounded-xl border border-pebble-warning/40 bg-pebble-warning/10 px-2.5 py-1.5 text-xs text-pebble-text-primary">
+            <p className="font-medium text-pebble-warning">Couldn't reach Pebble</p>
+            <p className="mt-0.5 text-pebble-text-secondary">{agentError}</p>
+            {lastAsked && (
+              <button
+                type="button"
+                onClick={() => { setAgentError(null); void submitQuestion(lastAsked, { appendUser: false }) }}
+                className="mt-1.5 rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.10] px-2 py-0.5 text-[11px] font-medium text-pebble-text-primary transition hover:bg-pebble-overlay/[0.20]"
+              >
+                Retry
+              </button>
+            )}
           </div>
         )}
 

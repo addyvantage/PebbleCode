@@ -21,33 +21,44 @@
   --pebble-chip-surface: 68 74 96;
   --pebble-editor-bg: #252A3C;
   --pebble-editor-gutter: #1E2231;
-  --pebble-shadow-1: 0 1px 3px rgba(18,24,38,0.28), 0 1px 2px rgba(18,24,38,0.20);
-  --pebble-shadow-2: 0 4px 16px rgba(18,24,38,0.36), 0 2px 6px rgba(18,24,38,0.24);
-  --pebble-shadow-3: 0 16px 40px rgba(18,24,38,0.50), 0 4px 12px rgba(18,24,38,0.28);
+  --pebble-shadow-1: 0 1px 3px rgba(18, 24, 38, 0.28), 0 1px 2px rgba(18, 24, 38, 0.20);
+  --pebble-shadow-2: 0 4px 16px rgba(18, 24, 38, 0.36), 0 2px 6px rgba(18, 24, 38, 0.24);
+  --pebble-shadow-3: 0 16px 40px rgba(18, 24, 38, 0.50), 0 4px 12px rgba(18, 24, 38, 0.28);
   --pebble-bg-image-opacity: 0.15;
   --pebble-shadow: 0 16px 40px rgba(28, 32, 48, 0.4);
   --pebble-shadow-hover: 0 18px 42px rgba(28, 32, 48, 0.45);
 }
 
 .theme-light {
-  --pebble-deep: 213 222 238;       /* #D5DEEE — global canvas / body bg */
-  --pebble-secondary: 200 213 232;  /* #C8D5E8 — body gradient bottom */
-  --pebble-panel: 241 245 252;      /* #F1F5FC — cards / panels (raised) */
-  --pebble-canvas: 228 234 246;     /* #E4EAF6 — editor / content wells */
-  --pebble-border: 55 72 110;       /* #37486E — borders (used with opacity) */
-  --pebble-overlay: 255 255 255;    /* WHITE — brightens raised surface tops */
+  --pebble-deep: 213 222 238;
+  /* #D5DEEE — global canvas / body bg */
+  --pebble-secondary: 200 213 232;
+  /* #C8D5E8 — body gradient bottom */
+  --pebble-panel: 241 245 252;
+  /* #F1F5FC — cards / panels (raised) */
+  --pebble-canvas: 228 234 246;
+  /* #E4EAF6 — editor / content wells */
+  --pebble-border: 55 72 110;
+  /* #37486E — borders (used with opacity) */
+  --pebble-overlay: 255 255 255;
+  /* WHITE — brightens raised surface tops */
   --pebble-text-primary: 15 23 42;
   --pebble-text-secondary: 71 85 105;
-  --pebble-text-muted: 76 95 120;   /* #4C5F78 — 4.76:1 contrast on #D5DEEE */
-  --pebble-accent: 29 78 216;       /* #1D4ED8 — deep premium blue */
+  --pebble-text-muted: 76 95 120;
+  /* #4C5F78 — 4.76:1 contrast on #D5DEEE */
+  --pebble-accent: 29 78 216;
+  /* #1D4ED8 — deep premium blue */
   --pebble-glow-primary: 96 165 250;
   --pebble-glow-secondary: 59 130 246;
-  --pebble-chip-surface: 233 238 250;  /* #E9EEFA — lifted chip/input surface */
-  --pebble-editor-bg: #EEF2FA;         /* Monaco light bg — calm blue-white */
-  --pebble-editor-gutter: #E4EAF6;     /* Monaco gutter — matches canvas */
-  --pebble-shadow-1: 0 1px 3px rgba(55,72,110,0.10), 0 1px 2px rgba(55,72,110,0.06);
-  --pebble-shadow-2: 0 4px 16px rgba(55,72,110,0.12), 0 2px 6px rgba(55,72,110,0.08);
-  --pebble-shadow-3: 0 12px 40px rgba(55,72,110,0.16), 0 4px 12px rgba(55,72,110,0.10);
+  --pebble-chip-surface: 233 238 250;
+  /* #E9EEFA — lifted chip/input surface */
+  --pebble-editor-bg: #EEF2FA;
+  /* Monaco light bg — calm blue-white */
+  --pebble-editor-gutter: #E4EAF6;
+  /* Monaco gutter — matches canvas */
+  --pebble-shadow-1: 0 1px 3px rgba(55, 72, 110, 0.10), 0 1px 2px rgba(55, 72, 110, 0.06);
+  --pebble-shadow-2: 0 4px 16px rgba(55, 72, 110, 0.12), 0 2px 6px rgba(55, 72, 110, 0.08);
+  --pebble-shadow-3: 0 12px 40px rgba(55, 72, 110, 0.16), 0 4px 12px rgba(55, 72, 110, 0.10);
   --pebble-bg-image-opacity: 0.05;
   --pebble-shadow: 0 1px 4px rgba(55, 72, 110, 0.12), 0 4px 16px rgba(55, 72, 110, 0.08);
   --pebble-shadow-hover: 0 2px 8px rgba(55, 72, 110, 0.15), 0 8px 24px rgba(55, 72, 110, 0.10);
@@ -148,15 +159,55 @@ html {
 @layer components {
   .glass-panel {
     @apply rounded-2xl shadow-glass backdrop-blur-xl;
-    border: 1px solid rgba(var(--pebble-border), 0.3);
-    background-color: rgba(var(--pebble-panel), 0.72);
+    border: 1px solid rgba(var(--pebble-border), 0.22);
+    background-color: rgba(var(--pebble-panel), 0.78);
     background-image: linear-gradient(180deg,
-        rgba(var(--pebble-overlay), 0.14) 0%,
-        rgba(var(--pebble-overlay), 0.04) 100%);
+        rgba(var(--pebble-overlay), 0.10) 0%,
+        rgba(var(--pebble-overlay), 0.02) 100%);
     box-shadow:
       var(--pebble-shadow),
-      inset 0 1px 0 rgba(var(--pebble-overlay), 0.16),
-      inset 0 -1px 0 rgba(var(--pebble-border), 0.14);
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.14),
+      inset 0 -1px 0 rgba(var(--pebble-border), 0.10);
+  }
+
+  /* ── Premium card surface ──────────────────────────────────────────────────
+   * Elevated version of glass-panel for primary landing cards (TodayPlan,
+   * NextUp). Adds a stronger border, deeper shadow, and a crisper top-edge
+   * highlight. Pair with rounded-[24px] and no bg-pebble-overlay/* override.
+   * ─────────────────────────────────────────────────────────────────────────*/
+  .card-premium {
+    border: 1px solid rgba(var(--pebble-border), 0.18);
+    background-color: rgba(var(--pebble-panel), 0.82);
+    background-image: linear-gradient(180deg,
+        rgba(var(--pebble-overlay), 0.09) 0%,
+        rgba(var(--pebble-overlay), 0.01) 100%);
+    box-shadow:
+      var(--pebble-shadow-2),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.12),
+      inset 0 -1px 0 rgba(var(--pebble-border), 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .theme-dark .card-premium {
+    border-color: rgba(var(--pebble-border), 0.22);
+    box-shadow:
+      var(--pebble-shadow-2),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.08),
+      inset 0 -1px 0 rgba(var(--pebble-border), 0.10);
+  }
+
+  /* ── Hero card surface ─────────────────────────────────────────────────────
+   * Fixes the dark-mode "grey soup": replaces bg-white/[0.04] (neutral grey)
+   * with a deep navy-tinted panel (rich, premium dark surface).
+   * ─────────────────────────────────────────────────────────────────────────*/
+  .hero-card-surface {
+    background-color: rgba(255, 255, 255, 0.95);
+  }
+
+  .theme-dark .hero-card-surface {
+    /* Deep navy-blue at 55% — reads as a premium dark panel, not grey wash */
+    background-color: rgba(10, 16, 44, 0.58);
   }
 
   .soft-ring {
@@ -173,11 +224,11 @@ html {
 
   .glass-interactive:hover {
     transform: translateY(-1px);
-    border-color: rgba(var(--pebble-border), 0.36);
+    border-color: rgba(var(--pebble-border), 0.32);
     box-shadow:
       var(--pebble-shadow-hover),
-      inset 0 1px 0 rgba(var(--pebble-overlay), 0.18),
-      inset 0 -1px 0 rgba(var(--pebble-border), 0.16);
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.16),
+      inset 0 -1px 0 rgba(var(--pebble-border), 0.12);
   }
 
   .page-enter {
@@ -202,6 +253,64 @@ html {
 
   .coachmark-tip {
     animation: coachmark-tip-enter 160ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  /* ── Auth form primitives ────────────────────────────────────────────────────
+   * Consistent input + button tokens used across all auth pages.
+   * .auth-input  — text field (email, username, etc.)
+   * .auth-button — primary CTA button
+   * ─────────────────────────────────────────────────────────────────────────── */
+  .auth-input {
+    @apply w-full rounded-xl border bg-pebble-overlay/[0.06] px-3.5 py-2.5 text-sm text-pebble-text-primary outline-none placeholder:text-pebble-text-muted;
+    border-color: rgba(var(--pebble-border), 0.28);
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .auth-input:focus {
+    border-color: rgba(var(--pebble-accent), 0.55);
+    box-shadow: 0 0 0 3px rgba(var(--pebble-accent), 0.14);
+  }
+  .auth-input[aria-invalid='true'] {
+    border-color: rgba(239, 68, 68, 0.55);
+  }
+  .auth-input[aria-invalid='true']:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+  }
+
+  .auth-button {
+    @apply inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    border-color: rgba(var(--pebble-accent), 0.50);
+    background-color: rgba(var(--pebble-accent), 0.20);
+    color: rgb(var(--pebble-text-primary));
+  }
+  .auth-button:hover:not(:disabled) {
+    background-color: rgba(var(--pebble-accent), 0.30);
+  }
+  .auth-button:active:not(:disabled) {
+    background-color: rgba(var(--pebble-accent), 0.24);
+    transform: scale(0.99);
+  }
+
+  /* ── OTP digit box ────────────────────────────────────────────────────────── */
+  .otp-digit {
+    @apply w-11 h-12 rounded-xl border text-center text-[1.1rem] font-semibold outline-none transition-all;
+    background-color: rgba(var(--pebble-overlay), 0.06);
+    border-color: rgba(var(--pebble-border), 0.28);
+    color: rgb(var(--pebble-text-primary));
+    caret-color: transparent;
+  }
+  .otp-digit:focus {
+    border-color: rgba(var(--pebble-accent), 0.55);
+    box-shadow: 0 0 0 3px rgba(var(--pebble-accent), 0.14);
+  }
+  .otp-digit.otp-error {
+    border-color: rgba(239, 68, 68, 0.55);
+  }
+  .otp-digit.otp-error:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+  }
+  .otp-digit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
 }
@@ -274,6 +383,18 @@ html {
 
   100% {
     opacity: 1;
+  }
+}
+
+@keyframes tierFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -381,8 +502,10 @@ html {
  * ─────────────────────────────────────────────────────────────────────────── */
 .headline-shimmer {
   /* PRESET: Satin Blue — light mode */
-  --base-color: #1e3a8a;                       /* deep navy fill */
-  --base-gradient-color: rgba(37, 99, 235, 0.65); /* bright blue sweep */
+  --base-color: #1e3a8a;
+  /* deep navy fill */
+  --base-gradient-color: rgba(37, 99, 235, 0.65);
+  /* bright blue sweep */
 }
 
 .theme-dark .headline-shimmer {
@@ -401,15 +524,96 @@ html {
  *   Speed:       `duration` prop on <TextShimmer> in LandingPage.tsx      */
 .theme-dark .headline-shimmer span {
   background-image:
-    linear-gradient(
-      110deg,
+    linear-gradient(110deg,
       transparent 30%,
       rgba(31, 79, 214, 0.52) 38%,
       #3D7BFF 50%,
       rgba(31, 79, 214, 0.52) 62%,
-      transparent 70%
-    ),
+      transparent 70%),
     linear-gradient(var(--base-color, #a8bef5), var(--base-color, #a8bef5));
+}
+
+/* ── Hero grid shimmer wave ─────────────────────────────────────────────────
+ * A slow diagonal band of light that sweeps across the hero grid backdrop.
+ * Uses background-position animation only — no transform, no blur, no JS.
+ * The radial mask reduces intensity at the center column so the headline
+ * and buttons remain the clear focal point.
+ *
+ * TUNING GUIDE:
+ *   Speed:   change the animation-duration on .hero-grid-shimmer (seconds)
+ *   Width:   move the 44%/56% stops closer (narrower) or further (wider)
+ *   Opacity: adjust the rgba alpha values in background-image
+ * ─────────────────────────────────────────────────────────────────────────── */
+.hero-grid-shimmer {
+  /*
+   * Light: navy-blue diagonal band — inky depth sweeping across the grid.
+   * Removed the radial ellipse mask (it was producing a visible oval outline).
+   * Now uses a linear top/bottom fade only: no oval, just a clean full-width sweep.
+   */
+  background-image: linear-gradient(
+    110deg,
+    transparent          28%,
+    rgba(29, 78, 216, 0.055) 42%,
+    rgba(37, 99, 235, 0.092) 50%,
+    rgba(29, 78, 216, 0.055) 58%,
+    transparent          72%
+  );
+  background-size: 300% 100%;
+  mix-blend-mode: multiply;
+  /* Fade only at very top/bottom edges — no oval, no center artifact */
+  mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent);
+  animation: hero-grid-shimmer 12s linear infinite;
+}
+
+.theme-dark .hero-grid-shimmer {
+  /* Dark: icy steel-blue band — frosted light drifting across the dark grid */
+  background-image: linear-gradient(
+    110deg,
+    transparent           28%,
+    rgba(96, 165, 250, 0.048)  42%,
+    rgba(147, 197, 253, 0.082) 50%,
+    rgba(96, 165, 250, 0.048)  58%,
+    transparent           72%
+  );
+  mix-blend-mode: screen;
+}
+
+@keyframes hero-grid-shimmer {
+  0%   { background-position: 200% 50%; }
+  100% { background-position: -100% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-grid-shimmer {
+    animation: none;
+    background-position: -200% 50%;
+  }
+}
+
+/* ── Hero grid line glow ─────────────────────────────────────────────────────
+ * Blurred 32px grid rendered in accent-blue, composited via multiply (light)
+ * or screen (dark). The 1.5px blur spreads each 1px line into a ~4px soft
+ * halo — etched/laser-engraved look without drawing any dots.
+ * As the shimmer wave passes over this layer, lines in the wave path appear
+ * to "catch" the light — this is the "wave highlighting lines" effect.
+ * ─────────────────────────────────────────────────────────────────────────── */
+.hero-grid-glow {
+  background-image:
+    linear-gradient(to right,  rgba(29, 78, 216, 0.30) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(29, 78, 216, 0.30) 1px, transparent 1px);
+  background-size: 32px 32px;
+  filter: blur(1.5px);
+  mix-blend-mode: multiply;
+  opacity: 0.50;
+}
+
+.theme-dark .hero-grid-glow {
+  background-image:
+    linear-gradient(to right,  rgba(96, 165, 250, 0.24) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(96, 165, 250, 0.24) 1px, transparent 1px);
+  mix-blend-mode: screen;
+  opacity: 0.55;
 }
 
 /* ensure full animation path exists */
@@ -459,4 +663,13 @@ html {
 * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes confetti-fall {
+  0%   { opacity: 1;   transform: translateY(-20px)  rotate(0deg)   translateX(0px); }
+  20%  {               transform: translateY(22vh)   rotate(160deg) translateX(12px); }
+  40%  {               transform: translateY(44vh)   rotate(320deg) translateX(-8px); }
+  60%  {               transform: translateY(66vh)   rotate(490deg) translateX(18px); opacity: 0.8; }
+  80%  {               transform: translateY(88vh)   rotate(620deg) translateX(-10px); }
+  100% { opacity: 0;   transform: translateY(110vh)  rotate(720deg) translateX(4px); }
 }

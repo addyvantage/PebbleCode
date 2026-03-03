@@ -20,6 +20,8 @@ import { GrowthLedger } from '../components/insights/GrowthLedger'
 import { NextTasks } from '../components/insights/NextTasks'
 import { StreakCalendar } from '../components/insights/StreakCalendar'
 import { ProblemContributionsHeatmap } from '../components/insights/ProblemContributionsHeatmap'
+import { StreakRiskWidget } from '../components/insights/StreakRiskWidget'
+import { WeeklyRecapWidget } from '../components/insights/WeeklyRecapWidget'
 import { getPebbleUserState } from '../utils/pebbleUserState'
 import { useI18n } from '../i18n/useI18n'
 import { loadCurriculumPath, type CurriculumUnit } from '../content/pathLoader'
@@ -37,7 +39,14 @@ import {
 } from '../lib/analyticsDerivers'
 import { loadUnitProgress } from '../lib/progressStore'
 import { loadSubmissions } from '../lib/submissionsStore'
+import { useLiveMentalState } from '../lib/useLiveMentalState'
 import type { PlacementLanguage } from '../data/onboardingData'
+
+type CohortData = {
+  avgRecoveryTime: Record<string, number>
+  autonomyRate: Record<string, number>
+  breakpointsPerCohort: Record<string, number>
+}
 
 const RADAR_AXIS_ORDER = [
   'speed',
@@ -123,6 +132,45 @@ export function DashboardPage() {
   )
 
   const hasLiveData = analyticsState.events.some((event) => event.type === 'run' || event.type === 'submit')
+
+  // ── Phase 5: Cohort Analytics ──────────────────────────────────────────────
+  const [cohortData, setCohortData] = useState<CohortData | null>(null)
+  useEffect(() => {
+    let mounted = true
+    fetch('/api/analytics/cohort')
+      .then(r => r.json())
+      .then(d => {
+        if (mounted && d.ok && d.data) setCohortData(d.data as CohortData)
+      })
+      .catch(e => console.error(e))
+    return () => { mounted = false }
+  }, [])
+
+  // ── Phase 4: Live Mental Presence ─────────────────────────────────────────
+  // We subscribe to 'anonymous' to match the offline fallback default user.
+  const { connected: liveConnected, latestUpdate } = useLiveMentalState('anonymous')
+
+  // Overlay state that merges live deltas/absolutes over the synchronous derived state
+  const [liveKpis, setLiveKpis] = useState(derived.kpis)
+
+  useEffect(() => {
+    setLiveKpis(derived.kpis)
+  }, [derived.kpis])
+
+  useEffect(() => {
+    if (latestUpdate) {
+      setLiveKpis(prev => ({
+        ...prev,
+        recoveryEffectiveness: latestUpdate.recoveryEffectiveness ?? prev.recoveryEffectiveness,
+        avgRecoveryTimeSec: latestUpdate.timeToRecover ?? prev.avgRecoveryTimeSec,
+        breakpointsWeek: prev.breakpointsWeek + (latestUpdate.breakpointIncrement ?? 0),
+        guidanceReliancePct: Math.max(0, Math.min(100, prev.guidanceReliancePct + (latestUpdate.guidanceRelianceDelta ?? 0))),
+        autonomyRatePct: Math.max(0, Math.min(100, prev.autonomyRatePct + (latestUpdate.autonomyDelta ?? 0))),
+        streakDays: prev.streakDays + (latestUpdate.streakDelta ?? 0),
+      }))
+    }
+  }, [latestUpdate])
+
   const localizedUnitTitles = useMemo(() => {
     const map: Record<string, string> = {}
     for (const unit of units) {
@@ -160,8 +208,21 @@ export function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Badge>{t('insights.hero.chipGrowth')}</Badge>
           <div className="flex items-center gap-2">
+            {cohortData && (
+              <Badge className="animate-pulse bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
+                <Sparkles className="mr-1 inline-block h-3 w-3" />
+                Data Source: Live Cohort Analytics
+              </Badge>
+            )}
             <Badge variant="neutral">{t('insights.hero.chipLast7')}</Badge>
-            <Badge variant={hasLiveData ? 'success' : 'neutral'}>{t('insights.hero.chipLive')}</Badge>
+            {liveConnected ? (
+              <Badge className="animate-pulse bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
+                <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-emerald-700 dark:bg-emerald-400" />
+                Live
+              </Badge>
+            ) : (
+              <Badge variant={hasLiveData ? 'success' : 'neutral'}>{t('insights.hero.chipLive')}</Badge>
+            )}
           </div>
         </div>
         <h1 className={`text-3xl font-semibold tracking-[-0.02em] text-pebble-text-primary ${proseClass}`}>
@@ -175,36 +236,36 @@ export function DashboardPage() {
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <KpiCard
           title={t('insights.kpi.recoveryEffectiveness')}
-          value={derived.kpis.recoveryEffectiveness}
+          value={liveKpis.recoveryEffectiveness}
           suffix="/100"
           icon={Sparkles}
         />
         <KpiCard
           title={t('insights.kpi.avgRecoveryTime')}
-          value={derived.kpis.avgRecoveryTimeSec}
+          value={cohortData?.avgRecoveryTime?.['Medium'] ?? liveKpis.avgRecoveryTimeSec}
           suffix={t('insights.units.sec')}
           icon={Timer}
         />
         <KpiCard
           title={t('insights.kpi.breakpoints')}
-          value={derived.kpis.breakpointsWeek}
+          value={cohortData?.breakpointsPerCohort?.['Intermediate'] ?? liveKpis.breakpointsWeek}
           icon={Workflow}
         />
         <KpiCard
           title={t('insights.kpi.guidanceReliance')}
-          value={derived.kpis.guidanceReliancePct}
+          value={liveKpis.guidanceReliancePct}
           suffix="%"
           icon={HandHelping}
         />
         <KpiCard
           title={t('insights.kpi.autonomyRate')}
-          value={derived.kpis.autonomyRatePct}
+          value={cohortData?.autonomyRate?.[selectedLanguage] ?? liveKpis.autonomyRatePct}
           suffix="%"
           icon={Compass}
         />
         <KpiCard
           title={t('insights.kpi.streak')}
-          value={derived.kpis.streakDays}
+          value={liveKpis.streakDays}
           suffix={t('insights.units.days')}
           icon={Flame}
         />
@@ -330,6 +391,12 @@ export function DashboardPage() {
           }}
         />
       </Card>
+
+      {/* Phase 9: Premium AWS Demo — SageMaker Risk + Polly Recap */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <StreakRiskWidget />
+        <WeeklyRecapWidget language={selectedLanguage} />
+      </div>
 
       {!hasLiveData && !unitsLoading ? (
         <Card padding="sm" interactive className="space-y-3 text-center">

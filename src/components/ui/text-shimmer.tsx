@@ -8,7 +8,7 @@ function cn(...classes: (string | undefined | null | false)[]) {
 }
 
 interface TextShimmerProps {
-    children: string
+    children: React.ReactNode
     as?: React.ElementType
     className?: string
     duration?: number
@@ -23,7 +23,8 @@ export function TextShimmer({
     spread = 1.8,
 }: TextShimmerProps) {
     const dynamicSpread = React.useMemo(() => {
-        return children.length * spread
+        const len = typeof children === 'string' ? children.length : Array.isArray(children) ? children.join('').length : 50;
+        return len * spread
     }, [children, spread])
 
     return (

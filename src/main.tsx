@@ -1,3 +1,9 @@
+// Polyfills required by amazon-cognito-identity-js (SRP auth) in browser
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _win = window as any
+if (typeof _win['global'] === 'undefined') _win['global'] = window
+if (typeof _win['Buffer'] === 'undefined') _win['Buffer'] = (globalThis as any)['Buffer']
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'

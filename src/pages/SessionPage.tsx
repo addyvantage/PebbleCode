@@ -34,7 +34,7 @@ import {
   validateFunctionSignature,
   type RunnerSourceMap,
 } from '../lib/functionMode'
-import { Check, ChevronLeft, ChevronRight, Home, Play, RotateCcw, Settings2 } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, FileText, Home, Play, RotateCcw, Settings2, Share2 } from 'lucide-react'
 import {
   loadUnitProgress,
   markUnitCompleted,
@@ -117,6 +117,7 @@ import {
   type ProblemCodeByLangEntry,
 } from '../lib/problemCodeByLangStore'
 import { getCurriculumBoilerplate, getProblemBoilerplate } from '../lib/boilerplate'
+import { telemetry } from '../lib/telemetry'
 
 type StruggleNudgeState = {
   level: StruggleLevel
@@ -404,6 +405,12 @@ export function SessionPage() {
   const [submissionsByUnit, setSubmissionsByUnit] = useState<SubmissionsByUnit>(() => loadSubmissions())
 
   const [runStatus, setRunStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
+
+  // ── Phase 7: Report + Snapshot state ──────────────────────────────
+  const [reportLoading, setReportLoading] = useState(false)
+  const [shareLoading, setShareLoading] = useState(false)
+  const [shareToast, setShareToast] = useState<string | null>(null)
+  const [reportToast, setReportToast] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
   const [runMessage, setRunMessage] = useState(t('run.evaluateAll'))
   const [nowTick, setNowTick] = useState(() => Date.now())
   const [selectedTestIndex, setSelectedTestIndex] = useState(0)
@@ -491,6 +498,16 @@ export function SessionPage() {
     [dailyCompletions, todayKey],
   )
   const currentSessionKey = activeProblemBase?.id ?? `unit:${units[currentUnitIndex]?.id ?? ''}`
+
+  useEffect(() => {
+    if (currentSessionKey && currentUnitIndex >= 0) {
+      telemetry.track('app.session_started', {}, {
+        page: 'session',
+        problemId: currentSessionKey.replace('unit:', ''),
+        language: sessionLanguage,
+      })
+    }
+  }, [currentSessionKey, currentUnitIndex, sessionLanguage])
 
   useEffect(() => {
     const fromQuery = resolveEntryLanguage(searchParams.get('lang'), languageOptions)
@@ -1388,6 +1405,19 @@ export function SessionPage() {
           exitCode: runExitCode,
           errorType: derivedErrorType,
         })
+
+        // ── Phase 6: Trigger learning journey update (fire-and-forget) ────────
+        fetch('/api/journey/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: 'anonymous',
+            recoveryTimeMs: durationTotal,
+            struggleScore: allPassed ? 20 : 70,
+            autonomyDelta: allPassed ? 2 : -1,
+            problemId: currentUnit.id,
+          }),
+        }).catch(() => { /* non-critical, ignore errors */ })
       }
 
       if (allPassed) {
@@ -1803,7 +1833,7 @@ export function SessionPage() {
           </button>
         </div>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="relative flex items-center justify-end gap-2">
           <Button
             type="button"
             variant="secondary"
@@ -1830,7 +1860,108 @@ export function SessionPage() {
             compact
           />
 
-          <Badge variant={statusVariant(runStatus)}>{statusLabelMap[runStatus]}</Badge>
+          {/* Status badge — only visible when running, not on idle */}
+          {runStatus !== 'idle' && (
+            <Badge variant={statusVariant(runStatus)}>{statusLabelMap[runStatus]}</Badge>
+          )}
+
+          {/* Export Report */}
+          <button
+            disabled={reportLoading}
+            aria-label="Export recovery report"
+            title="Export Recovery Report"
+            className="flex items-center gap-1.5 rounded-xl border border-pebble-border/30 bg-pebble-overlay/[0.08] px-3 py-1.5 text-[13px] text-pebble-text-primary transition hover:bg-pebble-overlay/[0.16] disabled:opacity-50"
+            onClick={async () => {
+              setReportLoading(true)
+              setReportToast(null)
+              // Open a blank tab synchronously (before await) so browsers don't block it
+              const win = window.open('', '_blank')
+              try {
+                const r = await fetch('/api/report/recovery', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ problemId: currentUnit?.id ?? 'unknown', userId: 'anonymous', sessionId: Date.now().toString() }),
+                })
+                const d = await r.json() as { reportUrl?: string; error?: string }
+                if (d.reportUrl) {
+                  if (win) win.location.href = d.reportUrl
+                  setReportToast({ kind: 'ok', msg: 'Report ready — opening in new tab.' })
+                } else {
+                  if (win) win.close()
+                  setReportToast({ kind: 'err', msg: d.error ?? 'Report generation failed.' })
+                }
+              } catch (err) {
+                if (win) win.close()
+                setReportToast({ kind: 'err', msg: err instanceof Error ? err.message : 'Network error.' })
+              } finally {
+                setReportLoading(false)
+                setTimeout(() => setReportToast(null), 5000)
+              }
+            }}
+          >
+            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+            {reportLoading ? 'Generating…' : 'Export Report'}
+          </button>
+
+          {/* Share Session */}
+          <button
+            disabled={shareLoading}
+            aria-label="Share session snapshot"
+            title="Share Session Snapshot"
+            className="flex items-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-500/[0.08] px-3 py-1.5 text-[13px] text-pebble-text-primary transition hover:bg-violet-500/[0.16] disabled:opacity-50"
+            onClick={async () => {
+              setShareLoading(true)
+              setShareToast(null)
+              try {
+                const r = await fetch('/api/session/snapshot', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    problemId: currentUnit?.id ?? 'unknown',
+                    finalCode: '', // omit code for privacy — just share metadata
+                    language: selectedLanguage,
+                    status: runStatus,
+                    runtimeMs: 0,
+                    recoveryTimeMs: 0,
+                    userId: 'anonymous',
+                  }),
+                })
+                const d = await r.json() as { shareUrl?: string; ok?: boolean }
+                if (d.shareUrl) {
+                  await navigator.clipboard.writeText(d.shareUrl).catch(() => { })
+                  setShareToast(d.shareUrl)
+                  setTimeout(() => setShareToast(null), 5000)
+                } else {
+                  setShareToast('⚠ Snapshot failed — try again.')
+                  setTimeout(() => setShareToast(null), 4000)
+                }
+              } catch (err) {
+                setShareToast(`⚠ ${err instanceof Error ? err.message : 'Network error.'}`)
+                setTimeout(() => setShareToast(null), 4000)
+              } finally {
+                setShareLoading(false)
+              }
+            }}
+          >
+            <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
+            {shareLoading ? 'Sharing…' : 'Share Session'}
+          </button>
+
+          {/* Report toast */}
+          {reportToast && (
+            <div className={`fixed right-4 top-[4.5rem] z-[200] max-w-[320px] rounded-xl border px-4 py-2.5 text-[12.5px] shadow-xl backdrop-blur-xl ${reportToast.kind === 'ok' ? 'border-pebble-success/30 bg-pebble-bg/95' : 'border-red-500/30 bg-pebble-bg/95'}`}>
+              <p className="font-semibold text-pebble-text-primary">{reportToast.kind === 'ok' ? 'Report ready!' : 'Export failed'}</p>
+              <p className="truncate text-pebble-text-secondary">{reportToast.msg}</p>
+            </div>
+          )}
+
+          {/* Share toast */}
+          {shareToast && !reportToast && (
+            <div className={`fixed right-4 top-[4.5rem] z-[200] max-w-[320px] rounded-xl border px-4 py-2.5 text-[12.5px] shadow-xl backdrop-blur-xl ${shareToast.startsWith('⚠') ? 'border-red-500/30 bg-pebble-bg/95' : 'border-violet-500/30 bg-pebble-bg/95'}`}>
+              <p className="font-semibold text-pebble-text-primary">{shareToast.startsWith('⚠') ? 'Share failed' : 'Link copied!'}</p>
+              <p className="truncate text-pebble-text-secondary">{shareToast}</p>
+            </div>
+          )}
         </div>
       </header>
 

@@ -5,6 +5,9 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs'
 import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2'
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import * as iam from 'aws-cdk-lib/aws-iam'
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import * as cognito from 'aws-cdk-lib/aws-cognito'
+import * as s3 from 'aws-cdk-lib/aws-s3'
 import * as path from 'path'
 
 export interface BackendStackProps extends cdk.StackProps {
@@ -139,6 +142,71 @@ export class BackendStack extends cdk.Stack {
     // CloudFront HttpOrigin. API Gateway $default stage has no path prefix.
     this.apiDomain = `${api.httpApiId}.execute-api.${this.region}.amazonaws.com`
 
+    // ── Phase 1: Auth & Profiles ─────────────────────────────────────────────
+
+    // Cognito User Pool
+    const userPool = new cognito.UserPool(this, 'PebbleUserPool', {
+      userPoolName: 'PebbleUserPool',
+      selfSignUpEnabled: true,
+      signInAliases: { email: true },
+      autoVerify: { email: true },
+      passwordPolicy: {
+        minLength: 8,
+        requireLowercase: false,
+        requireUppercase: false,
+        requireDigits: false,
+        requireSymbols: false,
+      },
+      standardAttributes: {
+        email: { required: true, mutable: true },
+        preferredUsername: { required: false, mutable: true },
+      },
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    })
+
+    // Auto-confirm for hackathon (lambda trigger would be needed for true auto-confirm,
+    // but we can use the Cognito console to disable verification for demo)
+    const userPoolClient = new cognito.UserPoolClient(this, 'PebbleWebClient', {
+      userPool,
+      userPoolClientName: 'PebbleWebClient',
+      authFlows: {
+        userSrp: true,
+        userPassword: true,
+      },
+      generateSecret: false,
+    })
+
+    // DynamoDB Profiles Table
+    const profilesTable = new dynamodb.Table(this, 'PebbleProfilesTable', {
+      tableName: 'pebble-profiles',
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    })
+
+    profilesTable.addGlobalSecondaryIndex({
+      indexName: 'username-index',
+      partitionKey: { name: 'username', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.KEYS_ONLY,
+    })
+
+    // S3 Avatars Bucket
+    const avatarsBucket = new s3.Bucket(this, 'PebbleAvatarsBucket', {
+      bucketName: `pebble-avatars-${this.account}-${this.region}`,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.PUT],
+          allowedOrigins: ['http://localhost:5173', 'http://localhost:3001'],
+          allowedHeaders: ['*'],
+          maxAge: 3000,
+        },
+      ],
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    })
+
     // ── Outputs ───────────────────────────────────────────────────────────────
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: api.url ?? `https://${this.apiDomain}/`,
@@ -148,6 +216,22 @@ export class BackendStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ApiDomain', {
       value: this.apiDomain,
       description: 'API Gateway domain used as the CloudFront /api/* origin',
+    })
+
+    new cdk.CfnOutput(this, 'UserPoolId', {
+      value: userPool.userPoolId,
+    })
+
+    new cdk.CfnOutput(this, 'UserPoolClientId', {
+      value: userPoolClient.userPoolClientId,
+    })
+
+    new cdk.CfnOutput(this, 'ProfilesTableName', {
+      value: profilesTable.tableName,
+    })
+
+    new cdk.CfnOutput(this, 'AvatarsBucketName', {
+      value: avatarsBucket.bucketName,
     })
   }
 }

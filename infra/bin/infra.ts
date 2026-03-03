@@ -3,6 +3,12 @@ import * as cdk from "aws-cdk-lib";
 import { BackendStack } from "../lib/backend-stack";
 import { HostingStack } from "../lib/hosting-stack";
 import { PipelineStack } from "../lib/pipeline-stack";
+import { PebblePhase4Stack } from "../lib/pebble-phase4-stack";
+import { PebblePhase5AnalyticsStack } from "../lib/pebble-phase5-analytics-stack";
+import { PebblePhase6JourneysStack } from "../lib/pebble-phase6-journeys-stack";
+import { PebblePhase7FilesStack } from "../lib/pebble-phase7-files-stack";
+import { PebblePhase8ObservabilityStack } from "../lib/pebble-phase8-observability-stack";
+import { PebblePhase9PremiumStack } from "../lib/pebble-phase9-premium-stack";
 
 const app = new cdk.App();
 
@@ -29,6 +35,42 @@ const hostingStack = new HostingStack(app, "PebbleHostingStack", {
   env,
   description: "Pebble frontend hosting — S3 (private) + CloudFront with OAC",
   apiOriginDomain: backendStack.apiDomain,
+});
+
+// ── Phase 4: Live Mental Presence ───────────────────────────────────────────
+new PebblePhase4Stack(app, "PebblePhase4Stack", {
+  env,
+  description: "Phase 4 AppSync Live API + Streams + Lambdas",
+});
+
+// ── Phase 5: Cohort Analytics (Athena + S3 + Glue) ────────────────────────
+new PebblePhase5AnalyticsStack(app, "PebblePhase5AnalyticsStack", {
+  env,
+  description: "Phase 5 S3 Event Lake + Glue Catalog + Athena Named Queries",
+});
+
+// ── Phase 6: Orchestrated Learning Journeys ────────────────────────────
+new PebblePhase6JourneysStack(app, "PebblePhase6JourneysStack", {
+  env,
+  description: "Phase 6 Step Functions Learning Journeys + DynamoDB",
+});
+
+// ── Phase 7: PDF Reports + Session Snapshots ───────────────────────────
+new PebblePhase7FilesStack(app, "PebblePhase7FilesStack", {
+  env,
+  description: "Phase 7 S3 PDF Reports + DynamoDB Session Snapshots",
+});
+
+// ── Phase 8: Observability (CloudWatch + X-Ray) ────────────────────────
+new PebblePhase8ObservabilityStack(app, "PebblePhase8ObservabilityStack", {
+  env,
+  description: "Phase 8 CloudWatch Log Group + X-Ray IAM Policy",
+});
+
+// ── Phase 9: Premium Demo — SageMaker + Polly ──────────────────────────
+new PebblePhase9PremiumStack(app, "PebblePhase9PremiumStack", {
+  env,
+  description: "Phase 9 SageMaker Streak Risk Predictor + Polly Weekly Recap Narrator",
 });
 
 // ── Stack 3: CI/CD pipeline (CodePipeline + CodeBuild) ────────────────────────

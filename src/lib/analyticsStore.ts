@@ -1,5 +1,6 @@
 import type { PlacementLanguage } from '../data/onboardingData'
 import { safeGetJSON, safeRemoveItem, safeSetJSON } from './safeStorage'
+import { telemetry } from './telemetry'
 
 const ANALYTICS_STORAGE_KEY = 'pebble.analytics.v1'
 const ANALYTICS_EVENT_NAME = 'pebble:analytics-updated'
@@ -292,7 +293,7 @@ export function clearAnalyticsState() {
 
 export function subscribeAnalytics(listener: () => void) {
   if (typeof window === 'undefined') {
-    return () => {}
+    return () => { }
   }
 
   const onAnalyticsUpdate = () => {
@@ -371,6 +372,17 @@ function buildAttemptHash(input: {
 
 export function logRunEvent(input: RunEventInput) {
   const ts = Date.now()
+
+  telemetry.track('run.completed', {
+    success: input.passed,
+    runtimeMs: input.runtimeMs,
+    errorCategory: input.errorType ?? null,
+  }, {
+    page: 'session',
+    problemId: input.unitId,
+    language: input.language,
+  })
+
   return appendEvent({
     ...input,
     type: 'run',
@@ -382,6 +394,16 @@ export function logRunEvent(input: RunEventInput) {
 
 export function logSubmitEvent(input: SubmitEventInput) {
   const ts = Date.now()
+
+  telemetry.track('submit.completed', {
+    accepted: input.accepted,
+    runtimeMs: input.runtimeMs,
+  }, {
+    page: 'session',
+    problemId: input.unitId,
+    language: input.language,
+  })
+
   return appendEvent({
     ...input,
     type: 'submit',
@@ -392,6 +414,20 @@ export function logSubmitEvent(input: SubmitEventInput) {
 
 export function logAssistEvent(input: AssistEventInput) {
   const ts = Date.now()
+
+  let uiAction: import('../shared/events').EventName | null = null
+  if (input.action === 'hint') uiAction = 'ui.hint_clicked'
+  else if (input.action === 'explain') uiAction = 'ui.explain_clicked'
+  else if (input.action === 'next') uiAction = 'ui.next_step_clicked'
+
+  if (uiAction) {
+    telemetry.track(uiAction, {}, {
+      page: 'session',
+      problemId: input.unitId,
+      language: input.language,
+    })
+  }
+
   return appendEvent({
     ...input,
     type: 'assist',

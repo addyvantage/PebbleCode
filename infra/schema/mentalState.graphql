@@ -1,0 +1,33 @@
+type MentalStateUpdate {
+  userId: ID!
+  timestamp: String!
+  recoveryEffectiveness: Float
+  timeToRecover: Float
+  autonomyDelta: Float
+  guidanceRelianceDelta: Float
+  breakpointIncrement: Int
+  streakDelta: Int
+}
+
+type Mutation {
+  publishMentalStateUpdate(
+    userId: ID!
+    timestamp: String!
+    recoveryEffectiveness: Float
+    timeToRecover: Float
+    autonomyDelta: Float
+    guidanceRelianceDelta: Float
+    breakpointIncrement: Int
+    streakDelta: Int
+  ): MentalStateUpdate
+}
+
+type Subscription {
+  onMentalStateUpdate(userId: ID!): MentalStateUpdate
+    @aws_subscribe(mutations: ["publishMentalStateUpdate"])
+}
+
+type Query {
+  # AppSync requires at least one query
+  getCurrentState(userId: ID!): MentalStateUpdate
+}

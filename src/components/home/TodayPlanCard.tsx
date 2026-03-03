@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Card } from '../ui/Card'
 import { useI18n } from '../../i18n/useI18n'
-import { Check, Sparkles, ChevronRight, Flame, X } from 'lucide-react'
+import { Check, Sparkles, Flame, X, RefreshCw } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { loadDailyPlan, toggleTaskDone, computeStreak, computeEffortScore, type PlanState } from '../../lib/planStore'
 import { generatePlan, type PlannerContext } from '../../api/plan'
@@ -152,13 +152,13 @@ export function TodayPlanCard() {
 
     return (
         <>
-            <Card className="flex flex-col p-3 bg-pebble-overlay/[0.04]">
-                <div className="mb-2.5 flex items-start justify-between gap-3">
+            <Card className="flex flex-col p-4 lg:p-5 card-premium rounded-[24px]">
+                <div className="mb-4 flex items-start justify-between gap-3">
                     <div className="space-y-0.5">
-                        <h2 className={`text-[13.5px] font-semibold text-pebble-text-primary tracking-tight ${isRTL ? 'rtlText' : ''}`}>
+                        <h2 className={`text-[14px] font-semibold text-pebble-text-primary tracking-tight ${isRTL ? 'rtlText' : ''}`}>
                             {plan ? plan.title : t('home.todayPlan.title')}
                         </h2>
-                        <p className={`text-xs text-pebble-text-secondary ${isRTL ? 'rtlText' : ''}`}>
+                        <p className={`text-[12.5px] text-pebble-text-secondary ${isRTL ? 'rtlText' : ''}`}>
                             {plan ? plan.subtitle : t('home.todayPlan.subtitle')}
                         </p>
                     </div>
@@ -178,100 +178,82 @@ export function TodayPlanCard() {
                 </div>
 
                 {!plan ? (
-                    <div className="flex flex-col items-center justify-center rounded-[10px] border border-dashed border-pebble-border/30 bg-pebble-overlay/[0.02] py-4 px-3 text-center">
+                    <div className="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-pebble-border/30 bg-pebble-overlay/[0.02] py-5 px-4 text-center">
                         <button
                             onClick={handleGenerate}
                             disabled={isGenerating}
-                            className={classNames(buttonClass('primary'), "w-full sm:w-auto", isGenerating ? "opacity-50 cursor-not-allowed" : undefined)}
+                            className={classNames(buttonClass('primary'), "w-full sm:w-auto px-6 py-2.5", isGenerating ? "opacity-50 cursor-not-allowed" : undefined)}
                         >
                             <Sparkles className="mr-2 h-4 w-4" />
                             {isGenerating ? t('home.plan.generating') : t('home.plan.generate')}
                         </button>
-                        <p className={`mt-3 text-xs text-pebble-text-muted ${isRTL ? 'rtlText' : ''}`}>
+                        <p className={`mt-4 text-[13px] text-pebble-text-muted ${isRTL ? 'rtlText' : ''}`}>
                             Get a personalized plan based on your recent activity
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         <ul className="flex flex-col gap-2">
-                            {plan.tasks.map((task) => {
+                            {plan.tasks.slice(0, 3).map((task) => {
                                 const checked = state.completedTasks.includes(task.id)
                                 return (
-                                    <li key={task.id} className="relative overflow-hidden rounded-[10px] border border-pebble-border/20 bg-pebble-canvas/60 transition-all">
-                                        {/* Left hit area — toggles completion (~50% width) */}
-                                        <button
-                                            type="button"
-                                            aria-pressed={checked}
-                                            aria-label={checked ? `Mark "${task.label}" incomplete` : `Mark "${task.label}" complete`}
-                                            onClick={() => handleToggleCheck(task.id)}
-                                            className="absolute inset-y-0 left-0 z-10 w-1/2 rounded-l-[9px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pebble-accent/45"
-                                        />
-                                        {/* Right hit area — opens detail modal (~50% width) */}
-                                        <button
-                                            type="button"
-                                            aria-label={`View details for "${task.label}"`}
-                                            onClick={() => openModal(task.id)}
-                                            className="absolute inset-y-0 right-0 z-10 w-1/2 rounded-r-[9px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pebble-accent/45"
-                                        />
-                                        {/* Visual content — pointer-events-none so overlay buttons capture all events */}
-                                        <div
-                                            className={classNames(
-                                                'flex w-full items-start gap-2.5 px-2.5 py-2 pointer-events-none select-none transition',
-                                                checked ? 'opacity-60 bg-pebble-overlay/[0.02]' : ''
-                                            )}
-                                        >
-                                            <div
+                                    <li key={task.id} className="relative flex items-center justify-between rounded-[12px] bg-pebble-canvas/40 hover:bg-pebble-canvas/80 px-4 py-2.5 transition-colors">
+
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={checked}
+                                                onClick={() => handleToggleCheck(task.id)}
                                                 className={classNames(
-                                                    'mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-[4px] border transition',
+                                                    'flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-[4px] border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/50',
                                                     checked
                                                         ? 'border-pebble-success/40 bg-pebble-success/18 text-pebble-success'
-                                                        : 'border-pebble-border/40 bg-pebble-overlay/[0.05] text-transparent'
+                                                        : 'border-pebble-border/40 bg-pebble-overlay/[0.05] text-transparent hover:border-pebble-border/80'
                                                 )}
                                             >
                                                 <Check className="h-3 w-3" strokeWidth={3} />
-                                            </div>
-                                            <div className="flex min-w-0 flex-1 flex-col">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span
-                                                        className={classNames(
-                                                            'text-sm font-semibold truncate transition',
-                                                            checked ? 'text-pebble-text-muted line-through' : 'text-pebble-text-primary'
-                                                        )}
-                                                        dir={isRTL ? 'rtl' : 'ltr'}
-                                                    >
-                                                        {task.label}
-                                                    </span>
-                                                    <span className="shrink-0 text-[11px] font-medium text-pebble-text-muted bg-pebble-overlay/[0.06] px-1.5 py-0.5 rounded">
-                                                        {t('home.plan.estimatedMinutes', { mins: String(task.estimatedMinutes) })}
-                                                    </span>
-                                                </div>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => openModal(task.id)}
+                                                className="flex flex-col items-start min-w-0 text-left focus-visible:outline-none rounded-sm focus-visible:ring-2 focus-visible:ring-pebble-accent/50"
+                                            >
                                                 <span
                                                     className={classNames(
-                                                        'mt-0.5 text-xs line-clamp-1 transition',
-                                                        checked ? 'text-pebble-text-muted/60' : 'text-pebble-text-secondary'
+                                                        'text-[13px] font-medium truncate transition-colors max-w-full',
+                                                        checked ? 'text-pebble-text-muted line-through' : 'text-pebble-text-primary'
                                                     )}
                                                     dir={isRTL ? 'rtl' : 'ltr'}
                                                 >
+                                                    {task.label}
+                                                </span>
+                                                <span
+                                                    className={classNames(
+                                                        'text-[11px] truncate w-full transition-colors',
+                                                        checked ? 'text-pebble-text-muted/60' : 'text-pebble-text-secondary'
+                                                    )}
+                                                >
                                                     {task.detail}
                                                 </span>
-                                            </div>
-                                            <div className="mt-1 shrink-0 text-pebble-text-muted">
-                                                <ChevronRight className="h-4 w-4" />
-                                            </div>
+                                            </button>
                                         </div>
+
+                                        <span className="shrink-0 ml-3 text-[10.5px] font-medium text-pebble-text-muted bg-pebble-overlay/[0.06] px-1.5 py-0.5 rounded">
+                                            {task.estimatedMinutes}m
+                                        </span>
                                     </li>
                                 )
                             })}
                         </ul>
-                        <div className="flex items-center justify-between border-t border-pebble-border/15 pt-2">
-                            <p className={`text-xs italic text-pebble-text-muted ${isRTL ? 'rtlText' : ''}`}>
-                                {plan.scoring.note}
-                            </p>
+                        <div className="flex items-center justify-between px-1">
                             <button
                                 onClick={handleGenerate}
                                 disabled={isGenerating}
-                                className="text-xs font-medium text-pebble-accent hover:text-pebble-text-primary transition disabled:opacity-50"
+                                className="text-[12px] font-medium text-pebble-text-muted hover:text-pebble-text-primary transition disabled:opacity-50 inline-flex items-center gap-1.5"
                             >
+                                <RefreshCw className={classNames("h-3 w-3", isGenerating ? "animate-spin" : "")} />
                                 {isGenerating ? t('home.plan.generating') : t('home.plan.regenerate')}
                             </button>
                         </div>

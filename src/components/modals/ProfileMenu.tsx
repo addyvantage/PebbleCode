@@ -100,6 +100,17 @@ export function ProfileMenu({
         <button
           type="button"
           onClick={() => {
+            onRequestClose()
+            window.location.href = '/profile'
+          }}
+          className={`${buttonClass('secondary', 'sm')} mb-2 w-full`}
+        >
+          {'View Profile'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
             onSignOut()
             onRequestClose()
           }}
