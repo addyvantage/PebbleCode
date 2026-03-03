@@ -7,6 +7,8 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { StreakPill } from '../components/ui/StreakPill'
 import { PatternText } from '../components/ui/pattern-text'
 import { BrandLogo } from '../components/ui/BrandLogo'
+import { HoverBorderGradient } from '../components/ui/hover-border-gradient'
+import { AnimatedBorderRing } from '../components/ui/rainbow-borders-button'
 import {
   clearAppLocalData,
   clearLocalUserData,
@@ -18,9 +20,6 @@ import { dateKeyForTimeZone, selectCurrentStreak, selectDailyCompletions } from 
 import { safeClearPrefix, subscribeStoragePressure } from '../lib/safeStorage'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
-
-const iconButtonClass =
-  'inline-flex h-8 w-8 sm:h-[34px] sm:w-[34px] items-center justify-center rounded-[10px] border border-pebble-border/35 bg-pebble-overlay/8 text-pebble-text-secondary transition hover:bg-pebble-overlay/14 hover:text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40'
 
 export function AppLayout() {
   const { t } = useI18n()
@@ -48,6 +47,11 @@ export function AppLayout() {
   const isLandingRoute = location.pathname === '/'
   const auth = useAuth()
   const { theme } = useTheme()
+  const iconButtonClass = `inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-[12px] border border-pebble-border/35 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40 ${
+    theme === 'dark'
+      ? 'bg-[rgba(10,14,24,0.58)] text-[rgba(214,222,242,0.82)] hover:bg-[rgba(10,14,24,0.68)] hover:text-[rgba(241,245,255,0.96)]'
+      : 'bg-pebble-overlay/8 text-pebble-text-secondary hover:bg-pebble-overlay/14 hover:text-pebble-text-primary'
+  }`
   const navItems = useMemo(
     () => {
       const items = [
@@ -192,73 +196,82 @@ export function AppLayout() {
                     </div>
                   </div>
 
-                  <nav className="hidden items-center justify-center gap-0.5 overflow-x-auto rounded-[10px] border border-pebble-border/28 bg-pebble-overlay/7 p-0.5 lg:flex flex-shrink-0">
-                    {navItems.map(({ to, label }) => (
-                      <NavLink
-                        key={to}
-                        to={to}
-                        className={({ isActive }) =>
-                          `whitespace-nowrap rounded-md px-2.5 py-1 md:px-3 md:py-1.5 text-[12px] md:text-[13px] font-medium tracking-[0.01em] transition ${isActive
-                            ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_22px_rgba(2,8,23,0.18)]'
-                            : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/12 hover:text-pebble-text-primary'
-                          }`
-                        }
-                      >
-                        {label}
-                      </NavLink>
-                    ))}
-                  </nav>
+                  <HoverBorderGradient
+                    as="div"
+                    duration={1.2}
+                    containerClassName="hidden rounded-full lg:flex flex-shrink-0"
+                    className="bg-transparent px-0 py-0 text-inherit"
+                  >
+                    <nav className="flex items-center justify-center gap-0.5 overflow-hidden rounded-full p-0.5">
+                      {navItems.map(({ to, label }) => (
+                        <NavLink
+                          key={to}
+                          to={to}
+                          className={({ isActive }) =>
+                            `relative z-10 whitespace-nowrap rounded-full px-2.5 py-1 md:px-3 md:py-1.5 text-[12px] md:text-[13px] font-medium tracking-[0.01em] transition ${isActive
+                              ? 'border border-[var(--navActiveBorder)] bg-[var(--navActiveBg)] text-[var(--navActiveFg)] ring-0 shadow-none hover:bg-[var(--navActiveBg)] hover:shadow-none'
+                              : 'border border-transparent text-pebble-text-secondary hover:bg-white/5 dark:hover:bg-white/6 hover:text-pebble-text-primary focus-visible:bg-white/6'
+                            }`
+                          }
+                        >
+                          {label}
+                        </NavLink>
+                      ))}
+                    </nav>
+                  </HoverBorderGradient>
 
                   <div className="flex items-center gap-1.5 sm:gap-2 justify-end flex-1">
-                    <StreakPill
-                      streak={currentStreak.streak}
-                      isTodayComplete={currentStreak.isTodayComplete}
-                    />
-                    <button
-                      aria-label={t('layout.notificationsAria')}
-                      className={iconButtonClass}
-                      type="button"
-                    >
-                      <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5 sm:h-5 sm:w-5" aria-hidden="true">
-                        <path d="M10 3.5a4.25 4.25 0 0 0-4.25 4.25v2.4L4.6 12.2a.9.9 0 0 0 .8 1.3h9.2a.9.9 0 0 0 .8-1.3l-1.15-2.05v-2.4A4.25 4.25 0 0 0 10 3.5Z" stroke="currentColor" strokeWidth="1.25" />
-                        <path d="M8.1 14.8a2.1 2.1 0 0 0 3.8 0" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                    <button
-                      aria-label={t('layout.settingsAria')}
-                      onClick={() => setIsSettingsOpen(true)}
-                      className={iconButtonClass}
-                      type="button"
-                    >
-                      <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5 sm:h-5 sm:w-5" aria-hidden="true">
-                        <path d="M8.35 3.75h3.3l.35 1.57c.36.12.7.27 1.02.46l1.49-.66 1.65 2.85-1.15 1.12c.03.23.04.46.04.7s-.01.47-.04.7l1.15 1.12-1.65 2.85-1.49-.66c-.32.19-.66.34-1.02.46l-.35 1.57h-3.3l-.35-1.57a4.95 4.95 0 0 1-1.02-.46l-1.49.66-1.65-2.85 1.15-1.12a5.86 5.86 0 0 1 0-1.4L3.85 7.97 5.5 5.12l1.49.66c.32-.19.66-.34 1.02-.46l.35-1.57Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" />
-                        <circle cx="10" cy="10" r="1.95" stroke="currentColor" strokeWidth="1.15" />
-                      </svg>
-                    </button>
-
-                    {auth.isAuthenticated ? (
+                    <div className="mr-1.5 sm:mr-2 flex items-center gap-1.5 sm:gap-2">
+                      <StreakPill
+                        streak={currentStreak.streak}
+                        isTodayComplete={currentStreak.isTodayComplete}
+                        darkSurface={theme === 'dark'}
+                      />
                       <button
-                        ref={profileButtonRef}
-                        aria-label={t('layout.profileAria')}
-                        aria-expanded={isProfileOpen}
-                        aria-haspopup="menu"
-                        onClick={() => {
-                          updateProfileAnchorRect()
-                          setIsProfileOpen((current) => !current)
-                        }}
-                        className="inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-pebble-border/35 overflow-hidden transition hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40"
-                        style={{
-                          background: theme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.90)',
-                          boxShadow: theme === 'dark'
-                            ? '0 0 14px 4px rgba(96,165,250,0.25), 0 0 30px 10px rgba(59,130,246,0.14)'
-                            : '0 0 14px 4px rgba(29,78,216,0.14), 0 0 30px 10px rgba(15,34,90,0.07)',
-                        }}
+                        aria-label={t('layout.notificationsAria')}
+                        className={iconButtonClass}
                         type="button"
                       >
-                        {auth.profile?.avatarUrl ? (
-                          <img src={auth.profile.avatarUrl} alt="" className="h-full w-full object-cover" />
-                        ) : null}
+                        <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5 sm:h-5 sm:w-5" aria-hidden="true">
+                          <path d="M10 3.5a4.25 4.25 0 0 0-4.25 4.25v2.4L4.6 12.2a.9.9 0 0 0 .8 1.3h9.2a.9.9 0 0 0 .8-1.3l-1.15-2.05v-2.4A4.25 4.25 0 0 0 10 3.5Z" stroke="currentColor" strokeWidth="1.25" />
+                          <path d="M8.1 14.8a2.1 2.1 0 0 0 3.8 0" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+                        </svg>
                       </button>
+                      <button
+                        aria-label={t('layout.settingsAria')}
+                        onClick={() => setIsSettingsOpen(true)}
+                        className={iconButtonClass}
+                        type="button"
+                      >
+                        <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5 sm:h-5 sm:w-5" aria-hidden="true">
+                          <path d="M8.35 3.75h3.3l.35 1.57c.36.12.7.27 1.02.46l1.49-.66 1.65 2.85-1.15 1.12c.03.23.04.46.04.7s-.01.47-.04.7l1.15 1.12-1.65 2.85-1.49-.66c-.32.19-.66.34-1.02.46l-.35 1.57h-3.3l-.35-1.57a4.95 4.95 0 0 1-1.02-.46l-1.49.66-1.65-2.85 1.15-1.12a5.86 5.86 0 0 1 0-1.4L3.85 7.97 5.5 5.12l1.49.66c.32-.19.66-.34 1.02-.46l.35-1.57Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" />
+                          <circle cx="10" cy="10" r="1.95" stroke="currentColor" strokeWidth="1.15" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {auth.isAuthenticated ? (
+                      <AnimatedBorderRing className="h-[50px] w-[50px] sm:h-[54px] sm:w-[54px] rounded-full" variant="avatar">
+                        <button
+                          ref={profileButtonRef}
+                          aria-label={t('layout.profileAria')}
+                          aria-expanded={isProfileOpen}
+                          aria-haspopup="menu"
+                          onClick={() => {
+                            updateProfileAnchorRect()
+                            setIsProfileOpen((current) => !current)
+                          }}
+                          className="inline-flex h-full w-full items-center justify-center rounded-full border border-pebble-border/35 overflow-hidden transition hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40"
+                          style={{
+                            background: theme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.90)',
+                          }}
+                          type="button"
+                        >
+                          {auth.profile?.avatarUrl ? (
+                            <img src={auth.profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+                          ) : null}
+                        </button>
+                      </AnimatedBorderRing>
                     ) : (
                       <button
                         type="button"
@@ -271,22 +284,29 @@ export function AppLayout() {
                   </div>
                 </div>
 
-                <nav className="mt-0.5 flex items-center gap-0.5 overflow-x-auto rounded-[10px] border border-pebble-border/28 bg-pebble-overlay/7 p-0.5 lg:hidden">
-                  {navItems.map(({ to, label }) => (
-                    <NavLink
-                      key={to}
-                      to={to}
-                      className={({ isActive }) =>
-                        `whitespace-nowrap rounded-md px-2.5 py-1.5 md:py-1.5 text-[13px] font-medium tracking-[0.01em] transition ${isActive
-                          ? 'border border-pebble-border/45 bg-pebble-overlay/16 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_22px_rgba(2,8,23,0.18)]'
-                          : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/12 hover:text-pebble-text-primary'
-                        }`
-                      }
-                    >
-                      {label}
-                    </NavLink>
-                  ))}
-                </nav>
+                <HoverBorderGradient
+                  as="div"
+                  duration={1.2}
+                  containerClassName="mt-0.5 rounded-full lg:hidden"
+                  className="bg-transparent px-0 py-0 text-inherit"
+                >
+                  <nav className="flex items-center gap-0.5 overflow-hidden rounded-full p-0.5">
+                    {navItems.map(({ to, label }) => (
+                      <NavLink
+                        key={to}
+                        to={to}
+                        className={({ isActive }) =>
+                          `relative z-10 whitespace-nowrap rounded-full px-2.5 py-1.5 md:py-1.5 text-[13px] font-medium tracking-[0.01em] transition ${isActive
+                            ? 'border border-[var(--navActiveBorder)] bg-[var(--navActiveBg)] text-[var(--navActiveFg)] ring-0 shadow-none hover:bg-[var(--navActiveBg)] hover:shadow-none'
+                            : 'border border-transparent text-pebble-text-secondary hover:bg-white/5 dark:hover:bg-white/6 hover:text-pebble-text-primary focus-visible:bg-white/6'
+                          }`
+                        }
+                      >
+                        {label}
+                      </NavLink>
+                    ))}
+                  </nav>
+                </HoverBorderGradient>
               </PageContainer>
             </Card>
           </header>

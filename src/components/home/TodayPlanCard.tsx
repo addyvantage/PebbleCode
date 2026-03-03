@@ -10,6 +10,7 @@ import { getRecentActivity } from '../../lib/recentStore'
 import { PROBLEMS_BANK } from '../../data/problemsBank'
 import { Link } from 'react-router-dom'
 import { buttonClass } from '../ui/buttonStyles'
+import { useTheme } from '../../hooks/useTheme'
 
 function classNames(...values: Array<string | undefined>) {
     return values.filter(Boolean).join(' ')
@@ -17,6 +18,7 @@ function classNames(...values: Array<string | undefined>) {
 
 export function TodayPlanCard() {
     const { t, lang, isRTL } = useI18n()
+    const { theme } = useTheme()
     const [state, setState] = useState<PlanState>(loadDailyPlan)
     const [streak, setStreak] = useState(0)
     const [isGenerating, setIsGenerating] = useState(false)
@@ -149,10 +151,16 @@ export function TodayPlanCard() {
     const currentEffort = computeEffortScore(plan, state.completedTasks)
     const expandedTask = plan?.tasks.find(t => t.id === expandedTaskId)
     const portalHost = document.getElementById('pebble-portal') ?? document.body
+    const planSurfaceClass = theme === 'dark'
+        ? 'bg-pebble-overlay/[0.04]'
+        : 'bg-[rgba(231,237,249,0.94)] border-pebble-border/28 shadow-[0_14px_34px_rgba(55,72,110,0.14)]'
+    const taskRowClass = theme === 'dark'
+        ? 'border border-pebble-border/22 bg-pebble-canvas/48 hover:bg-pebble-canvas/64'
+        : 'border border-pebble-border/26 bg-[rgba(221,229,244,0.78)] hover:bg-[rgba(214,223,241,0.92)]'
 
     return (
         <>
-            <Card className="flex flex-col p-4 lg:p-5 card-premium rounded-[24px]">
+            <Card className={`flex flex-col p-4 lg:p-5 rounded-[24px] ${planSurfaceClass}`}>
                 <div className="mb-4 flex items-start justify-between gap-3">
                     <div className="space-y-0.5">
                         <h2 className={`text-[14px] font-semibold text-pebble-text-primary tracking-tight ${isRTL ? 'rtlText' : ''}`}>
@@ -197,7 +205,7 @@ export function TodayPlanCard() {
                             {plan.tasks.slice(0, 3).map((task) => {
                                 const checked = state.completedTasks.includes(task.id)
                                 return (
-                                    <li key={task.id} className="relative flex items-center justify-between rounded-[12px] bg-pebble-canvas/40 hover:bg-pebble-canvas/80 px-4 py-2.5 transition-colors">
+                                    <li key={task.id} className={`relative flex items-center justify-between rounded-[12px] px-4 py-2.5 transition-colors ${taskRowClass}`}>
 
                                         <div className="flex min-w-0 items-center gap-3">
                                             <button

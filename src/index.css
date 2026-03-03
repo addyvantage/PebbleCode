@@ -30,6 +30,14 @@
   --pebble-header-bg: #1F2432;
   --pebble-header-border: rgba(148, 163, 184, 0.10);
   --pebble-header-shadow: rgba(0, 0, 0, 0.22);
+  --hbg-edge: rgba(30, 64, 175, 0.82);
+  --hbg-spot: rgba(30, 64, 175, 0.78);
+  --hbg-highlight: rgba(30, 58, 138, 0.94);
+  --hbg-surface: rgba(10, 14, 24, 0.35);
+  --hbg-inner: rgba(10, 14, 24, 0.75);
+  --navActiveBg: rgba(18, 24, 42, 0.94);
+  --navActiveBorder: rgba(130, 138, 165, 0.40);
+  --navActiveFg: rgba(241, 245, 255, 0.98);
 }
 
 .theme-light {
@@ -68,6 +76,14 @@
   --pebble-header-bg: #EEF3FF;
   --pebble-header-border: rgba(15, 23, 42, 0.08);
   --pebble-header-shadow: rgba(15, 23, 42, 0.06);
+  --hbg-edge: rgba(160, 200, 255, 0.18);
+  --hbg-spot: rgba(120, 170, 255, 0.45);
+  --hbg-highlight: rgba(130, 190, 255, 0.70);
+  --hbg-surface: rgba(255, 255, 255, 0.75);
+  --hbg-inner: rgba(255, 255, 255, 0.92);
+  --navActiveBg: rgba(59, 130, 246, 0.12);
+  --navActiveBorder: rgba(59, 130, 246, 0.45);
+  --navActiveFg: rgba(17, 24, 39, 0.98);
 }
 
 html {
@@ -95,6 +111,31 @@ html {
       Arial,
       sans-serif;
     text-rendering: optimizeLegibility;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
   }
 
   * {
@@ -159,6 +200,32 @@ html {
   h6 {
     line-height: 1.2;
     letter-spacing: -0.01em;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 

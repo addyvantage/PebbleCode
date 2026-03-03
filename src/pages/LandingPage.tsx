@@ -4,7 +4,6 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Component as EtheralShadow } from '../components/ui/etheral-shadow'
 import { buttonClass } from '../components/ui/buttonStyles'
-import { TextShimmer } from '../components/ui/text-shimmer'
 import { useI18n } from '../i18n/useI18n'
 import { useTheme } from '../hooks/useTheme'
 import { getRecentActivity } from '../lib/recentStore'
@@ -25,6 +24,10 @@ export function LandingPage() {
   const etherealColor = theme === 'dark'
     ? 'rgba(120, 170, 255, 0.22)'
     : 'rgba(59, 130, 246, 0.30)'
+  const previewInnerOutlineClass = 'border-[rgba(130,138,165,0.42)]'
+  const sideCardSurfaceClass = theme === 'dark'
+    ? 'bg-pebble-overlay/[0.04]'
+    : 'bg-[rgba(231,237,249,0.94)] border-pebble-border/28 shadow-[0_14px_34px_rgba(55,72,110,0.14)]'
 
   const recent = getRecentActivity()
   const recentProblem = recent ? getProblemById(recent.problemId) : null
@@ -59,9 +62,9 @@ export function LandingPage() {
 
 
   return (
-    <section className="page-enter h-full min-h-0 overflow-y-auto lg:overflow-hidden">
-      <div className="flex h-full min-h-0 flex-col gap-1.5 lg:grid lg:grid-rows-[minmax(0,1fr)_auto_auto] lg:gap-1.5">
-        <Card className="relative w-full min-h-0 overflow-hidden rounded-none p-3 xl:p-3.5" interactive>
+    <section className="page-enter h-full min-h-0 overflow-y-auto lg:overflow-visible">
+      <div className="flex min-h-0 flex-col gap-4">
+        <Card className="relative w-full overflow-hidden rounded-none px-3 py-3 md:px-4 md:py-4 lg:px-6 lg:py-6 xl:px-8 xl:py-7" interactive>
           <div className="pointer-events-none absolute inset-0 z-0">
             <EtheralShadow
               className="absolute inset-0"
@@ -75,96 +78,100 @@ export function LandingPage() {
             />
           </div>
 
-          <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6">
-            <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[1.18fr_0.82fr] lg:gap-3 xl:gap-4">
-              <div className="flex min-h-0 flex-col justify-center gap-3 xl:gap-3.5">
-              <Badge className="w-fit">{t('landing.badge')}</Badge>
+          <div className="relative z-10 mx-auto w-full max-w-[1280px] px-1 sm:px-2 lg:px-3">
+            <div className="grid h-full min-h-0 grid-cols-1 gap-y-7 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-0 xl:gap-x-12">
+              <div className="col-span-1 flex min-h-0 flex-col justify-start gap-5 lg:col-span-8 lg:pr-4 xl:col-span-7 xl:gap-6">
+                <Badge className="w-fit">{t('landing.badge')}</Badge>
 
-              <div className="headline-shimmer">
-                <h1
-                  className={`max-w-[38ch] text-balance text-3xl font-semibold tracking-tight leading-[1.1] md:text-4xl lg:text-[3.05rem] xl:text-[3.3rem] ${isUrdu ? 'rtlText' : ''}`}
-                >
-                  <TextShimmer
-                    duration={6}
-                    spread={1.8}
-                    className="font-bold pb-[0.3em]"
+                <div>
+                  <h1
+                    className={`max-w-none text-balance text-3xl font-semibold tracking-tight leading-[1.16] md:text-4xl lg:text-[2.75rem] xl:text-[3.05rem] ${isUrdu ? 'rtlText' : ''}`}
                   >
-                    {t('landing.headline')}
-                  </TextShimmer>
-                </h1>
-              </div>
-              <p className={`max-w-[66ch] text-[13.5px] leading-relaxed text-pebble-text-secondary sm:text-[14.5px] ${isUrdu ? 'rtlText' : ''}`}>
-                {t('landing.subheadline')}
-              </p>
+                    <span className={`font-bold ${theme === 'dark' ? 'text-pebble-text-primary' : 'text-pebble-accent'}`}>
+                      {lang === 'en' ? (
+                        <>
+                          Elite coding practice with real runtime feedback
+                          <span className="hidden lg:inline"><br /></span>
+                          <span className="lg:ml-1">and mentor-level guidance.</span>
+                        </>
+                      ) : (
+                        t('landing.headline')
+                      )}
+                    </span>
+                  </h1>
+                </div>
+                <p className={`max-w-[70ch] text-[13.5px] leading-relaxed text-pebble-text-secondary sm:text-[14.5px] ${isUrdu ? 'rtlText' : ''}`}>
+                  {t('landing.subheadline')}
+                </p>
 
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <Link to="/onboarding" className={buttonClass('primary')}>
-                  {t('landing.tryPebble')}
-                </Link>
-                <Link to="/session/1" className={buttonClass('secondary')}>
-                  {t('landing.openSession')}
-                </Link>
-              </div>
-
-              <div className="flex flex-wrap gap-2 pt-1">
-                {trustChips.map((chip) => (
-                  <span
-                    key={chip}
-                    className="rounded-full border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2.5 py-0.5 text-[11.5px] font-medium text-pebble-text-secondary"
-                  >
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-              <div className="flex min-h-0 items-center lg:justify-end">
-                <div className="w-full max-w-[620px] rounded-[14px] border border-pebble-border/34 bg-pebble-overlay/[0.08] p-2.5 shadow-[0_20px_48px_rgba(2,8,23,0.2)] lg:p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className={`text-[13px] font-semibold uppercase tracking-[0.08em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>
-                    {t('landing.previewLabel')}
-                  </p>
-                  <span className="rounded-full border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2 py-0.5 text-[10.5px] uppercase tracking-[0.06em] text-pebble-text-secondary">
-                    {t('landing.previewUsingRun')}
-                  </span>
+                <div className="flex flex-wrap items-center gap-2.5 pt-1.5">
+                  <Link to="/onboarding" className={buttonClass('primary')}>
+                    {t('landing.tryPebble')}
+                  </Link>
+                  <Link to="/session/1" className={buttonClass('secondary')}>
+                    {t('landing.openSession')}
+                  </Link>
                 </div>
 
-                <div className="mt-1.5 space-y-1.5">
-                  <div className="rounded-[10px] border border-pebble-border/30 bg-pebble-canvas/80 p-2">
-                    <div className="mb-1.5 flex items-center justify-between text-[13px] text-pebble-text-muted">
-                      <span>{t('landing.previewUnit')}</span>
-                      <span>{t('landing.previewTests')}</span>
-                    </div>
-                    <pre dir="ltr" className="ltrSafe overflow-hidden rounded-[6px] border border-pebble-border/22 bg-pebble-canvas/90 p-1.5 font-mono text-[13px] leading-snug text-pebble-text-secondary">{`def two_sum(nums, target):\n    seen = {}\n    # TODO\n    return -1, -1`}</pre>
-                    <div className="mt-1.5 inline-flex rounded-full border border-pebble-warning/35 bg-pebble-warning/15 px-2 py-0.5 text-[11px] font-medium text-pebble-warning">
-                      {t('landing.previewFail')}
-                    </div>
+                <div className="flex flex-wrap justify-start gap-2 pt-2">
+                  {trustChips.map((chip) => (
+                    <span
+                      key={chip}
+                      className="rounded-full border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2.5 py-0.5 text-[11.5px] font-medium text-pebble-text-secondary"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="col-span-1 flex min-h-0 items-center lg:col-span-4 lg:justify-end lg:translate-x-14 xl:col-span-5 xl:translate-x-16">
+                <div className="w-full max-w-[620px] rounded-[14px] border border-pebble-border/34 bg-pebble-overlay/[0.08] p-2.5 shadow-[0_26px_60px_rgba(2,8,23,0.26)] lg:p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-[13px] font-semibold uppercase tracking-[0.08em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>
+                      {t('landing.previewLabel')}
+                    </p>
+                    <span className="rounded-full border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2 py-0.5 text-[10.5px] uppercase tracking-[0.06em] text-pebble-text-secondary">
+                      {t('landing.previewUsingRun')}
+                    </span>
                   </div>
 
-                  <div className="rounded-[10px] border border-pebble-border/30 bg-pebble-overlay/[0.08] p-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-pebble-accent/28 text-[11px] font-semibold text-pebble-text-primary">
-                        P
-                      </span>
-                      <p className={`text-[13px] font-semibold text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>
-                        {t('landing.previewCoach')}
+                  <div className="mt-1.5 space-y-1.5">
+                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} bg-pebble-canvas/80 p-2`}>
+                      <div className="mb-1.5 flex items-center justify-between text-[13px] text-pebble-text-muted">
+                        <span>{t('landing.previewUnit')}</span>
+                        <span>{t('landing.previewTests')}</span>
+                      </div>
+                      <pre dir="ltr" className={`ltrSafe overflow-hidden rounded-[6px] border ${previewInnerOutlineClass} bg-pebble-canvas/90 p-1.5 font-mono text-[13px] leading-snug text-pebble-text-secondary`}>{`def two_sum(nums, target):\n    seen = {}\n    # TODO\n    return -1, -1`}</pre>
+                      <div className="mt-1.5 inline-flex rounded-full border border-pebble-warning/35 bg-pebble-warning/15 px-2 py-0.5 text-[11px] font-medium text-pebble-warning">
+                        {t('landing.previewFail')}
+                      </div>
+                    </div>
+
+                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} bg-pebble-overlay/[0.08] p-2`}>
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-pebble-accent/28 text-[11px] font-semibold text-pebble-text-primary">
+                          P
+                        </span>
+                        <p className={`text-[13px] font-semibold text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>
+                          {t('landing.previewCoach')}
+                        </p>
+                      </div>
+                      <p className={`mt-1 text-[13.5px] leading-relaxed text-pebble-text-secondary line-clamp-2 ${isUrdu ? 'rtlText' : ''}`}>
+                        {t('landing.previewCoachHint')}
                       </p>
                     </div>
-                    <p className={`mt-1 text-[13.5px] leading-relaxed text-pebble-text-secondary line-clamp-2 ${isUrdu ? 'rtlText' : ''}`}>
-                      {t('landing.previewCoachHint')}
-                    </p>
                   </div>
-                </div>
                 </div>
               </div>
             </div>
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.12fr_0.88fr] lg:gap-4">
+        <div className="-mt-2 grid grid-cols-1 gap-4 lg:grid-cols-[1.12fr_0.88fr] lg:gap-4">
           <TodayPlanCard />
           <div className="flex flex-col gap-4">
-            <Card className="relative overflow-hidden p-3 flex flex-col justify-center bg-pebble-overlay/[0.05]" interactive>
+            <Card className={`relative overflow-hidden p-3 flex flex-col justify-center ${sideCardSurfaceClass}`} interactive>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pebble-accent/15 text-pebble-accent shrink-0">
@@ -204,15 +211,15 @@ export function LandingPage() {
                 </div>
               </div>
             </Card>
-            <RecommendedNextCard className="flex-1" />
+            <RecommendedNextCard className={`flex-1 ${sideCardSurfaceClass}`} />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="-mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {bentoCards.map((card) => {
             const Icon = card.icon
             return (
-              <Card key={card.title} padding="sm" className={`h-full p-8 lg:p-10 ${bentoCardClass} min-h-[160px] flex items-center`} interactive>
+              <Card key={card.title} padding="sm" className={`h-full p-5 lg:p-6 ${bentoCardClass} min-h-[116px] flex items-center`} interactive>
                 {/* Premium floating glass interior elements */}
                 <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-500 opacity-0 group-hover:opacity-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1px_1px_rgba(0,0,0,0.05)] [background-image:linear-gradient(135deg,rgba(255,255,255,0.08)_0%,transparent_40%,transparent_70%,rgba(0,0,0,0.04)_100%)]">
                   {/* Subtle corner glow */}
@@ -222,14 +229,14 @@ export function LandingPage() {
                 {/* Diagonal floating sheen */}
                 <span aria-hidden="true" className="pointer-events-none absolute inset-0 transition-transform duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] translate-x-[-150%] opacity-0 group-hover:opacity-100 group-hover:translate-x-[150%] bg-gradient-to-tr from-transparent via-white/[0.06] to-transparent" />
 
-                <div className="relative z-10 flex items-center gap-5">
-                  <span className="shrink-0 flex h-16 w-16 relative items-center justify-center rounded-[14px] border border-pebble-border/20 bg-pebble-overlay/[0.04] text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-500 group-hover:bg-pebble-overlay/[0.08] group-hover:border-pebble-border/40 group-hover:text-pebble-accent group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_20px_rgba(0,0,0,0.12)]">
+                <div className="relative z-10 flex items-center gap-3.5">
+                  <span className="shrink-0 flex h-12 w-12 relative items-center justify-center rounded-[12px] border border-pebble-border/20 bg-pebble-overlay/[0.04] text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-500 group-hover:bg-pebble-overlay/[0.08] group-hover:border-pebble-border/40 group-hover:text-pebble-accent group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_20px_rgba(0,0,0,0.12)]">
                     <span className="absolute inset-0 rounded-[14px] bg-pebble-accent/20 blur-[10px] transition-opacity duration-500 opacity-0 group-hover:opacity-100" />
-                    <Icon className="relative z-10 h-8 w-8 transition-transform duration-500 group-hover:scale-[1.15]" aria-hidden="true" />
+                    <Icon className="relative z-10 h-6 w-6 transition-transform duration-500 group-hover:scale-[1.12]" aria-hidden="true" />
                   </span>
-                  <div className="space-y-2.5 min-w-0">
-                    <h3 className={`text-[19px] font-semibold tracking-tight text-pebble-text-primary transition-colors duration-500 group-hover:text-pebble-accent ${isUrdu ? 'rtlText' : ''}`}>{card.title}</h3>
-                    <p className={`text-[15px] leading-relaxed text-pebble-text-secondary transition-colors duration-500 group-hover:text-pebble-text-primary/95 ${isUrdu ? 'rtlText' : ''}`}>{card.detail}</p>
+                  <div className="space-y-1.5 min-w-0">
+                    <h3 className={`text-[17px] font-semibold tracking-tight text-pebble-text-primary transition-colors duration-500 group-hover:text-pebble-accent ${isUrdu ? 'rtlText' : ''}`}>{card.title}</h3>
+                    <p className={`text-[14px] leading-relaxed text-pebble-text-secondary transition-colors duration-500 group-hover:text-pebble-text-primary/95 ${isUrdu ? 'rtlText' : ''}`}>{card.detail}</p>
                   </div>
                 </div>
               </Card>

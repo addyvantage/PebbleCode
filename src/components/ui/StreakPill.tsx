@@ -6,9 +6,10 @@ type StreakPillProps = {
   streak: number
   isTodayComplete?: boolean
   compact?: boolean
+  darkSurface?: boolean
 }
 
-export function StreakPill({ streak, isTodayComplete = false, compact = false }: StreakPillProps) {
+export function StreakPill({ streak, isTodayComplete = false, compact = false, darkSurface = false }: StreakPillProps) {
   const { t, isRTL } = useI18n()
   const [pulse, setPulse] = useState(false)
   const prevCompleteRef = useRef(isTodayComplete)
@@ -52,9 +53,13 @@ export function StreakPill({ streak, isTodayComplete = false, compact = false }:
 
   return (
     <div
-      className={`relative inline-flex h-10 items-center justify-center gap-2.5 rounded-xl border px-3 transition-all duration-300 ${isActive
-        ? 'border-pebble-border/35 bg-pebble-overlay/[0.08] shadow-sm text-pebble-text-primary'
-        : 'border-pebble-border/20 bg-pebble-overlay/[0.04] text-pebble-text-secondary'
+      className={`relative inline-flex h-9 sm:h-10 items-center justify-center gap-2.5 rounded-xl border px-3 transition-all duration-300 ${isActive
+        ? darkSurface
+          ? 'border-pebble-border/35 bg-[rgba(10,14,24,0.58)] shadow-none text-[rgba(241,245,255,0.96)]'
+          : 'border-pebble-border/35 bg-pebble-overlay/[0.08] shadow-sm text-pebble-text-primary'
+        : darkSurface
+          ? 'border-pebble-border/35 bg-[rgba(10,14,24,0.58)] text-[rgba(214,222,242,0.84)]'
+          : 'border-pebble-border/20 bg-pebble-overlay/[0.04] text-pebble-text-secondary'
         } ${isRTL ? 'rtlText' : ''}`}
     >
       <span
