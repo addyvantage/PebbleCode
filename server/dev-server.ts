@@ -377,7 +377,9 @@ app.post('/api/pebble-agent', async (req: Request, res: Response) => {
 
 // ── Auth middleware ─────────────────────────────────────────────────────────
 const PROFILES_TABLE = process.env.PROFILES_TABLE_NAME || 'pebble-profiles'
-const AVATARS_BUCKET = process.env.AVATARS_BUCKET_NAME || 'pebble-avatars-dev'
+// Must be set explicitly — the real bucket name includes account+region (e.g. pebble-avatars-123456789012-ap-south-1).
+// When unset, the presign endpoint falls back to the offline dev stub so the UI still works locally.
+const AVATARS_BUCKET = process.env.AVATARS_BUCKET_NAME ?? ''
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
 
 function extractUserId(req: Request): { userId: string; email: string } | null {
@@ -604,9 +606,19 @@ app.post('/api/avatar/presign', async (req: Request, res: Response) => {
 
   const awsRegion = process.env.AWS_REGION
 
-  if (!awsRegion) {
-    // Dev mode: return a fake URL (avatar upload won't actually work without S3)
-    console.log(`[dev-api] Would generate presigned URL for ${key} (offline mode)`)
+  // Use offline stub when either AWS_REGION or AVATARS_BUCKET_NAME is not configured.
+  // This avoids signing presigned URLs against a non-existent / wrong bucket (which
+  // surfaces as a CORS error in the browser because S3 returns a no-CORS 403/404).
+  if (!awsRegion || !AVATARS_BUCKET) {
+    if (awsRegion && !AVATARS_BUCKET) {
+      console.warn(
+        '[dev-api] AVATARS_BUCKET_NAME is not set — falling back to offline avatar stub.\n' +
+        '         Set AVATARS_BUCKET_NAME to the CDK output AvatarsBucketName, e.g.:\n' +
+        '           AVATARS_BUCKET_NAME=pebble-avatars-<account>-<region>'
+      )
+    } else {
+      console.log(`[dev-api] AWS not configured — using offline avatar stub for key: ${key}`)
+    }
     res.status(200).json({ uploadUrl: 'http://localhost:3001/dev-upload-stub', key })
     return
   }
@@ -615,10 +627,15 @@ app.post('/api/avatar/presign', async (req: Request, res: Response) => {
     const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
     const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
     const s3 = new S3Client({ region: awsRegion })
+    // Note: ContentType is intentionally NOT included in PutObjectCommand.
+    // Including it locks the signature to that exact value; if the browser sends
+    // a slightly different Content-Type header the upload gets a 403 SignatureDoesNotMatch.
+    // The client still sends Content-Type on the PUT (S3 stores it), but it is not
+    // part of the signature check. The contentType param is kept for future use.
+    void contentType
     const command = new PutObjectCommand({
       Bucket: AVATARS_BUCKET,
       Key: key,
-      ContentType: contentType || 'image/jpeg',
     })
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 })
     res.status(200).json({ uploadUrl, key })

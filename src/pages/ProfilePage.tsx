@@ -48,11 +48,21 @@ export function ProfilePage() {
             const { uploadUrl, key } = await presignRes.json()
 
             // 2. Upload to S3 (or dev stub)
-            const uploadRes = await fetch(uploadUrl, {
-                method: 'PUT',
-                headers: { 'Content-Type': file.type },
-                body: file,
-            })
+            // Wrap separately so CORS/network errors get a clear message distinct from HTTP errors.
+            let uploadRes: Response
+            try {
+                uploadRes = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': file.type },
+                    body: file,
+                })
+            } catch {
+                throw new Error(
+                    'Avatar upload blocked — likely a CORS error. ' +
+                    'Ensure AVATARS_BUCKET_NAME is set to the correct S3 bucket ' +
+                    'and that bucket has a CORS rule allowing this origin.'
+                )
+            }
             if (!uploadRes.ok) throw new Error(`S3 upload failed (HTTP ${uploadRes.status})`)
 
             // 3. Update profile with new avatar key
