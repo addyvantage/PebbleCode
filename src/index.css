@@ -27,6 +27,9 @@
   --pebble-bg-image-opacity: 0.15;
   --pebble-shadow: 0 16px 40px rgba(28, 32, 48, 0.4);
   --pebble-shadow-hover: 0 18px 42px rgba(28, 32, 48, 0.45);
+  --pebble-header-bg: #1F2432;
+  --pebble-header-border: rgba(148, 163, 184, 0.10);
+  --pebble-header-shadow: rgba(0, 0, 0, 0.22);
 }
 
 .theme-light {
@@ -62,6 +65,9 @@
   --pebble-bg-image-opacity: 0.05;
   --pebble-shadow: 0 1px 4px rgba(55, 72, 110, 0.12), 0 4px 16px rgba(55, 72, 110, 0.08);
   --pebble-shadow-hover: 0 2px 8px rgba(55, 72, 110, 0.15), 0 8px 24px rgba(55, 72, 110, 0.10);
+  --pebble-header-bg: #EEF3FF;
+  --pebble-header-border: rgba(15, 23, 42, 0.08);
+  --pebble-header-shadow: rgba(15, 23, 42, 0.06);
 }
 
 html {
@@ -187,6 +193,12 @@ html {
       inset 0 -1px 0 rgba(var(--pebble-border), 0.08);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+  }
+
+  .pebble-header {
+    background: var(--pebble-header-bg);
+    border-bottom: 1px solid var(--pebble-header-border);
+    box-shadow: 0 10px 30px var(--pebble-header-shadow);
   }
 
   .theme-dark .card-premium {
