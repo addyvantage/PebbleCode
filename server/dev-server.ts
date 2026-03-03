@@ -376,7 +376,7 @@ app.post('/api/pebble-agent', async (req: Request, res: Response) => {
 })
 
 // ── Auth middleware ─────────────────────────────────────────────────────────
-const PROFILES_TABLE = process.env.PROFILES_TABLE_NAME || 'pebble-profiles-dev'
+const PROFILES_TABLE = process.env.PROFILES_TABLE_NAME || 'pebble-profiles'
 const AVATARS_BUCKET = process.env.AVATARS_BUCKET_NAME || 'pebble-avatars-dev'
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
 
@@ -392,7 +392,7 @@ function extractUserId(req: Request): { userId: string; email: string } | null {
     try {
       // Decode JWT payload (not verifying signature in dev; prod should use JWKS)
       const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
-      return { userId: payload.sub, email: payload.email || '' }
+      return { userId: payload.sub, email: payload.email || payload['cognito:username'] || '' }
     } catch {
       return null
     }
@@ -443,11 +443,10 @@ app.get('/api/profile', async (req: Request, res: Response) => {
       TableName: PROFILES_TABLE,
       Key: { userId: identity.userId },
     }))
-    if (result.Item) {
-      res.status(200).json(result.Item)
-    } else {
+    let item = result.Item
+    if (!item) {
       // Auto-create on first access
-      const newProfile = {
+      item = {
         userId: identity.userId,
         username: identity.email.split('@')[0],
         email: identity.email,
@@ -459,12 +458,37 @@ app.get('/api/profile', async (req: Request, res: Response) => {
         updatedAt: new Date().toISOString(),
       }
       const { PutCommand } = await import('@aws-sdk/lib-dynamodb')
-      await client.send(new PutCommand({ TableName: PROFILES_TABLE, Item: newProfile }))
-      res.status(200).json(newProfile)
+      await client.send(new PutCommand({ TableName: PROFILES_TABLE, Item: item }))
     }
+    // Generate a short-lived presigned GET URL if an avatar key is stored
+    if (item.avatarKey) {
+      try {
+        const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3')
+        const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
+        const s3 = new S3Client({ region: awsRegion })
+        item = {
+          ...item,
+          avatarUrl: await getSignedUrl(s3, new GetObjectCommand({ Bucket: AVATARS_BUCKET, Key: item.avatarKey as string }), { expiresIn: 3600 }),
+        }
+      } catch {
+        // Non-fatal: avatar URL generation failed, return without it
+      }
+    }
+    res.status(200).json(item)
   } catch (err) {
-    console.error('[dev-api] Failed to fetch profile:', err)
-    res.status(500).json({ error: 'Failed to fetch profile' })
+    console.error('[dev-api] Failed to fetch profile from DynamoDB, using in-memory fallback:', err)
+    const stored = devProfiles.get(identity.userId)
+    res.status(200).json(stored ?? {
+      userId: identity.userId,
+      username: identity.email.split('@')[0],
+      email: identity.email,
+      bio: '',
+      avatarUrl: null,
+      avatarKey: null,
+      role: ADMIN_EMAILS.includes(identity.email) ? 'admin' : 'user',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
   }
 })
 
@@ -548,8 +572,22 @@ app.put('/api/profile', async (req: Request, res: Response) => {
 
     res.status(200).json({ ok: true })
   } catch (err) {
-    console.error('[dev-api] Failed to update profile:', err)
-    res.status(500).json({ error: 'Failed to update profile' })
+    console.error('[dev-api] Failed to update profile in DynamoDB, using in-memory fallback:', err)
+    const existing = devProfiles.get(identity.userId) ?? {
+      userId: identity.userId,
+      email: identity.email,
+      role: ADMIN_EMAILS.includes(identity.email) ? 'admin' : 'user',
+      createdAt: now,
+    }
+    const updated = {
+      ...existing,
+      ...(username !== undefined && { username }),
+      ...(bio !== undefined && { bio }),
+      ...(avatarKey !== undefined && { avatarKey }),
+      updatedAt: now,
+    }
+    devProfiles.set(identity.userId, updated)
+    res.status(200).json({ ok: true })
   }
 })
 

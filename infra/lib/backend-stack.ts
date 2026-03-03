@@ -113,10 +113,11 @@ export class BackendStack extends cdk.Stack {
         allowMethods: [
           apigwv2.CorsHttpMethod.GET,
           apigwv2.CorsHttpMethod.POST,
+          apigwv2.CorsHttpMethod.PUT,
           apigwv2.CorsHttpMethod.OPTIONS,
           apigwv2.CorsHttpMethod.HEAD,
         ],
-        allowHeaders: ['Content-Type'],
+        allowHeaders: ['Content-Type', 'Authorization'],
       },
     })
 
@@ -197,9 +198,10 @@ export class BackendStack extends cdk.Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       cors: [
         {
-          allowedMethods: [s3.HttpMethods.PUT],
-          allowedOrigins: ['http://localhost:5173', 'http://localhost:3001'],
+          allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.HEAD],
+          allowedOrigins: ['*'],
           allowedHeaders: ['*'],
+          exposedHeaders: ['ETag'],
           maxAge: 3000,
         },
       ],
