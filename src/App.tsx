@@ -14,6 +14,9 @@ import { AuthSignupPage } from './pages/auth/AuthSignupPage'
 import { AuthForgotPasswordPage } from './pages/auth/AuthForgotPasswordPage'
 import { AuthThankYouPage } from './pages/auth/AuthThankYouPage'
 import { AuthVerifyPage } from './pages/auth/AuthVerifyPage'
+import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage'
+import { TermsPage } from './pages/legal/TermsPage'
+import { CookiePolicyPage } from './pages/legal/CookiePolicyPage'
 
 function App() {
   return (
@@ -29,6 +32,9 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/ops" element={<OpsPage />} />
+          <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/legal/terms" element={<TermsPage />} />
+          <Route path="/legal/cookies" element={<CookiePolicyPage />} />
         </Route>
 
         {/* ── Auth flow (standalone, no nav) ── */}

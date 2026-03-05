@@ -1,5 +1,5 @@
-import pebbleLogoLight from '../../assets/branding/PebbleLogoLight.png'
-import pebbleLogoDark from '../../assets/branding/PebbleLogoDark.png'
+import pebbleWordmarkLight from '../../assets/brand/pebblecode-wordmark-light.png'
+import pebbleWordmarkDark from '../../assets/brand/pebblecode-wordmark-dark.png'
 import { useTheme } from '../../hooks/useTheme'
 
 interface BrandLogoProps {
@@ -13,10 +13,10 @@ export function BrandLogo({ className }: BrandLogoProps) {
   return (
     <div className="flex items-center leading-none">
       <img
-        src={isDarkMode ? pebbleLogoDark : pebbleLogoLight}
-        alt="Pebble"
+        src={isDarkMode ? pebbleWordmarkDark : pebbleWordmarkLight}
+        alt="PebbleCode"
         draggable={false}
-        className={className ?? 'h-28 w-auto select-none pointer-events-none'}
+        className={className ?? 'h-8 w-auto select-none pointer-events-none object-contain'}
       />
     </div>
   )

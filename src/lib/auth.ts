@@ -1,8 +1,8 @@
 /**
  * Auth wrapper:
- * - Login/signup go through backend (/api/auth/*), so username-or-email login
- *   and username uniqueness rules are server-enforced.
- * - Confirmation / resend / forgot-password still use Cognito browser SDK.
+ * - Login/signup/confirm/resend go through backend (/api/auth/*), so
+ *   username-or-email login and username uniqueness rules are server-enforced.
+ * - Forgot-password remains on Cognito browser SDK for now.
  */
 import {
     CognitoUserPool,
@@ -63,9 +63,19 @@ export type AuthUser = {
     email: string
 }
 
+function decodeJwtSegment(segment: string): string {
+    const normalized = segment.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4)
+    return atob(padded)
+}
+
 function parseJwtPayload(token: string): Record<string, unknown> | null {
     try {
-        return JSON.parse(atob(token.split('.')[1])) as Record<string, unknown>
+        const [, payload] = token.split('.')
+        if (!payload) {
+            return null
+        }
+        return JSON.parse(decodeJwtSegment(payload)) as Record<string, unknown>
     } catch {
         return null
     }
@@ -152,9 +162,24 @@ export async function signIn(identifier: string, password: string): Promise<{ us
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, password }),
     })
-    const data = await res.json().catch(() => ({})) as { idToken?: string; error?: string }
+    const data = await res.json().catch(() => ({})) as {
+        idToken?: string
+        error?: string
+        code?: string
+        verificationEmail?: string
+    }
     if (!res.ok || !data.idToken) {
-        throw new Error(data.error ?? 'Invalid username/email or password')
+        const error = new Error(data.error ?? 'Invalid username/email or password') as Error & {
+            code?: string
+            verificationEmail?: string
+        }
+        if (data.code) {
+            error.code = data.code
+        }
+        if (data.verificationEmail) {
+            error.verificationEmail = data.verificationEmail
+        }
+        throw error
     }
     const user = tokenToUser(data.idToken)
     if (!user) {
@@ -170,9 +195,19 @@ export async function signUp(email: string, password: string, username: string):
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, username }),
     })
-    const data = await res.json().catch(() => ({})) as { error?: string }
+    const data = await res.json().catch(() => ({})) as { error?: string; code?: string; reason?: string }
     if (!res.ok) {
-        throw new Error(data.error ?? 'Account creation failed. Please try again.')
+        const error = new Error(data.error ?? 'Account creation failed. Please try again.') as Error & {
+            code?: string
+            reason?: string
+        }
+        if (data.code) {
+            error.code = data.code
+        }
+        if (data.reason) {
+            error.reason = data.reason
+        }
+        throw error
     }
 }
 
@@ -184,24 +219,32 @@ export function signOut(): void {
 }
 
 export function confirmSignUp(email: string, code: string): Promise<void> {
-    if (!userPool) return Promise.reject(new Error('Cognito not configured'))
-    const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
-    return new Promise((resolve, reject) => {
-        cognitoUser.confirmRegistration(code, true, (err) => {
-            if (err) { reject(err); return }
-            resolve()
-        })
+    return fetch('/api/auth/confirm-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+    }).then(async (res) => {
+        const data = await res.json().catch(() => ({})) as { error?: string; code?: string }
+        if (!res.ok) {
+            const error = new Error(data.error ?? 'Verification failed') as Error & { code?: string }
+            error.code = data.code
+            throw error
+        }
     })
 }
 
 export function resendSignUpCode(email: string): Promise<void> {
-    if (!userPool) return Promise.reject(new Error('Cognito not configured'))
-    const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
-    return new Promise((resolve, reject) => {
-        cognitoUser.resendConfirmationCode((err) => {
-            if (err) { reject(err); return }
-            resolve()
-        })
+    return fetch('/api/auth/resend-signup-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+    }).then(async (res) => {
+        const data = await res.json().catch(() => ({})) as { error?: string; code?: string }
+        if (!res.ok) {
+            const error = new Error(data.error ?? 'Failed to resend code') as Error & { code?: string }
+            error.code = data.code
+            throw error
+        }
     })
 }
 

@@ -13,6 +13,7 @@ import { getLocalizedProblem } from '../i18n/problemContent'
 import { TodayPlanCard } from '../components/home/TodayPlanCard'
 import { RecommendedNextCard } from '../components/home/RecommendedNextCard'
 import { FeatureGrid } from '../components/home/FeatureGrid'
+import { SiteFooter } from '../components/layout/SiteFooter'
 
 function classNames(...values: Array<string | undefined>) {
   return values.filter(Boolean).join(' ')
@@ -26,7 +27,9 @@ export function LandingPage() {
   const etherealColor = theme === 'dark'
     ? 'rgba(120, 170, 255, 0.22)'
     : 'rgba(59, 130, 246, 0.30)'
-  const previewInnerOutlineClass = 'border-[rgba(130,138,165,0.42)]'
+  const previewInnerOutlineClass = theme === 'dark'
+    ? 'border-[rgba(167,179,208,0.52)]'
+    : 'border-[rgba(129,144,174,0.56)]'
   const sideCardSurfaceClass = theme === 'dark'
     ? 'bg-pebble-overlay/[0.04]'
     : 'bg-[rgba(231,237,249,0.94)] border-pebble-border/28 shadow-[0_14px_34px_rgba(55,72,110,0.14)]'
@@ -108,27 +111,27 @@ export function LandingPage() {
               <div className="col-span-1 flex min-h-0 min-w-0 items-center lg:col-span-4 lg:justify-end lg:translate-x-14 xl:col-span-5 xl:translate-x-16">
                 <div className="w-full max-w-[620px] rounded-[14px] border border-pebble-border/34 bg-pebble-overlay/[0.08] p-2.5 shadow-[0_26px_60px_rgba(2,8,23,0.26)] lg:p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className={`text-[13px] font-semibold uppercase tracking-[0.08em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>
+                    <p className={`text-[13px] font-semibold uppercase tracking-[0.08em] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
                       {t('landing.previewLabel')}
                     </p>
-                    <span className="rounded-full border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2 py-0.5 text-[10.5px] uppercase tracking-[0.06em] text-pebble-text-secondary">
+                    <span className="rounded-full border border-pebble-border/48 bg-pebble-overlay/[0.14] px-2 py-0.5 text-[10.5px] uppercase tracking-[0.06em] text-pebble-text-primary">
                       {t('landing.previewUsingRun')}
                     </span>
                   </div>
 
                   <div className="mt-1.5 space-y-1.5">
-                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} bg-pebble-canvas/80 p-2`}>
-                      <div className="mb-1.5 flex items-center justify-between text-[13px] text-pebble-text-muted">
+                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} bg-pebble-canvas/84 p-2`}>
+                      <div className="mb-1.5 flex items-center justify-between text-[13px] text-pebble-text-primary">
                         <span>{t('landing.previewUnit')}</span>
                         <span>{t('landing.previewTests')}</span>
                       </div>
-                      <pre dir="ltr" className={`ltrSafe overflow-hidden rounded-[6px] border ${previewInnerOutlineClass} bg-pebble-canvas/90 p-1.5 font-mono text-[13px] leading-snug text-pebble-text-secondary`}>{`def two_sum(nums, target):\n    seen = {}\n    # TODO\n    return -1, -1`}</pre>
-                      <div className="mt-1.5 inline-flex rounded-full border border-pebble-warning/35 bg-pebble-warning/15 px-2 py-0.5 text-[11px] font-medium text-pebble-warning">
+                      <pre dir="ltr" className={`ltrSafe overflow-hidden rounded-[6px] border ${previewInnerOutlineClass} bg-pebble-canvas/92 p-1.5 font-mono text-[13px] leading-snug text-pebble-text-primary`}>{`def two_sum(nums, target):\n    seen = {}\n    # TODO\n    return -1, -1`}</pre>
+                      <div className="mt-1.5 inline-flex rounded-full border border-amber-500/60 bg-amber-500/16 px-2 py-0.5 text-[11px] font-semibold text-amber-800 shadow-[0_1px_0_rgba(255,255,255,0.55)_inset] dark:border-amber-300/56 dark:bg-amber-400/18 dark:text-amber-100 dark:shadow-[0_0_14px_rgba(251,191,36,0.15)]">
                         {t('landing.previewFail')}
                       </div>
                     </div>
 
-                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} bg-pebble-overlay/[0.08] p-2`}>
+                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} bg-pebble-overlay/[0.12] p-2`}>
                       <div className="flex items-center gap-1.5">
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-pebble-accent/28 text-[11px] font-semibold text-pebble-text-primary">
                           P
@@ -196,6 +199,8 @@ export function LandingPage() {
         </div>
 
         <FeatureGrid />
+
+        <SiteFooter />
       </div>
     </section>
   )

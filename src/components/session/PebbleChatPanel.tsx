@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Badge } from '../ui/Badge'
-import { BrandLogo } from '../ui/BrandLogo'
 import { Button } from '../ui/Button'
+import pebblecodeIconDark from '../../assets/brand/pebblecode-icon-dark.jpg'
 import { askPebble } from '../../utils/pebbleLLM'
 import { askPebbleAgent, type AgentResponse, type HelpTier } from '../../utils/pebbleAgentClient'
 import { ArrowUp, Check, Globe, Lightbulb, Search, Settings2, Wrench } from 'lucide-react'
@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme'
 import { StruggleNudgeBar, type StruggleNudgeAction } from './StruggleNudgeBar'
 import type { StruggleContextSummary, StruggleLevel } from '../../lib/struggleEngine'
 import { telemetry } from '../../lib/telemetry'
+import { buildHintCards } from './hintCopy'
 
 type ChatMessage = {
   id: string
@@ -70,13 +71,14 @@ function renderMarkdown(text: string): ReactNode {
 function formatAgentResponse(response: AgentResponse): string {
   const parts: string[] = []
   if (response.reasoning_brief) parts.push(response.reasoning_brief)
-  if (response.hints.length > 0) parts.push('Hints:\n' + response.hints.map(h => `• ${h}`).join('\n'))
+  if (response.hints.length > 0) parts.push('Hints:\n' + response.hints.map((hint, index) => `${index + 1}. ${hint}`).join('\n'))
   if (response.steps.length > 0) parts.push('Steps:\n' + response.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'))
   if (response.patch_suggestion) parts.push('Suggested fix:\n' + response.patch_suggestion)
   return parts.join('\n\n') || 'No response.'
 }
 
 function AgentResponseView({ response }: { response: AgentResponse }) {
+  const hintCards = buildHintCards(response.hints)
   return (
     <div className="space-y-2">
       {/* Tier badge */}
@@ -92,15 +94,18 @@ function AgentResponseView({ response }: { response: AgentResponse }) {
       {/* Hints */}
       {response.hints.length > 0 && (
         <div>
-          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">Hints</p>
-          <ul className="space-y-0.5">
-            {response.hints.map((hint, i) => (
-              <li key={i} className="flex gap-1.5">
-                <span className="mt-0.5 h-1 w-1 shrink-0 rounded-full bg-pebble-accent/60" />
-                <span>{renderMarkdown(hint)}</span>
-              </li>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">Hints</p>
+          <div className="space-y-1.5">
+            {hintCards.map((hint) => (
+              <div
+                key={hint.id}
+                className="rounded-lg border border-pebble-border/35 bg-pebble-overlay/[0.07] px-2.5 py-2"
+              >
+                <p className="text-[9.5px] font-semibold uppercase tracking-[0.07em] text-pebble-accent">{hint.label}</p>
+                <p className="mt-0.5 text-[12px] leading-relaxed text-pebble-text-primary">{renderMarkdown(hint.text)}</p>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
@@ -578,20 +583,27 @@ export function PebbleChatPanel({
           <div
             className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-[box-shadow,transform] duration-300 motion-reduce:transition-none"
             style={{
-              background: dark ? '#1D2235' : '#E8EEFA',
+              background: dark ? '#25304A' : '#E8EEFA',
               boxShadow: avatarHovered
                 ? dark
-                  ? '0 0 0 1px rgba(180,195,230,0.12), 0 0 14px 6px rgba(96,165,250,0.40), 0 0 28px 12px rgba(59,130,246,0.24), 0 0 44px 20px rgba(79,107,196,0.14)'
+                  ? '0 0 0 1px rgba(198,213,245,0.30), 0 0 14px 6px rgba(96,165,250,0.40), 0 0 28px 12px rgba(59,130,246,0.24), 0 0 44px 20px rgba(79,107,196,0.14)'
                   : '0 0 0 1px rgba(55,72,110,0.16), 0 0 14px 6px rgba(29,78,216,0.22), 0 0 28px 12px rgba(15,34,90,0.12), 0 0 44px 20px rgba(29,78,216,0.07)'
                 : dark
-                  ? '0 0 0 1px rgba(180,195,230,0.12), 0 0 10px 4px rgba(96,165,250,0.30), 0 0 22px 9px rgba(59,130,246,0.18), 0 0 34px 16px rgba(79,107,196,0.10)'
+                  ? '0 0 0 1px rgba(198,213,245,0.24), 0 0 10px 4px rgba(96,165,250,0.30), 0 0 22px 9px rgba(59,130,246,0.18), 0 0 34px 16px rgba(79,107,196,0.10)'
                   : '0 0 0 1px rgba(55,72,110,0.16), 0 0 10px 4px rgba(29,78,216,0.17), 0 0 22px 9px rgba(15,34,90,0.09), 0 0 34px 16px rgba(29,78,216,0.05)',
               transform: avatarHovered ? 'scale(1.02)' : 'scale(1)',
             }}
             onMouseEnter={() => setAvatarHovered(true)}
             onMouseLeave={() => setAvatarHovered(false)}
           >
-            <BrandLogo className="h-14 w-14 select-none object-contain pointer-events-none" />
+            <img
+              src={pebblecodeIconDark}
+              alt="PebbleCode"
+              draggable={false}
+              className={`h-10 w-10 select-none rounded-full object-cover pointer-events-none ${
+                dark ? 'brightness-[1.24] contrast-[1.06] saturate-110' : ''
+              }`}
+            />
           </div>
           <div>
             <p className={`text-base font-semibold text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>{t('chat.title')}</p>

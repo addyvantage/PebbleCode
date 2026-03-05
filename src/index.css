@@ -206,6 +206,20 @@ html {
     color: inherit;
   }
 
+  /* Use hand cursor only on actionable controls, keep default arrow elsewhere. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  a[href],
+  summary,
+  label[for],
+  input:not(:disabled),
+  select:not(:disabled),
+  textarea:not(:disabled),
+  [aria-haspopup='menu']:not([aria-disabled='true']),
+  [aria-haspopup='listbox']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
   h1,
   h2,
   h3,

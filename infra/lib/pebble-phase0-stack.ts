@@ -4,7 +4,6 @@ import * as events from 'aws-cdk-lib/aws-events'
 import * as targets from 'aws-cdk-lib/aws-events-targets'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
-import * as ejs from 'aws-cdk-lib/aws-events-rule'
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs'
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
 

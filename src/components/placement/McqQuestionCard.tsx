@@ -10,10 +10,10 @@ type McqQuestionCardProps = {
 }
 
 function optionClass(isSelected: boolean) {
-  return `w-full rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
+  return `w-full rounded-xl border px-4 py-3.5 text-left text-sm font-medium transition-all duration-200 ${
     isSelected
-      ? 'border-pebble-accent/50 bg-pebble-accent/14 text-pebble-text-primary shadow-[0_10px_24px_rgba(2,8,23,0.2)]'
-      : 'border-pebble-border/30 bg-pebble-overlay/[0.05] text-pebble-text-secondary hover:border-pebble-border/45 hover:bg-pebble-overlay/[0.1] hover:text-pebble-text-primary'
+      ? 'border-pebble-accent/55 bg-pebble-accent/16 text-pebble-text-primary shadow-[0_12px_26px_rgba(2,8,23,0.18),inset_0_1px_0_rgba(255,255,255,0.14)]'
+      : 'border-pebble-border/30 bg-pebble-overlay/[0.05] text-pebble-text-secondary hover:border-pebble-border/48 hover:bg-pebble-overlay/[0.11] hover:text-pebble-text-primary'
   }`
 }
 
@@ -24,7 +24,7 @@ export function McqQuestionCard({
   onSelect,
 }: McqQuestionCardProps) {
   return (
-    <Card padding="lg" className="space-y-5" interactive>
+    <Card padding="lg" className="space-y-5 rounded-[18px]" interactive>
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">
@@ -32,7 +32,7 @@ export function McqQuestionCard({
           </p>
           <Badge variant="neutral">{question.difficulty}</Badge>
         </div>
-        <h2 className="text-balance text-2xl font-semibold tracking-[-0.01em] text-pebble-text-primary sm:text-[1.9rem]">
+        <h2 className="text-balance text-[1.75rem] font-semibold tracking-[-0.01em] text-pebble-text-primary sm:text-[1.9rem]">
           {questionNumber}. {question.prompt}
         </h2>
       </div>

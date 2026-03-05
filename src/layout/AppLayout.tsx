@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ProfileMenu } from '../components/modals/ProfileMenu'
 import { SettingsModal } from '../components/modals/SettingsModal'
+import { NotificationCenter } from '../components/layout/NotificationCenter'
 import { Card } from '../components/ui/Card'
 import { PageContainer } from '../components/ui/PageContainer'
 import { StreakPill } from '../components/ui/StreakPill'
-import { PatternText } from '../components/ui/pattern-text'
 import { BrandLogo } from '../components/ui/BrandLogo'
 import { HoverBorderGradient } from '../components/ui/hover-border-gradient'
 import { AnimatedBorderRing } from '../components/ui/rainbow-borders-button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import {
   clearAppLocalData,
   clearLocalUserData,
@@ -18,6 +19,7 @@ import { useI18n } from '../i18n/useI18n'
 import { getAnalyticsState, subscribeAnalytics } from '../lib/analyticsStore'
 import { dateKeyForTimeZone, selectCurrentStreak, selectDailyCompletions } from '../lib/analyticsDerivers'
 import { safeClearPrefix, subscribeStoragePressure } from '../lib/safeStorage'
+import { setNotificationScope, useNotifications } from '../lib/notificationsStore'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 
@@ -27,12 +29,15 @@ export function AppLayout() {
   const location = useLocation()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [profileAnchorRect, setProfileAnchorRect] = useState<DOMRect | null>(null)
   const [showStoragePressureNotice, setShowStoragePressureNotice] = useState(false)
   const [nowTick, setNowTick] = useState(() => Date.now())
   const profileButtonRef = useRef<HTMLButtonElement | null>(null)
+  const notificationButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const analyticsState = useSyncExternalStore(subscribeAnalytics, getAnalyticsState, getAnalyticsState)
+  const notificationsState = useNotifications()
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
   const dailyCompletions = useMemo(
     () => selectDailyCompletions(analyticsState.events, timeZone),
@@ -66,6 +71,16 @@ export function AppLayout() {
       return items
     },
     [t, auth.isAdmin],
+  )
+  const headerUserName =
+    auth.profile?.displayName?.trim()
+    || auth.profile?.username?.trim()
+    || auth.user?.email?.split('@')[0]
+    || 'Guest'
+  const headerUserInitials = headerUserName.slice(0, 2).toUpperCase()
+  const unreadNotificationCount = useMemo(
+    () => notificationsState.items.reduce((count, item) => count + (item.read ? 0 : 1), 0),
+    [notificationsState.items],
   )
 
   const updateProfileAnchorRect = useCallback(() => {
@@ -110,6 +125,45 @@ export function AppLayout() {
       window.removeEventListener('keydown', handleEscape)
     }
   }, [isProfileOpen])
+
+  useEffect(() => {
+    if (!isNotificationsOpen) {
+      return
+    }
+
+    function handleOutsideClick(event: MouseEvent | TouchEvent) {
+      const target = event.target as HTMLElement | null
+      if (!target) {
+        return
+      }
+
+      if (notificationButtonRef.current?.contains(target)) {
+        return
+      }
+
+      if (target.closest('[data-notification-center-root="true"]')) {
+        return
+      }
+
+      setIsNotificationsOpen(false)
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsNotificationsOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handleOutsideClick)
+    window.addEventListener('touchstart', handleOutsideClick)
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      window.removeEventListener('mousedown', handleOutsideClick)
+      window.removeEventListener('touchstart', handleOutsideClick)
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [isNotificationsOpen])
 
   useEffect(() => {
     if (!isProfileOpen) {
@@ -157,8 +211,17 @@ export function AppLayout() {
     auth.signOut()
     clearLocalUserData()
     setIsProfileOpen(false)
+    setIsNotificationsOpen(false)
     navigate('/')
   }
+
+  useEffect(() => {
+    setNotificationScope(auth.user?.userId ?? auth.profile?.userId ?? null)
+  }, [auth.profile?.userId, auth.user?.userId])
+
+  useEffect(() => {
+    setIsNotificationsOpen(false)
+  }, [location.pathname])
 
   return (
     <div
@@ -180,20 +243,13 @@ export function AppLayout() {
               <PageContainer>
                 <div className="flex items-center justify-between px-1.5 py-0 sm:px-2.5 sm:py-0">
                   <div className="flex min-w-0 items-center gap-1.5 sm:gap-2 justify-start flex-1">
-                    <div className="h-10 sm:h-12 overflow-hidden flex items-center flex-shrink-0">
-                      <BrandLogo className="h-20 sm:h-24 w-auto select-none pointer-events-none" />
-                    </div>
-                    <div className="min-w-0 -translate-y-[0.5px] -ml-1">
-                      <div className="relative">
-                        <PatternText
-                          text="Pebble"
-                          className="relative select-none text-[20px] font-black sm:text-[24px] tracking-tight leading-none"
-                        />
-                      </div>
-                      <p className="mt-[1px] text-[9px] sm:text-[10px] leading-[1] text-pebble-text-secondary whitespace-nowrap overflow-hidden text-ellipsis">
-                        {t('app.tagline')}
-                      </p>
-                    </div>
+                    <NavLink
+                      to="/"
+                      aria-label="PebbleCode home"
+                      className="-ml-1 inline-flex h-10 sm:h-11 md:h-12 items-center overflow-hidden flex-shrink-0"
+                    >
+                      <BrandLogo className="h-10 sm:h-11 md:h-12 w-auto select-none pointer-events-none object-contain" />
+                    </NavLink>
                   </div>
 
                   <HoverBorderGradient
@@ -227,16 +283,41 @@ export function AppLayout() {
                         isTodayComplete={currentStreak.isTodayComplete}
                         darkSurface={theme === 'dark'}
                       />
-                      <button
-                        aria-label={t('layout.notificationsAria')}
-                        className={iconButtonClass}
-                        type="button"
-                      >
-                        <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5 sm:h-5 sm:w-5" aria-hidden="true">
-                          <path d="M10 3.5a4.25 4.25 0 0 0-4.25 4.25v2.4L4.6 12.2a.9.9 0 0 0 .8 1.3h9.2a.9.9 0 0 0 .8-1.3l-1.15-2.05v-2.4A4.25 4.25 0 0 0 10 3.5Z" stroke="currentColor" strokeWidth="1.25" />
-                          <path d="M8.1 14.8a2.1 2.1 0 0 0 3.8 0" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
-                        </svg>
-                      </button>
+                      <div className="relative">
+                        <TooltipProvider delayDuration={100}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                ref={notificationButtonRef}
+                                aria-label={t('layout.notificationsAria')}
+                                aria-expanded={isNotificationsOpen}
+                                aria-haspopup="dialog"
+                                onClick={() => {
+                                  setIsProfileOpen(false)
+                                  setIsNotificationsOpen((current) => !current)
+                                }}
+                                className={`relative ${iconButtonClass} ${
+                                  isNotificationsOpen ? 'border-pebble-accent/45 bg-pebble-accent/16 text-pebble-text-primary' : ''
+                                }`}
+                                type="button"
+                              >
+                                <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5 sm:h-5 sm:w-5" aria-hidden="true">
+                                  <path d="M10 3.5a4.25 4.25 0 0 0-4.25 4.25v2.4L4.6 12.2a.9.9 0 0 0 .8 1.3h9.2a.9.9 0 0 0 .8-1.3l-1.15-2.05v-2.4A4.25 4.25 0 0 0 10 3.5Z" stroke="currentColor" strokeWidth="1.25" />
+                                  <path d="M8.1 14.8a2.1 2.1 0 0 0 3.8 0" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+                                </svg>
+                                {unreadNotificationCount > 0 ? (
+                                  <span className="absolute right-[6px] top-[6px] inline-flex h-2 w-2 rounded-full bg-pebble-accent shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
+                                ) : null}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">{t('layout.notificationsAria')}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <NotificationCenter
+                          open={isNotificationsOpen}
+                          onClose={() => setIsNotificationsOpen(false)}
+                        />
+                      </div>
                       <button
                         aria-label={t('layout.settingsAria')}
                         onClick={() => setIsSettingsOpen(true)}
@@ -251,27 +332,39 @@ export function AppLayout() {
                     </div>
 
                     {auth.isAuthenticated ? (
-                      <AnimatedBorderRing className="h-[50px] w-[50px] sm:h-[54px] sm:w-[54px] rounded-full" variant="avatar">
-                        <button
-                          ref={profileButtonRef}
-                          aria-label={t('layout.profileAria')}
-                          aria-expanded={isProfileOpen}
-                          aria-haspopup="menu"
-                          onClick={() => {
-                            updateProfileAnchorRect()
-                            setIsProfileOpen((current) => !current)
-                          }}
-                          className="inline-flex h-full w-full items-center justify-center rounded-full border border-pebble-border/35 overflow-hidden transition hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40"
-                          style={{
-                            background: theme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.90)',
-                          }}
-                          type="button"
+                      <div className="flex min-w-[74px] flex-col items-center justify-center gap-1">
+                        <AnimatedBorderRing className="h-[50px] w-[50px] sm:h-[54px] sm:w-[54px] rounded-full" variant="avatar">
+                          <button
+                            ref={profileButtonRef}
+                            aria-label={t('layout.profileAria')}
+                            aria-expanded={isProfileOpen}
+                            aria-haspopup="menu"
+                            onClick={() => {
+                              updateProfileAnchorRect()
+                              setIsProfileOpen((current) => !current)
+                            }}
+                            className="inline-flex h-full w-full items-center justify-center rounded-full border border-pebble-border/35 overflow-hidden transition hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40"
+                            style={{
+                              background: theme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.90)',
+                            }}
+                            type="button"
+                          >
+                            {auth.profile?.avatarUrl ? (
+                              <img src={auth.profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="text-sm font-semibold text-pebble-text-primary">{headerUserInitials}</span>
+                            )}
+                          </button>
+                        </AnimatedBorderRing>
+                        <span
+                          className={`max-w-[88px] truncate text-[10px] font-semibold leading-none ${
+                            theme === 'dark' ? 'text-[rgba(232,239,255,0.94)]' : 'text-[rgba(27,42,74,0.88)]'
+                          }`}
+                          title={headerUserName}
                         >
-                          {auth.profile?.avatarUrl ? (
-                            <img src={auth.profile.avatarUrl} alt="" className="h-full w-full object-cover" />
-                          ) : null}
-                        </button>
-                      </AnimatedBorderRing>
+                          {headerUserName}
+                        </span>
+                      </div>
                     ) : (
                       <button
                         type="button"
@@ -328,7 +421,7 @@ export function AppLayout() {
       <ProfileMenu
         open={isProfileOpen}
         anchorRect={profileAnchorRect}
-        userName={auth.profile?.username ?? ''}
+        userName={headerUserName}
         userEmail={auth.user?.email ?? auth.profile?.email ?? ''}
         userBio={auth.profile?.bio ?? ''}
         avatarUrl={auth.profile?.avatarUrl ?? null}

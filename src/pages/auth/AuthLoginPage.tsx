@@ -53,8 +53,11 @@ export function AuthLoginPage() {
         } catch (err: any) {
             const code = err?.code ?? err?.name ?? ''
             if (code === 'UserNotConfirmedException') {
-                localStorage.setItem('pebble.auth.verifyEmail', identifier.trim())
-                navigate(`/auth/verify?email=${encodeURIComponent(identifier.trim())}`)
+                const verificationEmail = typeof err?.verificationEmail === 'string' && err.verificationEmail.trim()
+                    ? err.verificationEmail.trim()
+                    : identifier.trim()
+                localStorage.setItem('pebble.auth.verifyEmail', verificationEmail)
+                navigate(`/auth/verify?email=${encodeURIComponent(verificationEmail)}`)
                 return
             }
             setErrors({ form: err?.message ?? 'Invalid username/email or password' })

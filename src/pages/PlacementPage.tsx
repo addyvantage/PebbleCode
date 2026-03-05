@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Divider } from '../components/ui/Divider'
 import { McqQuestionCard } from '../components/placement/McqQuestionCard'
 import {
   CodingQuestionCard,
@@ -28,6 +27,7 @@ import { useI18n } from '../i18n/useI18n'
 import { logPlacementSkipEvent } from '../lib/analyticsStore'
 import { requestRunApi } from '../lib/runApi'
 import { fromLegacyCodeLanguageId } from '../../shared/languageRegistry'
+import { pushNotification } from '../lib/notificationsStore'
 
 type CodingRunState = {
   code: string
@@ -113,6 +113,7 @@ export function PlacementPage() {
   const totalQuestions = questionFlow.length
   const progressPercent = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0
   const currentQuestionSkipped = currentQuestion ? skippedByQuestionId[currentQuestion.question.id] === true : false
+  const currentDifficulty = currentQuestion?.question.difficulty ?? '—'
 
   function isAnswered(question: PlacementFlowQuestion) {
     if (skippedByQuestionId[question.question.id]) {
@@ -283,6 +284,14 @@ export function PlacementPage() {
       questionIds: nextResult.questionIds,
     })
 
+    pushNotification({
+      category: 'progress',
+      title: `Placement complete — your track is set to ${level} / ${metadata.label}`,
+      message: 'Your guided unit path is now personalized.',
+      actionRoute: `/session/1?lang=${language}&level=${level}&unit=${nextResult.startUnit}`,
+      actionLabel: 'Open session',
+    })
+
     navigate(`/session/1?lang=${language}&level=${level}&unit=${nextResult.startUnit}`)
   }
 
@@ -333,34 +342,49 @@ export function PlacementPage() {
   }
 
   return (
-    <section className="min-h-[100dvh] overflow-x-hidden p-3">
-      <Card padding="md" className="mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full max-w-5xl flex-col space-y-4" interactive>
-        <div className="space-y-2">
+    <section className="min-h-[100dvh] overflow-x-hidden px-3 pb-3 pt-2">
+      <Card padding="md" className="mx-auto flex min-h-[calc(100dvh-1.25rem)] w-full max-w-[1080px] flex-col" interactive>
+        <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Badge>{t('placement.badge')}</Badge>
-            <span className="rounded-full border border-pebble-border/35 px-2.5 py-1 text-xs text-pebble-text-muted">
-              {t('placement.level')}: {level}
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge>{t('placement.badge')}</Badge>
+              <span className="rounded-full border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2.5 py-1 text-[11px] text-pebble-text-muted">
+                {t('placement.level')}: {level}
+              </span>
+              <span className="rounded-full border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2.5 py-1 text-[11px] text-pebble-text-muted">
+                {metadata.label}
+              </span>
+            </div>
+            <span className="rounded-full border border-pebble-border/32 bg-pebble-overlay/[0.10] px-2.5 py-1 text-[11px] font-medium text-pebble-text-secondary">
+              Difficulty: {currentDifficulty}
             </span>
           </div>
 
-          <h1 className="text-balance text-3xl font-semibold tracking-[-0.015em] text-pebble-text-primary sm:text-4xl">
-            {t('placement.assessmentTitle', { language: metadata.label })}
-          </h1>
-          <p className="text-sm text-pebble-text-secondary sm:text-base">
-            {t('placement.questionProgress', { current: Math.min(currentQuestionIndex + 1, totalQuestions), total: totalQuestions })}
-          </p>
-          {currentQuestionSkipped ? (
-            <p className="text-xs font-medium text-pebble-warning">{t('placement.skipped')}</p>
-          ) : null}
-          <div className="h-2 overflow-hidden rounded-full border border-pebble-border/30 bg-pebble-overlay/[0.06]">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h1 className="text-balance text-2xl font-semibold tracking-[-0.015em] text-pebble-text-primary sm:text-3xl">
+                {t('placement.assessmentTitle', { language: metadata.label })}
+              </h1>
+              <p className="mt-1 text-sm text-pebble-text-secondary">
+                {t('placement.questionProgress', { current: Math.min(currentQuestionIndex + 1, totalQuestions), total: totalQuestions })}
+              </p>
+            </div>
+            {currentQuestionSkipped ? (
+              <span className="rounded-full border border-pebble-warning/45 bg-pebble-warning/14 px-2.5 py-1 text-[11px] font-medium text-pebble-warning">
+                {t('placement.skipped')}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="h-2.5 overflow-hidden rounded-full border border-pebble-border/30 bg-pebble-overlay/[0.06]">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-pebble-accent/85 to-sky-300/75 transition-all duration-300"
+              className="h-full rounded-full bg-gradient-to-r from-pebble-accent/90 to-sky-300/75 transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>
 
-        <Divider />
+        <div className="my-4 h-px bg-pebble-border/22" />
 
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           {currentQuestion ? (
@@ -392,36 +416,38 @@ export function PlacementPage() {
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-pebble-border/24 pt-3">
-          <Button
-            variant="secondary"
-            onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
-            disabled={!canGoBack}
-          >
-            {t('placement.back')}
-          </Button>
-
-          <div className="flex items-center gap-2">
+        <div className="sticky bottom-0 mt-4 border-t border-pebble-border/24 bg-pebble-panel/90 pb-0 pt-3 backdrop-blur-md">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <Button
               variant="secondary"
-              onClick={skipCurrentQuestion}
-              title={t('placement.skipHint')}
+              onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
+              disabled={!canGoBack}
             >
-              {t('placement.skip')}
+              {t('placement.back')}
             </Button>
-            {!canFinish && (
+
+            <div className="flex items-center gap-2">
               <Button
-                onClick={() => setCurrentQuestionIndex((prev) => Math.min(totalQuestions - 1, prev + 1))}
-                disabled={!canGoNext}
+                variant="secondary"
+                onClick={skipCurrentQuestion}
+                title={t('placement.skipHint')}
               >
-                {t('placement.next')}
+                {t('placement.skip')}
               </Button>
-            )}
-            {canFinish && (
-              <Button onClick={finishPlacement}>
-                {t('placement.finish')}
-              </Button>
-            )}
+              {!canFinish && (
+                <Button
+                  onClick={() => setCurrentQuestionIndex((prev) => Math.min(totalQuestions - 1, prev + 1))}
+                  disabled={!canGoNext}
+                >
+                  {t('placement.next')}
+                </Button>
+              )}
+              {canFinish && (
+                <Button onClick={finishPlacement}>
+                  {t('placement.finish')}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </Card>

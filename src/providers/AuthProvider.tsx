@@ -9,9 +9,11 @@ import {
     isCognitoConfigured,
     type AuthUser,
 } from '../lib/auth'
+import { pushNotification, setNotificationScope } from '../lib/notificationsStore'
 
 export type UserProfile = {
     userId: string
+    displayName?: string | null
     username: string
     usernameLower?: string
     usernameSetAt?: string | null
@@ -47,6 +49,7 @@ export const AuthContext = createContext<AuthContextValue | null>(null)
 const DEV_GUEST_USER: AuthUser = { userId: 'dev-guest', email: 'guest@pebble.dev' }
 const DEV_GUEST_PROFILE: UserProfile = {
     userId: 'dev-guest',
+    displayName: 'Guest',
     username: 'Guest',
     usernameLower: 'guest',
     usernameSetAt: null,
@@ -79,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return `${url}${url.includes('?') ? '&' : '?'}v=${version}`
     }, [])
 
-    const fetchProfile = useCallback(async (token: string) => {
+    const fetchProfile = useCallback(async (token: string): Promise<UserProfile | null> => {
         try {
             const res = await fetch('/api/profile', {
                 headers: { Authorization: `Bearer ${token}` },
@@ -91,11 +94,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const freshUrl = await fetchAvatarUrl(token, data.avatarKey)
                     avatarUrl = freshUrl ? appendAvatarVersion(freshUrl, data.avatarUpdatedAt) : null
                 }
-                setProfile({ ...data, avatarUrl })
+                const nextProfile = { ...data, avatarUrl }
+                setProfile(nextProfile)
+                return nextProfile
             }
         } catch {
             // Profile fetch failed — user is authed but profile not yet created
         }
+        return null
     }, [appendAvatarVersion, fetchAvatarUrl])
 
     const refreshProfile = useCallback(async () => {
@@ -128,7 +134,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const result = await cognitoSignIn(identifier, password)
         setUser(result.user)
         setIdToken(result.idToken)
-        await fetchProfile(result.idToken)
+        setNotificationScope(result.user.userId)
+        const profileResult = await fetchProfile(result.idToken)
+        const signedInName =
+            profileResult?.displayName?.trim()
+            || profileResult?.username?.trim()
+            || result.user.email.split('@')[0]
+            || 'User'
+        pushNotification({
+            category: 'system',
+            title: `Signed in as ${signedInName}`,
+            message: 'Your profile and progress are synced.',
+            actionRoute: '/profile',
+            actionLabel: 'Open profile',
+        })
     }, [fetchProfile])
 
     // signUp only registers the user — Cognito sends a verification email.
@@ -147,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const handleSignOut = useCallback(() => {
         cognitoSignOut()
+        setNotificationScope(null)
         setUser(null)
         setProfile(null)
         setIdToken(null)
@@ -154,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const setGuestMode = useCallback(() => {
         if (import.meta.env.DEV) {
+            setNotificationScope('dev-guest')
             setUser(DEV_GUEST_USER)
             setProfile(DEV_GUEST_PROFILE)
             setIdToken('dev-guest-token')

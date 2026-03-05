@@ -50,6 +50,7 @@ import {
 } from '../lib/submissionsStore'
 import { useBodyScrollLock } from '../utils/useBodyScrollLock'
 import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../hooks/useAuth'
 import { loadPagePrefs, savePagePrefs, type PagePrefs } from '../lib/pagePrefsStore'
 import { useI18n } from '../i18n/useI18n'
 import { getLocalizedUnitCopy } from '../i18n/unitContent'
@@ -118,6 +119,7 @@ import {
 } from '../lib/problemCodeByLangStore'
 import { getCurriculumUnitModeDescriptor, getProblemModeDescriptor } from '../lib/modeRegistry'
 import { telemetry } from '../lib/telemetry'
+import { pushNotification } from '../lib/notificationsStore'
 
 type StruggleNudgeState = {
   level: StruggleLevel
@@ -375,6 +377,7 @@ function defineMonacoThemes(monaco: typeof import('monaco-editor')) {
 }
 
 export function SessionPage() {
+  const auth = useAuth()
   const { lang: uiLanguage, t, format } = useI18n()
   const [searchParams] = useSearchParams()
   const analyticsState = useSyncExternalStore(subscribeAnalytics, getAnalyticsState, getAnalyticsState)
@@ -643,6 +646,8 @@ export function SessionPage() {
     struggleEngineRef.current = createStruggleEngine()
   }
   const struggleStateRef = useRef<StruggleEngineState>(struggleEngineRef.current.getState())
+  const lastNudgeVisibleRef = useRef(false)
+  const lastNudgeLevelRef = useRef<StruggleLevel>(0)
   const previousCodeRef = useRef('')
   const liveCodeRef = useRef('')
   const hydratedEditorKeyRef = useRef('')
@@ -972,10 +977,31 @@ export function SessionPage() {
 
   const syncStruggle = useCallback((nextState: StruggleEngineState) => {
     struggleStateRef.current = nextState
+    const nextVisible = nextState.nudgeVisible && nextState.level > 0
+    if (!lastNudgeVisibleRef.current && nextVisible) {
+      pushNotification({
+        category: 'coach',
+        title: 'Pebble Coach suggested a hint',
+        message: 'You look stuck. Open coach for a quick nudge.',
+        actionRoute: '/session/1',
+        actionLabel: 'Open coach',
+      })
+    }
+    if (lastNudgeLevelRef.current < 2 && nextState.level >= 2) {
+      pushNotification({
+        category: 'coach',
+        title: 'You reached Tier 2 guidance',
+        message: 'Explain mode is now available for this attempt.',
+        actionRoute: '/session/1',
+        actionLabel: 'View guidance',
+      })
+    }
+    lastNudgeVisibleRef.current = nextVisible
+    lastNudgeLevelRef.current = nextState.level
     setStruggleNudge((previous) => {
       const next = {
         level: nextState.level,
-        visible: nextState.nudgeVisible && nextState.level > 0,
+        visible: nextVisible,
       }
       if (previous.level === next.level && previous.visible === next.visible) {
         return previous
@@ -1101,6 +1127,8 @@ export function SessionPage() {
     const nextCode = draftByUnitId[currentUnit.id]?.[sessionLanguage] ?? currentDefaultCode
     previousCodeRef.current = nextCode
     queueLiveCodeSnapshot(nextCode, true)
+    lastNudgeVisibleRef.current = false
+    lastNudgeLevelRef.current = 0
     const resetState = struggleEngineRef.current?.reset()
     if (resetState) {
       syncStruggle(resetState)
@@ -1701,6 +1729,15 @@ export function SessionPage() {
           exitCode: runExitCode,
           errorType: derivedErrorType,
         })
+        pushNotification({
+          category: 'progress',
+          title: `Run completed: ${passedCount}/${currentUnit.tests.length} tests passed`,
+          message: allPassed
+            ? 'Great run. All visible tests passed.'
+            : 'Some tests are still failing. Review diagnostics and retry.',
+          actionRoute: '/session/1',
+          actionLabel: 'Open session',
+        })
       } else {
         logSubmitEvent({
           unitId: currentUnit.id,
@@ -1712,6 +1749,15 @@ export function SessionPage() {
           runtimeMs: durationTotal,
           exitCode: runExitCode,
           errorType: derivedErrorType,
+        })
+        pushNotification({
+          category: 'progress',
+          title: allPassed ? 'Submission accepted ✅' : 'Submission failed ❌',
+          message: allPassed
+            ? `All ${currentUnit.tests.length} tests passed.`
+            : `${passedCount}/${currentUnit.tests.length} tests passed. Check failing diagnostics.`,
+          actionRoute: '/session/1',
+          actionLabel: 'Open submissions',
         })
 
         // ── Phase 6: Trigger learning journey update (fire-and-forget) ────────
@@ -1744,7 +1790,27 @@ export function SessionPage() {
             }),
         )
         if (!activeProblem) {
+          const wasCompleted = unitProgress[currentUnit.id]?.completed === true
           setUnitProgress((prev) => markUnitCompleted(prev, currentUnit.id, durationTotal))
+          if (!wasCompleted) {
+            pushNotification({
+              category: 'progress',
+              title: `Streak saved: Day ${Math.max(1, currentStreak.streak + 1)} 🔥`,
+              message: 'Keep momentum by completing one more run tomorrow.',
+              actionRoute: '/dashboard',
+              actionLabel: 'View insights',
+            })
+            const nextUnit = units[currentUnitIndex + 1]
+            if (nextUnit) {
+              pushNotification({
+                category: 'progress',
+                title: `New unit unlocked: ${nextUnit.title}`,
+                message: 'Your next guided step is ready.',
+                actionRoute: '/session/1',
+                actionLabel: 'Start next unit',
+              })
+            }
+          }
         } else {
           markProblemAttempt(activeProblem.id, mode === 'submit')
           if (mode === 'submit') {
@@ -1856,6 +1922,8 @@ export function SessionPage() {
     currentCode,
     currentFunctionConfig,
     currentModeDescriptor.mode,
+    currentStreak.streak,
+    currentUnitIndex,
     currentUnit,
     executeTest,
     ingestRunOutcome,
@@ -1866,6 +1934,8 @@ export function SessionPage() {
     sessionLanguage,
     t,
     trackId,
+    unitProgress,
+    units,
   ])
 
   function selectUnit(index: number) {
@@ -2200,18 +2270,45 @@ export function SessionPage() {
             onClick={async () => {
               setReportLoading(true)
               setReportToast(null)
+              const reportUserName =
+                auth.profile?.displayName?.trim() ||
+                auth.profile?.username?.trim() ||
+                auth.profile?.email?.split('@')[0] ||
+                auth.user?.email?.split('@')[0] ||
+                'Guest'
+              const reportUserId = auth.user?.userId || auth.profile?.userId || 'guest'
               // Open a blank tab synchronously (before await) so browsers don't block it
               const win = window.open('', '_blank')
               try {
                 const r = await fetch('/api/report/recovery', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ problemId: currentUnit?.id ?? 'unknown', userId: 'anonymous', sessionId: Date.now().toString() }),
+                  headers: {
+                    'Content-Type': 'application/json',
+                    ...(auth.idToken ? { Authorization: `Bearer ${auth.idToken}` } : {}),
+                  },
+                  body: JSON.stringify({
+                    problemId: currentUnit?.id ?? 'unknown',
+                    problemTitle: activeProblem?.title ?? currentUnit?.title ?? 'Problem',
+                    difficulty: activeProblem?.difficulty ?? sessionDifficultyLabel,
+                    language: selectedLanguage,
+                    userId: reportUserId,
+                    userName: reportUserName,
+                    userEmail: auth.profile?.email ?? auth.user?.email ?? '',
+                    avatarUrl: auth.profile?.avatarUrl ?? null,
+                    sessionId: Date.now().toString(),
+                  }),
                 })
                 const d = await r.json() as { reportUrl?: string; error?: string }
                 if (d.reportUrl) {
                   if (win) win.location.href = d.reportUrl
                   setReportToast({ kind: 'ok', msg: 'Report ready — opening in new tab.' })
+                  pushNotification({
+                    category: 'system',
+                    title: 'Exported recovery report',
+                    message: 'Your report was generated successfully.',
+                    actionRoute: '/dashboard',
+                    actionLabel: 'View insights',
+                  })
                 } else {
                   if (win) win.close()
                   setReportToast({ kind: 'err', msg: d.error ?? 'Report generation failed.' })
@@ -2249,13 +2346,20 @@ export function SessionPage() {
                     status: runStatus,
                     runtimeMs: 0,
                     recoveryTimeMs: 0,
-                    userId: 'anonymous',
+                    userId: auth.user?.userId ?? auth.profile?.userId ?? 'anonymous',
                   }),
                 })
                 const d = await r.json() as { shareUrl?: string; ok?: boolean }
                 if (d.shareUrl) {
                   await navigator.clipboard.writeText(d.shareUrl).catch(() => { })
                   setShareToast(d.shareUrl)
+                  pushNotification({
+                    category: 'system',
+                    title: 'Share session link created',
+                    message: 'Session snapshot link copied to your clipboard.',
+                    actionRoute: '/session/1',
+                    actionLabel: 'Open session',
+                  })
                   setTimeout(() => setShareToast(null), 5000)
                 } else {
                   setShareToast('⚠ Snapshot failed — try again.')

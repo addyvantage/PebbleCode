@@ -5,12 +5,18 @@ import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import { Camera } from 'lucide-react'
 import { ConfirmDialog } from '../components/modals/ConfirmDialog'
+import { useI18n } from '../i18n/useI18n'
+import { LANGUAGES, type LanguageCode } from '../i18n/languages'
+import { clearLocalUserData } from '../utils/storageKeys'
+import { pushNotification } from '../lib/notificationsStore'
 
 export function ProfilePage() {
-    const { isAuthenticated, isLoading, profile, idToken, refreshProfile } = useAuth()
-    const { theme } = useTheme()
+    const { isAuthenticated, isLoading, profile, idToken, refreshProfile, signOut } = useAuth()
+    const { theme, setTheme } = useTheme()
+    const { lang, setLang } = useI18n()
     const dark = theme === 'dark'
 
+    const [displayName, setDisplayName] = useState('')
     const [username, setUsername] = useState('')
     const [newUsername, setNewUsername] = useState('')
     const [bio, setBio] = useState('')
@@ -44,6 +50,7 @@ export function ProfilePage() {
             if (!profile) {
                 return
             }
+            setDisplayName(profile.displayName ?? profile.username ?? '')
             setUsername(profile.username ?? '')
             setNewUsername(profile.username ?? '')
             setBio(profile.bio ?? '')
@@ -135,6 +142,13 @@ export function ProfilePage() {
             setAvatarPreview(cacheBustedUrl)
             await refreshProfile()
             setMessage({ type: 'success', text: 'Avatar updated!' })
+            pushNotification({
+                category: 'system',
+                title: 'Profile updated',
+                message: 'Your avatar was updated successfully.',
+                actionRoute: '/profile',
+                actionLabel: 'View profile',
+            })
         } catch (err: any) {
             const detail = err?.message ?? 'Unknown error'
             console.error('[avatar-upload] failed:', err)
@@ -154,6 +168,11 @@ export function ProfilePage() {
             setSaving(false)
             return
         }
+        if (displayName.trim().length > 48) {
+            setMessage({ type: 'error', text: 'Display name must be 48 characters or less' })
+            setSaving(false)
+            return
+        }
 
         try {
             const res = await fetch('/api/profile', {
@@ -162,7 +181,7 @@ export function ProfilePage() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${idToken}`,
                 },
-                body: JSON.stringify({ bio }),
+                body: JSON.stringify({ displayName: displayName.trim(), bio }),
             })
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}))
@@ -170,11 +189,23 @@ export function ProfilePage() {
             }
             await refreshProfile()
             setMessage({ type: 'success', text: 'Profile saved!' })
+            pushNotification({
+                category: 'system',
+                title: 'Profile updated',
+                message: 'Your profile details were saved.',
+                actionRoute: '/profile',
+                actionLabel: 'View profile',
+            })
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message ?? 'Save failed' })
         } finally {
             setSaving(false)
         }
+    }
+
+    function handleClearLocalData() {
+        clearLocalUserData()
+        setMessage({ type: 'success', text: 'Local session data cleared from this browser.' })
     }
 
     const usernameCooldownRemainingDays = (() => {
@@ -267,6 +298,13 @@ export function ProfilePage() {
             await refreshProfile()
             setIsChangingUsername(false)
             setMessage({ type: 'success', text: 'Username updated' })
+            pushNotification({
+                category: 'system',
+                title: 'Profile updated',
+                message: `Username changed to ${candidate}.`,
+                actionRoute: '/profile',
+                actionLabel: 'View profile',
+            })
         } catch (err: any) {
             setMessage({ type: 'error', text: err?.message ?? 'Username change failed' })
         } finally {
@@ -299,13 +337,17 @@ export function ProfilePage() {
 
     return (
         <>
-        <div className="page-enter mx-auto max-w-lg px-4 pb-8 pt-4">
-            <Card className="relative overflow-hidden p-6" interactive>
+        <div className="page-enter mx-auto w-full max-w-3xl px-4 pb-8 pt-5">
+            <Card className="relative overflow-hidden p-6 md:p-7" interactive>
                 <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-pebble-accent/12 blur-3xl" />
                 <div className="pointer-events-none absolute -bottom-12 -right-12 h-40 w-40 rounded-full bg-sky-400/8 blur-3xl" />
 
                 <div className="relative space-y-6">
-                    <h1 className="text-xl font-bold tracking-tight text-pebble-text-primary">Your Profile</h1>
+                    <div className="space-y-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">Account</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-pebble-text-primary">Your Profile</h1>
+                        <p className="text-sm text-pebble-text-secondary">Personalize your Pebble identity and preferences.</p>
+                    </div>
 
                     {/* Avatar */}
                     <div className="flex justify-center">
@@ -352,13 +394,30 @@ export function ProfilePage() {
                         />
                     </div>
 
-                    {/* Email (read-only) */}
-                    <div>
-                        <label className="mb-1 block text-xs font-medium uppercase tracking-[0.06em] text-pebble-text-muted">
-                            Email
-                        </label>
-                        <div className="rounded-xl border border-pebble-border/20 bg-pebble-overlay/[0.03] px-3.5 py-2.5 text-sm text-pebble-text-secondary">
-                            {profile?.email ?? '—'}
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {/* Display name */}
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.06em] text-pebble-text-muted">
+                                Display name
+                            </label>
+                            <input
+                                type="text"
+                                value={displayName}
+                                onChange={(e) => setDisplayName(e.target.value)}
+                                placeholder="How your name appears"
+                                maxLength={48}
+                                className={inputClass}
+                            />
+                        </div>
+
+                        {/* Email (read-only) */}
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.06em] text-pebble-text-muted">
+                                Email
+                            </label>
+                            <div className="rounded-xl border border-pebble-border/20 bg-pebble-overlay/[0.03] px-3.5 py-2.5 text-sm text-pebble-text-secondary">
+                                {profile?.email ?? '—'}
+                            </div>
                         </div>
                     </div>
 
@@ -468,6 +527,62 @@ export function ProfilePage() {
                             className={`${inputClass} resize-none`}
                         />
                         <p className="mt-1 text-right text-[11px] text-pebble-text-muted">{bio.length}/160</p>
+                    </div>
+
+                    {/* Preferences */}
+                    <div className="rounded-2xl border border-pebble-border/25 bg-pebble-overlay/[0.04] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">Preferences</p>
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                            <label className="space-y-1">
+                                <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-pebble-text-muted">Theme</span>
+                                <select
+                                    value={theme}
+                                    onChange={(event) => setTheme(event.target.value as 'dark' | 'light')}
+                                    className={inputClass}
+                                >
+                                    <option value="dark">Dark</option>
+                                    <option value="light">Light</option>
+                                </select>
+                            </label>
+                            <label className="space-y-1">
+                                <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-pebble-text-muted">Chat language</span>
+                                <select
+                                    value={lang}
+                                    onChange={(event) => setLang(event.target.value as LanguageCode)}
+                                    className={inputClass}
+                                >
+                                    {LANGUAGES.map((option) => (
+                                        <option key={option.code} value={option.code}>
+                                            {option.romanizedName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Account tools */}
+                    <div className="rounded-2xl border border-pebble-border/25 bg-pebble-overlay/[0.04] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">Account</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                            <button
+                                type="button"
+                                onClick={signOut}
+                                className="rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.06] px-3 py-1.5 text-[12px] font-medium text-pebble-text-secondary transition hover:bg-pebble-overlay/[0.12] hover:text-pebble-text-primary"
+                            >
+                                Sign out
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleClearLocalData}
+                                className="rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.06] px-3 py-1.5 text-[12px] font-medium text-pebble-text-secondary transition hover:bg-pebble-overlay/[0.12] hover:text-pebble-text-primary"
+                            >
+                                Clear local data
+                            </button>
+                            <span className="rounded-lg border border-pebble-border/20 bg-pebble-overlay/[0.03] px-3 py-1.5 text-[12px] text-pebble-text-muted">
+                                Export my data (coming soon)
+                            </span>
+                        </div>
                     </div>
 
                     {/* Role badge */}

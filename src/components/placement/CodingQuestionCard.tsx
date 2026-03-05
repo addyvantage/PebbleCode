@@ -52,7 +52,7 @@ export function CodingQuestionCard({
   onRun,
 }: CodingQuestionCardProps) {
   return (
-    <Card padding="md" className="space-y-3" interactive>
+    <Card padding="md" className="space-y-3 rounded-[18px]" interactive>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">
@@ -78,7 +78,7 @@ export function CodingQuestionCard({
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-pebble-border/28 bg-pebble-canvas/92">
+      <div className="overflow-hidden rounded-[14px] border border-pebble-border/32 bg-pebble-canvas/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
         <Editor
           height="300px"
           language={IDE_MONACO_LANGUAGE[language]}
@@ -113,14 +113,14 @@ export function CodingQuestionCard({
         </span>
       </div>
 
-      <div className="space-y-2 rounded-xl border border-pebble-border/25 bg-pebble-canvas/72 p-3">
+      <div className="space-y-2 rounded-[14px] border border-pebble-border/28 bg-pebble-canvas/72 p-3">
         {results.length === 0 ? (
           <p className="text-sm text-pebble-text-muted">Run to evaluate testcases.</p>
         ) : (
           results.map((test, index) => (
             <div
               key={`${question.id}-test-${index}`}
-              className="rounded-lg border border-pebble-border/25 bg-pebble-overlay/[0.06] p-2"
+              className="rounded-xl border border-pebble-border/28 bg-pebble-overlay/[0.07] p-2.5"
             >
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-medium text-pebble-text-primary">Test {index + 1}</p>

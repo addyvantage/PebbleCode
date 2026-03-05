@@ -17,8 +17,14 @@ export interface SessionEvent {
 
 export interface RecoveryReport {
     userId: string
+    userName?: string
+    userEmail?: string
+    userAvatarUrl?: string | null
     sessionId: string
     problemId: string
+    problemTitle?: string
+    language?: string
+    difficulty?: string
     generatedAt: string
     totalAttempts: number
     totalRuns: number
@@ -29,14 +35,24 @@ export interface RecoveryReport {
     finalOutcome: 'success' | 'partial' | 'incomplete'
     fastestRunMs: number | null
     errorBreakdown: Record<string, number>
+    summaryBullets: string[]
 }
 
 export function buildRecoveryReport(
-    userId: string,
-    sessionId: string,
-    problemId: string,
-    events: SessionEvent[],
+    input: {
+        userId: string
+        sessionId: string
+        problemId: string
+        events: SessionEvent[]
+        userName?: string
+        userEmail?: string
+        userAvatarUrl?: string | null
+        problemTitle?: string
+        language?: string
+        difficulty?: string
+    },
 ): RecoveryReport {
+    const { userId, sessionId, problemId, events, userName, userEmail, userAvatarUrl, problemTitle, language, difficulty } = input
     const runs = events.filter(e => e.eventName === 'run.completed')
     const submits = events.filter(e => e.eventName === 'submit.completed')
     const allAttempts = [...runs, ...submits]
@@ -77,10 +93,30 @@ export function buildRecoveryReport(
         }
     }
 
+    const topError = Object.entries(errorBreakdown).sort((a, b) => b[1] - a[1])[0]
+    const summaryBullets: string[] = []
+    summaryBullets.push(
+        `Completed ${allAttempts.length} attempts with ${submits.length} submission${submits.length === 1 ? '' : 's'}.`,
+    )
+    summaryBullets.push(
+        `Autonomy ${autonomyRate}% and hint usage ${hintUsageRate}% with average recovery ${avgRecoveryTimeSec || 0}s.`,
+    )
+    if (topError) {
+        summaryBullets.push(`Primary blocker: ${topError[0].replace(/_/g, ' ')} (${topError[1]} occurrence${topError[1] === 1 ? '' : 's'}).`)
+    } else {
+        summaryBullets.push('No repeated runtime/error category was recorded in this session.')
+    }
+
     return {
         userId,
+        userName,
+        userEmail,
+        userAvatarUrl: userAvatarUrl ?? null,
         sessionId,
         problemId,
+        problemTitle,
+        language,
+        difficulty,
         generatedAt: new Date().toISOString(),
         totalAttempts: allAttempts.length,
         totalRuns: runs.length,
@@ -91,5 +127,6 @@ export function buildRecoveryReport(
         finalOutcome,
         fastestRunMs: runtimes.length ? Math.min(...runtimes) : null,
         errorBreakdown,
+        summaryBullets,
     }
 }

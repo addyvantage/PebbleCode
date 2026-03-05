@@ -127,10 +127,15 @@ export function AuthSignupPage() {
             localStorage.setItem('pebble.auth.resendAt', String(Date.now() + 120_000))
             navigate(`/auth/verify?email=${encodeURIComponent(email.trim())}`)
         } catch (err: any) {
+            const code = err?.code ?? err?.name ?? ''
             const message = err?.message ?? 'Account creation failed. Please try again.'
             if (String(message).toLowerCase().includes('username is already taken')) {
                 setErrors({ username: 'Username is already taken' })
                 setUsernameAvailability({ status: 'taken', message: 'Username is already taken' })
+            } else if (code === 'UsernameExistsException') {
+                setErrors({ form: 'An account with this email already exists. Try signing in.' })
+            } else if (code === 'InvalidPasswordException') {
+                setErrors({ password: message })
             } else {
                 setErrors({ form: message })
             }

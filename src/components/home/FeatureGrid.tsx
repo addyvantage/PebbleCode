@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { Bot, CheckCircle2, Code2, Languages, ListFilter, Search } from 'lucide-react'
+import { useTheme } from '../../hooks/useTheme'
 
 type TileTone = 'blue' | 'indigo' | 'slate'
 
@@ -60,25 +61,33 @@ function tilePlacementClass(id: FeatureTile['id']) {
   return 'md:col-span-1 xl:col-span-7 xl:col-start-6 xl:row-start-2'
 }
 
-function toneClass(tone: TileTone) {
+function toneClass(tone: TileTone, isDark: boolean) {
   if (tone === 'blue') {
-    return 'border-pebble-accent/38 bg-pebble-accent/12 text-pebble-accent dark:border-pebble-accent/30 dark:bg-pebble-accent/14 dark:text-blue-200'
+    return isDark
+      ? 'border-pebble-accent/46 bg-pebble-accent/18 text-pebble-text-primary'
+      : 'border-pebble-accent/55 bg-pebble-accent/12 text-pebble-accent'
   }
   if (tone === 'indigo') {
-    return 'border-pebble-border/40 bg-pebble-overlay/[0.16] text-pebble-text-secondary dark:border-pebble-border/32 dark:bg-pebble-overlay/[0.10] dark:text-pebble-text-secondary'
+    return isDark
+      ? 'border-pebble-border/44 bg-pebble-overlay/[0.14] text-pebble-text-primary'
+      : 'border-pebble-border/52 bg-pebble-overlay/[0.12] text-pebble-text-secondary'
   }
-  return 'border-pebble-border/40 bg-pebble-overlay/[0.16] text-pebble-text-secondary dark:border-pebble-border/32 dark:bg-pebble-overlay/[0.10] dark:text-pebble-text-secondary'
+  return isDark
+    ? 'border-pebble-border/44 bg-pebble-overlay/[0.14] text-pebble-text-primary'
+    : 'border-pebble-border/52 bg-pebble-overlay/[0.12] text-pebble-text-secondary'
 }
 
-function previewSurfaceClass(tone: TileTone) {
-  const base = 'border bg-pebble-canvas/62 dark:bg-pebble-canvas/36 shadow-[inset_0_1px_0_rgba(var(--pebble-overlay),0.12)]'
+function previewSurfaceClass(tone: TileTone, isDark: boolean) {
+  const base = isDark
+    ? 'border bg-pebble-canvas/44 shadow-[inset_0_1px_0_rgba(var(--pebble-overlay),0.08)]'
+    : 'border bg-pebble-canvas/72 shadow-[inset_0_1px_0_rgba(var(--pebble-overlay),0.14)]'
   if (tone === 'blue') {
-    return `${base} border-pebble-accent/22 dark:border-pebble-accent/18`
+    return `${base} ${isDark ? 'border-pebble-accent/36' : 'border-pebble-accent/44'}`
   }
   if (tone === 'indigo') {
-    return `${base} border-pebble-border/28 dark:border-pebble-border/22`
+    return `${base} ${isDark ? 'border-pebble-border/38' : 'border-pebble-border/48'}`
   }
-  return `${base} border-pebble-border/28 dark:border-pebble-border/22`
+  return `${base} ${isDark ? 'border-pebble-border/38' : 'border-pebble-border/48'}`
 }
 
 function onTileMouseMove(event: MouseEvent<HTMLElement>) {
@@ -94,48 +103,66 @@ function onTileMouseLeave(event: MouseEvent<HTMLElement>) {
   event.currentTarget.style.setProperty('--my', '50%')
 }
 
-function RuntimePreview({ tone }: { tone: TileTone }) {
+function RuntimePreview({ tone, isDark }: { tone: TileTone; isDark: boolean }) {
   return (
-    <div className={`rounded-2xl border p-3 ${previewSurfaceClass(tone)}`}>
+    <div className={`rounded-2xl border p-3 ${previewSurfaceClass(tone, isDark)}`}>
       <div className="mb-2.5 flex items-center justify-between gap-2">
-        <span className="rounded-full border border-pebble-accent/45 bg-pebble-accent/12 px-2.5 py-0.5 text-[10px] font-semibold text-pebble-accent dark:border-pebble-accent/35 dark:bg-pebble-accent/16 dark:text-blue-200">
+        <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${isDark
+          ? 'border-pebble-accent/52 bg-pebble-accent/20 text-pebble-text-primary'
+          : 'border-pebble-accent/58 bg-pebble-accent/12 text-pebble-accent'
+          }`}>
           Unit: Two Sum
         </span>
-        <span className="rounded-full border border-pebble-warning/40 bg-pebble-warning/12 px-2.5 py-0.5 text-[10px] font-semibold text-pebble-warning dark:border-pebble-warning/30 dark:bg-pebble-warning/18 dark:text-amber-200">
+        <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${isDark
+          ? 'border-amber-300/55 bg-amber-400/18 text-amber-100 shadow-[0_0_14px_rgba(251,191,36,0.18)]'
+          : 'border-amber-500/65 bg-amber-500/18 text-amber-800'
+          }`}>
           Fail #2
         </span>
       </div>
-      <div className="rounded-xl border border-pebble-border/26 bg-pebble-canvas/75 px-2.5 py-2 font-mono text-[11.5px] leading-relaxed text-pebble-text-secondary dark:border-pebble-border/24 dark:bg-pebble-canvas/38 dark:text-pebble-text-secondary">
+      <div className={`rounded-xl border px-2.5 py-2 font-mono text-[11.5px] leading-relaxed ${isDark
+        ? 'border-pebble-border/40 bg-pebble-canvas/46 text-pebble-text-primary'
+        : 'border-pebble-border/50 bg-pebble-canvas/76 text-pebble-text-secondary'
+        }`}>
         <div>def solve(nums, target):</div>
         <div className="opacity-90">  seen = {'{}'}</div>
         <div className="opacity-90">  return -1, -1</div>
       </div>
       <div className="mt-2 grid grid-cols-2 gap-1.5 text-[10px] text-pebble-text-secondary">
-        <div className="rounded-md border border-emerald-300/55 bg-emerald-500/10 px-2 py-1 dark:border-emerald-300/28 dark:bg-emerald-400/16">expected: 12</div>
-        <div className="rounded-md border border-rose-300/55 bg-rose-500/10 px-2 py-1 dark:border-rose-300/28 dark:bg-rose-400/16">got: -1 -1</div>
+        <div className={`rounded-md border bg-emerald-500/12 px-2 py-1 ${isDark ? 'border-emerald-300/55 text-emerald-100' : 'border-emerald-500/60 text-emerald-800'}`}>expected: 12</div>
+        <div className={`rounded-md border bg-rose-500/12 px-2 py-1 ${isDark ? 'border-rose-300/55 text-rose-100' : 'border-rose-500/60 text-rose-800'}`}>got: -1 -1</div>
       </div>
     </div>
   )
 }
 
-function CoachPreview({ tone }: { tone: TileTone }) {
+function CoachPreview({ tone, isDark }: { tone: TileTone; isDark: boolean }) {
   return (
-    <div className={`rounded-2xl border p-3 ${previewSurfaceClass(tone)}`}>
+    <div className={`rounded-2xl border p-3 ${previewSurfaceClass(tone, isDark)}`}>
       <div className="flex flex-wrap gap-1.5">
         {['Hint', 'Explain', 'Next step'].map((chip) => (
           <span
             key={chip}
-            className="rounded-full border border-indigo-300/55 bg-indigo-500/12 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:border-indigo-300/35 dark:bg-indigo-400/15 dark:text-indigo-200"
+            className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${isDark
+              ? 'border-pebble-accent/46 bg-pebble-accent/20 text-pebble-text-primary'
+              : 'border-pebble-accent/55 bg-pebble-accent/12 text-pebble-accent'
+              }`}
           >
             {chip}
           </span>
         ))}
       </div>
       <div className="mt-2.5 space-y-1.5">
-        <div className="w-[92%] rounded-lg border border-pebble-border/26 bg-pebble-canvas/68 px-2.5 py-2 text-[11.5px] leading-snug text-pebble-text-primary dark:border-pebble-border/24 dark:bg-pebble-canvas/36 dark:text-pebble-text-primary">
+        <div className={`w-[92%] rounded-lg border px-2.5 py-2 text-[11.5px] leading-snug ${isDark
+          ? 'border-pebble-border/40 bg-pebble-canvas/48 text-pebble-text-primary'
+          : 'border-pebble-border/50 bg-pebble-canvas/70 text-pebble-text-primary'
+          }`}>
           Check target - current before storing in seen.
         </div>
-        <div className="ml-auto w-[88%] rounded-lg border border-pebble-border/26 bg-pebble-canvas/68 px-2.5 py-2 text-[11.5px] leading-snug text-pebble-text-primary dark:border-pebble-border/24 dark:bg-pebble-canvas/36 dark:text-pebble-text-primary">
+        <div className={`ml-auto w-[88%] rounded-lg border px-2.5 py-2 text-[11.5px] leading-snug ${isDark
+          ? 'border-pebble-border/40 bg-pebble-canvas/48 text-pebble-text-primary'
+          : 'border-pebble-border/50 bg-pebble-canvas/70 text-pebble-text-primary'
+          }`}>
           Give me one concise next step.
         </div>
       </div>
@@ -143,7 +170,7 @@ function CoachPreview({ tone }: { tone: TileTone }) {
   )
 }
 
-function BrowserPreview({ tone }: { tone: TileTone }) {
+function BrowserPreview({ tone, isDark }: { tone: TileTone; isDark: boolean }) {
   const rows = [
     { title: 'Two Sum', difficulty: 'Easy', acceptance: '63%', solved: true },
     { title: 'Valid Parentheses', difficulty: 'Easy', acceptance: '58%', solved: false },
@@ -151,8 +178,11 @@ function BrowserPreview({ tone }: { tone: TileTone }) {
   ]
 
   return (
-    <div className={`rounded-2xl border p-3 ${previewSurfaceClass(tone)}`}>
-      <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-pebble-border/26 bg-pebble-canvas/68 px-2.5 py-2 text-[11px] text-pebble-text-secondary dark:border-pebble-border/24 dark:bg-pebble-canvas/36 dark:text-pebble-text-secondary">
+    <div className={`rounded-2xl border p-3 ${previewSurfaceClass(tone, isDark)}`}>
+      <div className={`mb-2.5 flex items-center gap-2 rounded-lg border px-2.5 py-2 text-[11px] ${isDark
+        ? 'border-pebble-border/40 bg-pebble-canvas/48 text-pebble-text-primary'
+        : 'border-pebble-border/50 bg-pebble-canvas/70 text-pebble-text-secondary'
+        }`}>
         <Search className="h-3.5 w-3.5" />
         Search problems, topics, tags
       </div>
@@ -160,24 +190,27 @@ function BrowserPreview({ tone }: { tone: TileTone }) {
         {rows.map((row) => (
           <div
             key={row.title}
-            className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded-lg border border-pebble-border/24 bg-pebble-overlay/75 px-2.5 py-2 dark:border-pebble-border/22 dark:bg-pebble-overlay/[0.06]"
+            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded-lg border px-2.5 py-2 ${isDark
+              ? 'border-pebble-border/40 bg-pebble-panel/52'
+              : 'border-pebble-border/50 bg-pebble-panel/78'
+              }`}
           >
-            <span className="truncate text-[11.5px] font-medium text-pebble-text-primary dark:text-pebble-text-primary">{row.title}</span>
+            <span className="truncate text-[11.5px] font-medium text-pebble-text-primary">{row.title}</span>
             <span
               className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ${
                 row.difficulty === 'Easy'
-                  ? 'bg-emerald-500/12 text-emerald-700 dark:bg-emerald-400/18 dark:text-emerald-200'
-                  : 'bg-rose-500/12 text-rose-700 dark:bg-rose-400/18 dark:text-rose-200'
+                  ? isDark ? 'bg-emerald-500/16 text-pebble-text-primary border border-emerald-300/48' : 'bg-emerald-500/12 text-emerald-700 border border-emerald-400/55'
+                  : isDark ? 'bg-rose-500/16 text-pebble-text-primary border border-rose-300/48' : 'bg-rose-500/12 text-rose-700 border border-rose-400/55'
               }`}
             >
               {row.difficulty}
             </span>
-            <span className="text-[10.5px] font-medium text-pebble-text-secondary dark:text-pebble-text-secondary">{row.acceptance}</span>
+            <span className={`text-[10.5px] font-medium ${isDark ? 'text-pebble-text-primary' : 'text-pebble-text-secondary'}`}>{row.acceptance}</span>
             <span className="inline-flex w-4 items-center justify-center">
               {row.solved ? (
-                <CheckCircle2 className="h-3.5 w-3.5 text-pebble-accent dark:text-blue-300" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-pebble-accent" />
               ) : (
-                <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-500" />
+                <span className="h-2 w-2 rounded-full bg-pebble-border/55" />
               )}
             </span>
           </div>
@@ -196,53 +229,41 @@ const LANGUAGE_COPY: Record<DemoLanguage, string> = {
   TA: 'குறிப்பு: அடுத்த index க்கு முன் map-ஐ update செய்யுங்கள்.',
 }
 
-const LOOP_LANGUAGES: DemoLanguage[] = ['EN', 'HI', 'BN', 'TA']
 const DEMO_SEQUENCE: DemoLanguage[] = ['HI', 'BN', 'TA', 'EN']
 
 // Slow, demo-friendly timings so each state is clearly visible.
 const DEMO_TIMINGS = {
-  idleBeforeOpen: 1050,
-  dropdownOpenHold: 1400,
-  optionHoverHold: 820,
-  afterSelectHold: 1300,
-  languagePreviewHold: 2350,
-  hintUpdateDelay: 180,
-  clickPulse: 210,
-  resumeAfterInteraction: 8000,
+  idleBeforeOpen: 1200,
+  dropdownOpenHold: 1700,
+  optionHoverHold: 1050,
+  afterSelectHold: 1500,
+  languagePreviewHold: 2600,
+  hintUpdateDelay: 220,
+  clickPulse: 260,
 } as const
 
-function LanguagePreviewAnimated({ tone }: { tone: TileTone }) {
+function LanguagePreviewAnimated({ tone, isDark }: { tone: TileTone; isDark: boolean }) {
   const reduceMotion = useReducedMotion()
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const selectorRef = useRef<HTMLButtonElement | null>(null)
+  const selectorRef = useRef<HTMLDivElement | null>(null)
   const optionRefs = useRef<Partial<Record<DemoLanguage, HTMLElement | null>>>({})
   const loopTimeoutRef = useRef<number | null>(null)
-  const resumeTimeoutRef = useRef<number | null>(null)
   const hintTimeoutRef = useRef<number | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [highlightedOption, setHighlightedOption] = useState<DemoLanguage | null>(null)
   const [demoStepIndex, setDemoStepIndex] = useState(0)
-  const [isHovered, setIsHovered] = useState(false)
-  const [isUserPaused, setIsUserPaused] = useState(false)
   const [cursorTarget, setCursorTarget] = useState<'selector' | DemoLanguage>('selector')
   const [cursorPulse, setCursorPulse] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState<DemoLanguage>('EN')
   const [hintLanguage, setHintLanguage] = useState<DemoLanguage>('EN')
   const [cursorPoint, setCursorPoint] = useState({ x: 0, y: 0 })
 
-  const autoplayEnabled = !reduceMotion && !isHovered && !isUserPaused
+  const autoplayEnabled = !reduceMotion
 
   const clearDemoTimer = useCallback(() => {
     if (loopTimeoutRef.current) {
       window.clearTimeout(loopTimeoutRef.current)
       loopTimeoutRef.current = null
-    }
-  }, [])
-
-  const clearResumeTimer = useCallback(() => {
-    if (resumeTimeoutRef.current) {
-      window.clearTimeout(resumeTimeoutRef.current)
-      resumeTimeoutRef.current = null
     }
   }, [])
 
@@ -257,14 +278,6 @@ function LanguagePreviewAnimated({ tone }: { tone: TileTone }) {
     setCursorPulse(true)
     window.setTimeout(() => setCursorPulse(false), DEMO_TIMINGS.clickPulse)
   }, [])
-
-  const pauseAutoplayByUser = useCallback(() => {
-    setIsUserPaused(true)
-    clearResumeTimer()
-    resumeTimeoutRef.current = window.setTimeout(() => {
-      setIsUserPaused(false)
-    }, DEMO_TIMINGS.resumeAfterInteraction)
-  }, [clearResumeTimer])
 
   const syncHintLanguage = useCallback((nextLanguage: DemoLanguage) => {
     clearHintTimer()
@@ -331,9 +344,8 @@ function LanguagePreviewAnimated({ tone }: { tone: TileTone }) {
     return () => {
       clearDemoTimer()
       clearHintTimer()
-      clearResumeTimer()
     }
-  }, [clearDemoTimer, clearHintTimer, clearResumeTimer])
+  }, [clearDemoTimer, clearHintTimer])
 
   useLayoutEffect(() => {
     const container = containerRef.current
@@ -358,46 +370,26 @@ function LanguagePreviewAnimated({ tone }: { tone: TileTone }) {
     setCursorPoint(cursorTarget === 'selector' || !isOpen ? selectorPoint : optionPoint)
   }, [cursorTarget, isOpen, selectedLanguage, highlightedOption])
 
-  const handleSelectorToggle = () => {
-    pauseAutoplayByUser()
-    setCursorTarget('selector')
-    setIsOpen((prev) => !prev)
-  }
-
-  const handleLanguageSelect = (language: DemoLanguage) => {
-    pauseAutoplayByUser()
-    clearDemoTimer()
-    clearHintTimer()
-    setSelectedLanguage(language)
-    setHintLanguage(language)
-    setIsOpen(false)
-    setHighlightedOption(null)
-    const nextLanguage = LOOP_LANGUAGES[(LOOP_LANGUAGES.indexOf(language) + 1) % LOOP_LANGUAGES.length]
-    setDemoStepIndex(DEMO_SEQUENCE.indexOf(nextLanguage))
-  }
-
   return (
     <div
       ref={containerRef}
-      className={`relative rounded-2xl border p-3.5 ${previewSurfaceClass(tone)}`}
-      onMouseEnter={() => {
-        setIsHovered(true)
-        pauseAutoplayByUser()
-      }}
-      onMouseLeave={() => setIsHovered(false)}
-      onFocusCapture={pauseAutoplayByUser}
+      className={`pointer-events-none relative isolate rounded-2xl border p-3.5 select-none ${previewSurfaceClass(tone, isDark)}`}
     >
-      <div className="relative rounded-xl border border-pebble-border/26 bg-pebble-canvas/68 px-3 py-2.5 text-[12px] text-pebble-text-primary dark:border-pebble-border/24 dark:bg-pebble-canvas/38 dark:text-pebble-text-primary">
+      <div className={`relative rounded-xl border px-3 py-2.5 text-[12px] text-pebble-text-primary ${isDark
+        ? 'border-pebble-border/42 bg-pebble-canvas/48'
+        : 'border-pebble-border/52 bg-pebble-canvas/72'
+        } z-20`}>
         <div className="flex items-center justify-between gap-2">
           <span className="text-[12px] font-medium text-pebble-text-secondary">Language</span>
-          <button
-            type="button"
+          <div
             ref={selectorRef}
-            onClick={handleSelectorToggle}
-            className="rounded-lg border border-pebble-accent/40 bg-pebble-accent/12 px-2.5 py-1 text-[11px] font-semibold text-pebble-accent transition-colors hover:bg-pebble-accent/16 dark:border-pebble-accent/36 dark:bg-pebble-accent/18 dark:text-blue-200 dark:hover:bg-pebble-accent/24"
+            className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold ${isDark
+              ? 'border-pebble-accent/56 bg-pebble-accent/22 text-pebble-text-primary'
+              : 'border-pebble-accent/62 bg-pebble-accent/14 text-pebble-accent'
+              } transition-[background-color,border-color,color,box-shadow] duration-300 ease-out`}
           >
             {selectedLanguage}
-          </button>
+          </div>
         </div>
 
         <AnimatePresence>
@@ -406,41 +398,49 @@ function LanguagePreviewAnimated({ tone }: { tone: TileTone }) {
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute right-3 top-[2.45rem] z-20 w-28 overflow-hidden rounded-xl border border-pebble-border/28 bg-pebble-panel/95 shadow-[0_12px_28px_rgba(15,23,42,0.18)] dark:border-pebble-border/24 dark:bg-pebble-canvas/90 dark:shadow-[0_14px_32px_rgba(0,0,0,0.42)]"
+              transition={{ duration: 0.34, ease: [0.2, 0.8, 0.2, 1] }}
+              className={`absolute right-3 top-[2.45rem] z-50 w-28 overflow-hidden rounded-xl border ${isDark
+                ? 'border-pebble-border/65 bg-[#121a2f] shadow-[0_18px_36px_rgba(0,0,0,0.52)]'
+                : 'border-pebble-border/70 bg-[#f5f8ff] shadow-[0_14px_30px_rgba(55,72,110,0.24)]'
+                }`}
             >
               {(['EN', 'HI', 'BN', 'TA'] as const).map((lang) => (
-                <button
+                <div
                   key={lang}
-                  type="button"
                   ref={(node) => {
                     optionRefs.current[lang] = node
                   }}
-                  onClick={() => handleLanguageSelect(lang)}
-                  className={`px-2.5 py-1.5 text-[11px] ${
+                  className={`block w-full px-2.5 py-1.5 text-[11px] ${
                     lang === selectedLanguage
-                      ? 'bg-pebble-accent/12 text-pebble-accent dark:bg-pebble-accent/18 dark:text-blue-200'
+                      ? isDark
+                        ? 'bg-pebble-accent/24 text-pebble-text-primary'
+                        : 'bg-pebble-accent/14 text-pebble-accent'
                       : highlightedOption === lang
-                        ? 'bg-pebble-overlay/35 text-pebble-text-primary dark:bg-pebble-overlay/10 dark:text-pebble-text-primary'
-                        : 'text-pebble-text-secondary dark:text-pebble-text-secondary'
-                  }`}
+                        ? isDark
+                          ? 'bg-pebble-canvas/52 text-pebble-text-primary'
+                          : 'bg-pebble-canvas/62 text-pebble-text-primary'
+                        : 'text-pebble-text-secondary'
+                  } transition-[background-color,color] duration-280 ease-out`}
                 >
                   {lang}
-                </button>
+                </div>
               ))}
             </motion.div>
           ) : null}
         </AnimatePresence>
       </div>
 
-      <div className="mt-2.5 rounded-xl border border-pebble-border/26 bg-pebble-canvas/75 px-3 py-2.5 text-[12px] leading-relaxed text-pebble-text-primary dark:border-pebble-border/24 dark:bg-pebble-canvas/38 dark:text-pebble-text-primary">
+      <div className={`mt-2.5 rounded-xl border px-3 py-2.5 text-[12px] leading-relaxed text-pebble-text-primary ${isDark
+        ? 'border-pebble-border/42 bg-pebble-canvas/48'
+        : 'border-pebble-border/52 bg-pebble-canvas/72'
+        } relative z-10`}>
         <AnimatePresence mode="wait">
           <motion.p
             key={hintLanguage}
             initial={{ opacity: 0.55, y: 3 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0.45, y: -2 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={{ duration: 0.32, ease: [0.2, 0.8, 0.2, 1] }}
           >
             {LANGUAGE_COPY[hintLanguage]}
           </motion.p>
@@ -455,30 +455,44 @@ function LanguagePreviewAnimated({ tone }: { tone: TileTone }) {
             y: cursorPoint.y,
             scale: cursorPulse ? [1, 0.88, 1] : 1,
           }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
           style={{ left: 0, top: 0 }}
         >
-          <div className="relative h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-pebble-border/45 bg-pebble-overlay/90 shadow-[0_2px_8px_rgba(15,23,42,0.22)] dark:border-pebble-overlay/55 dark:bg-pebble-overlay/92" />
+          <svg
+            viewBox="0 0 16 22"
+            className="h-5 w-4 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_2px_8px_rgba(15,23,42,0.32)]"
+            aria-hidden="true"
+          >
+            <path
+              d="M1.2 1.2v18.4l4.6-4.2 2.1 5 2.2-1-2.1-5h5.4z"
+              fill={isDark ? '#EAF2FF' : '#111827'}
+              stroke={isDark ? 'rgba(12,20,34,0.72)' : 'rgba(248,250,252,0.85)'}
+              strokeWidth="1.05"
+              strokeLinejoin="round"
+            />
+          </svg>
         </motion.div>
       ) : null}
     </div>
   )
 }
 
-function TilePreview({ preview, tone }: Pick<FeatureTile, 'preview' | 'tone'>) {
-  if (preview === 'runtime') return <RuntimePreview tone={tone} />
-  if (preview === 'coach') return <CoachPreview tone={tone} />
-  if (preview === 'browser') return <BrowserPreview tone={tone} />
-  return <LanguagePreviewAnimated tone={tone} />
+function TilePreview({ preview, tone, isDark }: Pick<FeatureTile, 'preview' | 'tone'> & { isDark: boolean }) {
+  if (preview === 'runtime') return <RuntimePreview tone={tone} isDark={isDark} />
+  if (preview === 'coach') return <CoachPreview tone={tone} isDark={isDark} />
+  if (preview === 'browser') return <BrowserPreview tone={tone} isDark={isDark} />
+  return <LanguagePreviewAnimated tone={tone} isDark={isDark} />
 }
 
 export function FeatureGrid() {
   const reduceMotion = useReducedMotion()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
 
   return (
-    <section className="relative mt-1 overflow-hidden rounded-[24px] border border-pebble-border/24 bg-[linear-gradient(180deg,rgba(var(--pebble-panel),0.86),rgba(var(--pebble-panel),0.78))] px-4 py-5 shadow-[0_16px_40px_rgba(55,72,110,0.14)] dark:bg-[linear-gradient(180deg,rgba(var(--pebble-panel),0.50),rgba(var(--pebble-panel),0.40))] dark:shadow-[0_24px_56px_rgba(0,0,0,0.42)] md:px-5 md:py-6">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pebble-overlay/75 to-transparent dark:via-pebble-overlay/18" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-pebble-overlay/[0.10] to-transparent dark:from-pebble-overlay/[0.06]" />
+    <section className="card-premium relative mt-1 overflow-hidden rounded-[24px] px-4 py-5 md:px-5 md:py-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pebble-overlay/64 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-pebble-overlay/[0.08] to-transparent" />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.12fr_0.88fr] lg:items-end">
         <div className="space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-pebble-text-muted">
@@ -499,42 +513,42 @@ export function FeatureGrid() {
           return (
             <motion.article
               key={tile.id}
-              className={`group relative isolate overflow-hidden rounded-[24px] border border-pebble-border/24 bg-[rgba(231,237,249,0.86)] p-4 shadow-[0_14px_32px_rgba(55,72,110,0.14)] dark:border-pebble-border/20 dark:bg-pebble-overlay/[0.05] dark:shadow-[0_18px_34px_rgba(0,0,0,0.42)] md:p-5 ${tilePlacementClass(tile.id)}`}
+              className={`card-premium group relative isolate overflow-hidden rounded-[24px] p-4 md:p-5 ${isDark ? 'border-pebble-border/28' : 'border-pebble-border/44'} ${tilePlacementClass(tile.id)}`}
               style={{ ['--mx' as string]: '50%', ['--my' as string]: '50%' }}
               onMouseMove={onTileMouseMove}
               onMouseLeave={onTileMouseLeave}
               whileHover={reduceMotion ? undefined : { y: -6, scale: 1.006 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
             >
               <div
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100"
                 style={{
                   background:
-                    'radial-gradient(280px circle at var(--mx) var(--my), rgba(59,130,246,0.12), rgba(59,130,246,0.02) 34%, transparent 62%)',
+                    'radial-gradient(280px circle at var(--mx) var(--my), rgba(59,130,246,0.16), rgba(59,130,246,0.03) 34%, transparent 62%)',
                 }}
               />
-              <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-pebble-overlay/72 to-transparent dark:via-pebble-overlay/20" />
+              <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-pebble-overlay/70 to-transparent" />
 
               <div className="relative z-10 flex items-start justify-between gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-pebble-border/28 bg-pebble-canvas/58 text-pebble-text-secondary dark:border-pebble-border/22 dark:bg-pebble-canvas/34 dark:text-pebble-text-primary">
+                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-pebble-canvas/60 ${isDark ? 'border-pebble-border/38 text-pebble-text-primary' : 'border-pebble-border/46 text-pebble-text-secondary'}`}>
                   <Icon className="h-[17px] w-[17px]" aria-hidden="true" />
                 </span>
-                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${toneClass(tile.tone)}`}>
+                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${toneClass(tile.tone, isDark)}`}>
                   {tile.tag}
                 </span>
               </div>
 
               <div className="relative z-10 mt-3 space-y-1.5">
-                <h3 className="text-[17px] font-semibold leading-[1.22] tracking-tight text-pebble-text-primary dark:text-pebble-text-primary">
+                <h3 className="text-[17px] font-semibold leading-[1.22] tracking-tight text-pebble-text-primary">
                   {tile.title}
                 </h3>
-                <p className="text-[13.25px] leading-[1.56] text-pebble-text-secondary dark:text-pebble-text-secondary">
+                <p className="text-[13.25px] leading-[1.56] text-pebble-text-secondary">
                   {tile.detail}
                 </p>
               </div>
 
               <div className="relative z-10 mt-3">
-                <TilePreview preview={tile.preview} tone={tile.tone} />
+                <TilePreview preview={tile.preview} tone={tile.tone} isDark={isDark} />
               </div>
             </motion.article>
           )

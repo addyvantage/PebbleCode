@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import { EventEmitter } from 'events'
+import { createHmac } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { promises as fsp } from 'node:fs'
@@ -394,6 +395,11 @@ const COGNITO_CLIENT_ID =
   process.env.COGNITO_CLIENT_ID ??
   process.env.VITE_COGNITO_CLIENT_ID ??
   ''
+const COGNITO_USER_POOL_ID =
+  process.env.COGNITO_USER_POOL_ID ??
+  process.env.VITE_COGNITO_USER_POOL_ID ??
+  ''
+const COGNITO_CLIENT_SECRET = process.env.COGNITO_CLIENT_SECRET ?? ''
 
 fs.mkdirSync(DEV_AVATARS_ROOT, { recursive: true })
 
@@ -419,11 +425,20 @@ async function persistDevProfiles(store: Map<string, DevProfileRecord>) {
   await fsp.writeFile(DEV_PROFILES_PATH, payload, 'utf8')
 }
 
-function getDefaultProfile(identity: { userId: string; email: string }, nowIso: string): DevProfileRecord {
+function getDefaultProfile(
+  identity: { userId: string; email: string; preferredUsername?: string; name?: string },
+  nowIso: string,
+): DevProfileRecord {
+  const fallbackNameRaw =
+    identity.preferredUsername
+      || (identity.email ? identity.email.split('@')[0] : '')
+      || ''
+  const fallbackName = USERNAME_REGEX.test(fallbackNameRaw) ? fallbackNameRaw : ''
   return {
     userId: identity.userId,
-    username: '',
-    usernameLower: '',
+    displayName: identity.name ?? fallbackName,
+    username: fallbackName,
+    usernameLower: fallbackName ? fallbackName.toLowerCase() : '',
     usernameSetAt: null,
     lastUsernameChangeAt: null,
     email: identity.email,
@@ -522,7 +537,30 @@ function toUploadRelativeKey(key: string) {
   return cleaned
 }
 
-function extractUserId(req: Request): { userId: string; email: string } | null {
+function decodeJwtSegment(segment: string) {
+  const normalized = segment.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4)
+  return Buffer.from(padded, 'base64').toString()
+}
+
+function createSecretHash(username: string) {
+  if (!COGNITO_CLIENT_SECRET || !COGNITO_CLIENT_ID) {
+    return undefined
+  }
+  return createHmac('sha256', COGNITO_CLIENT_SECRET)
+    .update(`${username}${COGNITO_CLIENT_ID}`)
+    .digest('base64')
+}
+
+function resolveCognitoRegion() {
+  if (process.env.AWS_REGION) {
+    return process.env.AWS_REGION
+  }
+  const match = COGNITO_USER_POOL_ID.match(/^([a-z]{2}-[a-z]+-\d+)_/)
+  return match?.[1]
+}
+
+function extractUserId(req: Request): { userId: string; email: string; preferredUsername?: string; name?: string } | null {
   // In production, we'd validate the JWT against Cognito JWKS.
   // For dev simplicity, we trust the token payload or accept X-Dev-User-Id.
   const authHeader = req.headers.authorization
@@ -533,8 +571,20 @@ function extractUserId(req: Request): { userId: string; email: string } | null {
     }
     try {
       // Decode JWT payload (not verifying signature in dev; prod should use JWKS)
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
-      return { userId: payload.sub, email: payload.email || payload['cognito:username'] || '' }
+      const [, payloadSegment] = token.split('.')
+      if (!payloadSegment) {
+        return null
+      }
+      const payload = JSON.parse(decodeJwtSegment(payloadSegment)) as Record<string, string>
+      if (typeof payload.sub !== 'string' || !payload.sub) {
+        return null
+      }
+      return {
+        userId: payload.sub,
+        email: payload.email || payload['cognito:username'] || '',
+        preferredUsername: payload.preferred_username || payload['cognito:username'],
+        name: payload.name || payload.nickname || payload.preferred_username,
+      }
     } catch {
       return null
     }
@@ -597,7 +647,16 @@ app.get('/api/profile', async (req: Request, res: Response) => {
 
   if (!awsRegion) {
     const stored = devProfiles.get(identity.userId) ?? getDefaultProfile(identity, nowIso)
-    res.status(200).json(stored)
+    const hydrated = {
+      ...stored,
+      displayName:
+        typeof stored.displayName === 'string' && stored.displayName.trim()
+          ? stored.displayName
+          : typeof stored.username === 'string' && stored.username.trim()
+            ? stored.username
+            : identity.name || identity.preferredUsername || identity.email.split('@')[0] || 'Guest',
+    }
+    res.status(200).json(hydrated)
     return
   }
 
@@ -616,7 +675,16 @@ app.get('/api/profile', async (req: Request, res: Response) => {
       item = getDefaultProfile(identity, nowIso)
       await client.send(new PutCommand({ TableName: PROFILES_TABLE, Item: item }))
     }
-    res.status(200).json(item)
+    const hydrated = {
+      ...item,
+      displayName:
+        typeof item.displayName === 'string' && item.displayName.trim()
+          ? item.displayName
+          : typeof item.username === 'string' && item.username.trim()
+            ? item.username
+            : identity.name || identity.preferredUsername || identity.email.split('@')[0] || 'Guest',
+    }
+    res.status(200).json(hydrated)
   } catch (err) {
     console.error('[dev-api] Failed to fetch profile from DynamoDB, using in-memory fallback:', err)
     const stored = devProfiles.get(identity.userId) ?? getDefaultProfile(identity, nowIso)
@@ -633,12 +701,20 @@ app.put('/api/profile', async (req: Request, res: Response) => {
 
   const { username, bio, avatarKey } = req.body as {
     username?: unknown
+    displayName?: unknown
     bio?: unknown
     avatarKey?: unknown
   }
+  const displayName = typeof (req.body as { displayName?: unknown }).displayName === 'string'
+    ? (req.body as { displayName?: string }).displayName?.trim()
+    : undefined
 
   if (username !== undefined) {
     res.status(400).json({ error: 'Username updates require POST /api/profile/username' })
+    return
+  }
+  if (displayName !== undefined && displayName.length > 48) {
+    res.status(400).json({ error: 'Display name must be 48 chars or less' })
     return
   }
   if (bio !== undefined && (typeof bio !== 'string' || bio.length > 160)) {
@@ -657,6 +733,7 @@ app.put('/api/profile', async (req: Request, res: Response) => {
     const existing = devProfiles.get(identity.userId) ?? getDefaultProfile(identity, now)
     const updated = {
       ...existing,
+      ...(displayName !== undefined ? { displayName } : {}),
       ...(bio !== undefined ? { bio } : {}),
       ...(avatarKey !== undefined ? { avatarKey } : {}),
       ...(avatarKey !== undefined ? { avatarUpdatedAt: now } : {}),
@@ -681,6 +758,11 @@ app.put('/api/profile', async (req: Request, res: Response) => {
       expressionParts.push('#bio = :bio')
       names['#bio'] = 'bio'
       values[':bio'] = bio
+    }
+    if (displayName !== undefined) {
+      expressionParts.push('#displayName = :displayName')
+      names['#displayName'] = 'displayName'
+      values[':displayName'] = displayName
     }
     if (avatarKey !== undefined) {
       expressionParts.push('#avatarKey = :avatarKey')
@@ -707,6 +789,7 @@ app.put('/api/profile', async (req: Request, res: Response) => {
     const existing = devProfiles.get(identity.userId) ?? getDefaultProfile(identity, now)
     const updated = {
       ...existing,
+      ...(displayName !== undefined ? { displayName } : {}),
       ...(bio !== undefined ? { bio } : {}),
       ...(avatarKey !== undefined ? { avatarKey } : {}),
       ...(avatarKey !== undefined ? { avatarUpdatedAt: now } : {}),
@@ -859,9 +942,12 @@ app.post('/api/auth/signup', async (req: Request, res: Response) => {
     return
   }
   const usernameLower = normalizedUsername.toLowerCase()
-  const awsRegion = process.env.AWS_REGION
+  const awsRegion = resolveCognitoRegion()
   if (!awsRegion || !COGNITO_CLIENT_ID) {
-    res.status(500).json({ error: 'Signup is not configured' })
+    res.status(500).json({
+      error: 'Signup is not configured. Set COGNITO_CLIENT_ID and AWS_REGION (or COGNITO_USER_POOL_ID).',
+      code: 'AuthNotConfigured',
+    })
     return
   }
 
@@ -878,14 +964,17 @@ app.post('/api/auth/signup', async (req: Request, res: Response) => {
     }
 
     const cognito = new CognitoIdentityProviderClient({ region: awsRegion })
+    const secretHash = createSecretHash(normalizedEmail)
     const signUpResp = await cognito.send(
       new SignUpCommand({
         ClientId: COGNITO_CLIENT_ID,
         Username: normalizedEmail,
         Password: password,
+        ...(secretHash ? { SecretHash: secretHash } : {}),
         UserAttributes: [
           { Name: 'email', Value: normalizedEmail },
           { Name: 'preferred_username', Value: normalizedUsername },
+          { Name: 'name', Value: normalizedUsername },
         ],
       }),
     )
@@ -917,6 +1006,7 @@ app.post('/api/auth/signup', async (req: Request, res: Response) => {
           userId,
           username: normalizedUsername,
           usernameLower,
+          displayName: normalizedUsername,
           usernameSetAt: nowIso,
           lastUsernameChangeAt: nowIso,
           email: normalizedEmail,
@@ -937,11 +1027,29 @@ app.post('/api/auth/signup', async (req: Request, res: Response) => {
       return
     }
     if (err?.name === 'UsernameExistsException') {
-      res.status(409).json({ error: 'Account already exists' })
+      res.status(409).json({ error: 'Account already exists. Try signing in instead.', code: 'UsernameExistsException' })
+      return
+    }
+    if (err?.name === 'InvalidPasswordException') {
+      res.status(400).json({
+        error: 'Password does not meet Cognito policy. Use at least 8 characters with upper/lowercase and a number.',
+        code: 'InvalidPasswordException',
+      })
+      return
+    }
+    if (err?.name === 'InvalidParameterException') {
+      res.status(400).json({ error: err?.message ?? 'Invalid signup parameters', code: 'InvalidParameterException' })
+      return
+    }
+    if (err?.name === 'NotAuthorizedException' && String(err?.message ?? '').toLowerCase().includes('secret hash')) {
+      res.status(500).json({
+        error: 'Cognito app client requires a client secret. Set COGNITO_CLIENT_SECRET on the backend.',
+        code: 'MissingClientSecret',
+      })
       return
     }
     console.error('[dev-api] Signup failed:', err)
-    res.status(500).json({ error: 'Signup failed' })
+    res.status(500).json({ error: err?.message ?? 'Signup failed', code: err?.name ?? 'SignupFailed' })
   }
 })
 
@@ -953,9 +1061,12 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     return
   }
 
-  const awsRegion = process.env.AWS_REGION
+  const awsRegion = resolveCognitoRegion()
   if (!awsRegion || !COGNITO_CLIENT_ID) {
-    res.status(500).json({ error: 'Login is not configured' })
+    res.status(500).json({
+      error: 'Login is not configured. Set COGNITO_CLIENT_ID and AWS_REGION (or COGNITO_USER_POOL_ID).',
+      code: 'AuthNotConfigured',
+    })
     return
   }
 
@@ -983,6 +1094,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
     const { CognitoIdentityProviderClient, InitiateAuthCommand } = await import('@aws-sdk/client-cognito-identity-provider')
     const cognito = new CognitoIdentityProviderClient({ region: awsRegion })
+    const secretHash = createSecretHash(loginEmail)
     const authResult = await cognito.send(
       new InitiateAuthCommand({
         AuthFlow: 'USER_PASSWORD_AUTH',
@@ -990,6 +1102,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         AuthParameters: {
           USERNAME: loginEmail,
           PASSWORD: password,
+          ...(secretHash ? { SECRET_HASH: secretHash } : {}),
         },
       }),
     )
@@ -1006,8 +1119,102 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       expiresIn: authResult.AuthenticationResult.ExpiresIn,
       tokenType: authResult.AuthenticationResult.TokenType,
     })
-  } catch (err) {
-    res.status(401).json({ error: 'Invalid username/email or password' })
+  } catch (err: any) {
+    const errorName = err?.name ?? ''
+    if (errorName === 'UserNotConfirmedException') {
+      res.status(401).json({
+        error: 'Account not verified. Enter the code sent to your email.',
+        code: 'UserNotConfirmedException',
+        verificationEmail: loginEmail,
+      })
+      return
+    }
+    if (errorName === 'NotAuthorizedException' && String(err?.message ?? '').toLowerCase().includes('secret hash')) {
+      res.status(500).json({
+        error: 'Cognito app client requires a client secret. Set COGNITO_CLIENT_SECRET on the backend.',
+        code: 'MissingClientSecret',
+      })
+      return
+    }
+    res.status(401).json({ error: 'Invalid username/email or password', code: errorName || 'AuthFailed' })
+  }
+})
+
+app.post('/api/auth/confirm-signup', async (req: Request, res: Response) => {
+  const { email, code } = req.body as { email?: unknown; code?: unknown }
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+  const confirmationCode = typeof code === 'string' ? code.trim() : ''
+  if (!normalizedEmail || !confirmationCode) {
+    res.status(400).json({ error: 'Email and verification code are required' })
+    return
+  }
+
+  const awsRegion = resolveCognitoRegion()
+  if (!awsRegion || !COGNITO_CLIENT_ID) {
+    res.status(500).json({
+      error: 'Verification is not configured. Set COGNITO_CLIENT_ID and AWS_REGION (or COGNITO_USER_POOL_ID).',
+      code: 'AuthNotConfigured',
+    })
+    return
+  }
+
+  try {
+    const { CognitoIdentityProviderClient, ConfirmSignUpCommand } = await import('@aws-sdk/client-cognito-identity-provider')
+    const cognito = new CognitoIdentityProviderClient({ region: awsRegion })
+    const secretHash = createSecretHash(normalizedEmail)
+    await cognito.send(new ConfirmSignUpCommand({
+      ClientId: COGNITO_CLIENT_ID,
+      Username: normalizedEmail,
+      ConfirmationCode: confirmationCode,
+      ...(secretHash ? { SecretHash: secretHash } : {}),
+    }))
+    res.status(200).json({ ok: true })
+  } catch (err: any) {
+    const codeName = err?.name ?? 'ConfirmSignUpFailed'
+    if (codeName === 'CodeMismatchException') {
+      res.status(400).json({ error: 'Incorrect code. Please try again.', code: codeName })
+      return
+    }
+    if (codeName === 'ExpiredCodeException') {
+      res.status(400).json({ error: 'Verification code expired. Request a new code.', code: codeName })
+      return
+    }
+    if (codeName === 'NotAuthorizedException' && String(err?.message ?? '').toLowerCase().includes('already confirmed')) {
+      res.status(200).json({ ok: true, alreadyConfirmed: true })
+      return
+    }
+    res.status(400).json({ error: err?.message ?? 'Verification failed', code: codeName })
+  }
+})
+
+app.post('/api/auth/resend-signup-code', async (req: Request, res: Response) => {
+  const { email } = req.body as { email?: unknown }
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+  if (!normalizedEmail) {
+    res.status(400).json({ error: 'Email is required' })
+    return
+  }
+  const awsRegion = resolveCognitoRegion()
+  if (!awsRegion || !COGNITO_CLIENT_ID) {
+    res.status(500).json({
+      error: 'Verification resend is not configured. Set COGNITO_CLIENT_ID and AWS_REGION (or COGNITO_USER_POOL_ID).',
+      code: 'AuthNotConfigured',
+    })
+    return
+  }
+
+  try {
+    const { CognitoIdentityProviderClient, ResendConfirmationCodeCommand } = await import('@aws-sdk/client-cognito-identity-provider')
+    const cognito = new CognitoIdentityProviderClient({ region: awsRegion })
+    const secretHash = createSecretHash(normalizedEmail)
+    await cognito.send(new ResendConfirmationCodeCommand({
+      ClientId: COGNITO_CLIENT_ID,
+      Username: normalizedEmail,
+      ...(secretHash ? { SecretHash: secretHash } : {}),
+    }))
+    res.status(200).json({ ok: true })
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message ?? 'Failed to resend code', code: err?.name ?? 'ResendFailed' })
   }
 })
 
@@ -1383,7 +1590,83 @@ import { join } from 'path'
 const devSnapshots = new Map<string, Record<string, unknown>>()
 
 app.post('/api/report/recovery', async (req: Request, res: Response) => {
-  const { problemId = 'unknown', userId = 'anonymous', sessionId = 'local' } = req.body || {}
+  const {
+    problemId = 'unknown',
+    problemTitle,
+    difficulty,
+    language,
+    userId: requestUserId = 'guest',
+    userName: requestUserName = 'Guest',
+    userEmail: requestUserEmail = '',
+    avatarUrl: requestAvatarUrl = null,
+    sessionId = 'local',
+  } = req.body || {}
+
+  const identity = extractUserId(req)
+  const awsRegion = process.env.AWS_REGION
+  const effectiveUserId = identity?.userId ?? requestUserId
+  let effectiveUserName = String(requestUserName ?? '').trim()
+  let effectiveUserEmail = String(requestUserEmail ?? '').trim()
+  let effectiveAvatarUrl = typeof requestAvatarUrl === 'string' ? requestAvatarUrl : null
+
+  if (identity) {
+    try {
+      if (!awsRegion) {
+        const profile = devProfiles.get(identity.userId)
+        if (profile) {
+          const displayName = typeof profile.displayName === 'string' ? profile.displayName.trim() : ''
+          const username = typeof profile.username === 'string' ? profile.username.trim() : ''
+          const email = typeof profile.email === 'string' ? profile.email.trim() : ''
+          const avatarKey = typeof profile.avatarKey === 'string' ? profile.avatarKey : null
+          effectiveUserName = displayName || username || effectiveUserName
+          effectiveUserEmail = email || effectiveUserEmail
+          if (!effectiveAvatarUrl && avatarKey) {
+            const relativeKey = toUploadRelativeKey(avatarKey)
+            if (relativeKey) {
+              const port = Number(process.env.PORT ?? 3001)
+              effectiveAvatarUrl = `http://localhost:${port}/uploads/${relativeKey}`
+            }
+          }
+        }
+      } else {
+        const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb')
+        const { DynamoDBDocumentClient, GetCommand } = await import('@aws-sdk/lib-dynamodb')
+        const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({ region: awsRegion }))
+        const profileRes = await ddb.send(new GetCommand({ TableName: PROFILES_TABLE, Key: { userId: identity.userId } }))
+        const profile = profileRes.Item as Record<string, unknown> | undefined
+        if (profile) {
+          const displayName = typeof profile.displayName === 'string' ? profile.displayName.trim() : ''
+          const username = typeof profile.username === 'string' ? profile.username.trim() : ''
+          const email = typeof profile.email === 'string' ? profile.email.trim() : ''
+          effectiveUserName = displayName || username || effectiveUserName
+          effectiveUserEmail = email || effectiveUserEmail
+        }
+      }
+    } catch (profileErr) {
+      console.warn('[report] Failed to hydrate profile identity for report payload.', profileErr)
+    }
+  }
+
+  if (!effectiveUserName) {
+    effectiveUserName =
+      identity?.name?.trim()
+      || identity?.preferredUsername?.trim()
+      || effectiveUserEmail.split('@')[0]
+      || 'Guest'
+  }
+
+  const sanitizeForFilename = (value: string, fallback: string, maxLen = 32) => {
+    const slug = String(value ?? '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, maxLen)
+    return slug || fallback
+  }
+  const safeUserSlug = sanitizeForFilename(effectiveUserName || effectiveUserId, 'guest')
+  const safeProblemSlug = sanitizeForFilename(problemId, 'problem', 40)
+  const dateStamp = new Date().toISOString().slice(0, 10)
+  const downloadFilename = `PebbleRecoveryReport_${safeUserSlug}_${safeProblemSlug}_${dateStamp}.pdf`
 
   try {
     // Build the report from an empty event array (real events would come from DDB rollup)
@@ -1394,26 +1677,45 @@ app.post('/api/report/recovery', async (req: Request, res: Response) => {
       { eventName: 'submit.completed', timestamp: new Date().toISOString(), runtimeMs: 1400, accepted: true, tierUsed: 'T2' },
     ]
 
-    const report = buildRecoveryReport(userId, sessionId, problemId, mockEvents)
+    const report = buildRecoveryReport({
+      userId: effectiveUserId,
+      userName: effectiveUserName,
+      userEmail: effectiveUserEmail,
+      userAvatarUrl: effectiveAvatarUrl,
+      sessionId,
+      problemId,
+      problemTitle: typeof problemTitle === 'string' ? problemTitle : undefined,
+      difficulty: typeof difficulty === 'string' ? difficulty : undefined,
+      language: typeof language === 'string' ? language : undefined,
+      events: mockEvents,
+    })
     const pdfBuffer = await generateReportPdf(report)
 
-    const awsRegion = process.env.AWS_REGION
     const reportsBucket = process.env.REPORTS_BUCKET_NAME
 
     if (awsRegion && reportsBucket) {
       try {
-        const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
+        const { S3Client, PutObjectCommand, GetObjectCommand } = await import('@aws-sdk/client-s3')
         const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
         const s3 = new S3Client({ region: awsRegion })
-        const key = `pebble-session-reports/${userId}/${sessionId}.pdf`
+        const key = `pebble-session-reports/${effectiveUserId}/${sessionId}.pdf`
         await s3.send(new PutObjectCommand({
           Bucket: reportsBucket,
           Key: key,
           Body: pdfBuffer,
           ContentType: 'application/pdf',
         }))
-        const reportUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: reportsBucket, Key: key }), { expiresIn: 3600 })
-        return res.status(200).json({ ok: true, reportUrl, expiresIn: 3600 })
+        const reportUrl = await getSignedUrl(
+          s3,
+          new GetObjectCommand({
+            Bucket: reportsBucket,
+            Key: key,
+            ResponseContentType: 'application/pdf',
+            ResponseContentDisposition: `attachment; filename="${downloadFilename}"`,
+          }),
+          { expiresIn: 3600 },
+        )
+        return res.status(200).json({ ok: true, reportUrl, expiresIn: 3600, filename: downloadFilename })
       } catch (s3Err) {
         console.error('[report] S3 upload failed, falling back to local', s3Err)
       }
@@ -1422,8 +1724,7 @@ app.post('/api/report/recovery', async (req: Request, res: Response) => {
     // Local fallback: write PDF to /tmp/reports/
     const tmpDir = join('/tmp', 'pebble-reports')
     mkdirSync(tmpDir, { recursive: true })
-    const ts = Date.now()
-    const filename = `${userId}_${sessionId}_${ts}.pdf`
+    const filename = downloadFilename
     const filepath = join(tmpDir, filename)
     writeFileSync(filepath, pdfBuffer)
 
@@ -1432,6 +1733,7 @@ app.post('/api/report/recovery', async (req: Request, res: Response) => {
       ok: true,
       reportUrl: `http://localhost:${process.env.PORT ?? 3001}/api/report/download/${filename}`,
       expiresIn: 3600,
+      filename: downloadFilename,
       _local: true,
     })
   } catch (err) {
