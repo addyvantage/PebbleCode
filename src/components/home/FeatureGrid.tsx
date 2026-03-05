@@ -98,15 +98,15 @@ function toneClass(tone: TileTone) {
 
 function previewSurfaceClass(tone: TileTone) {
   if (tone === 'blue') {
-    return 'border-sky-300/25 bg-[linear-gradient(160deg,rgba(116,181,255,0.18),rgba(10,20,38,0.40))] dark:bg-[linear-gradient(160deg,rgba(88,145,230,0.18),rgba(7,14,27,0.52))]'
+    return 'border-sky-200/35 bg-[linear-gradient(160deg,rgba(186,230,253,0.20),rgba(2,8,23,0.35))] dark:bg-[linear-gradient(160deg,rgba(56,189,248,0.16),rgba(2,8,23,0.62))] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]'
   }
   if (tone === 'indigo') {
-    return 'border-indigo-300/25 bg-[linear-gradient(160deg,rgba(151,146,255,0.18),rgba(14,18,42,0.40))] dark:bg-[linear-gradient(160deg,rgba(110,115,230,0.18),rgba(9,12,31,0.54))]'
+    return 'border-indigo-200/35 bg-[linear-gradient(160deg,rgba(199,210,254,0.20),rgba(8,10,30,0.36))] dark:bg-[linear-gradient(160deg,rgba(99,102,241,0.16),rgba(2,8,23,0.64))] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]'
   }
   if (tone === 'emerald') {
-    return 'border-emerald-300/25 bg-[linear-gradient(160deg,rgba(120,220,188,0.16),rgba(11,28,33,0.42))] dark:bg-[linear-gradient(160deg,rgba(96,180,156,0.16),rgba(8,24,28,0.56))]'
+    return 'border-emerald-200/35 bg-[linear-gradient(160deg,rgba(167,243,208,0.18),rgba(5,20,26,0.38))] dark:bg-[linear-gradient(160deg,rgba(16,185,129,0.14),rgba(2,8,23,0.65))] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]'
   }
-  return 'border-slate-300/22 bg-[linear-gradient(160deg,rgba(190,200,228,0.14),rgba(18,25,44,0.42))] dark:bg-[linear-gradient(160deg,rgba(136,149,179,0.12),rgba(9,13,24,0.56))]'
+  return 'border-slate-200/30 bg-[linear-gradient(160deg,rgba(226,232,240,0.18),rgba(10,14,28,0.38))] dark:bg-[linear-gradient(160deg,rgba(148,163,184,0.12),rgba(2,8,23,0.66))] shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]'
 }
 
 function onTileMouseMove(event: MouseEvent<HTMLElement>) {
@@ -132,7 +132,7 @@ function TilePreview({ preview, tone }: Pick<FeatureTile, 'preview' | 'tone'>) {
           <span className="rounded-full border border-sky-300/35 bg-sky-400/18 px-2 py-0.5 text-[10px] font-medium text-sky-100">Unit: Two Sum</span>
           <span className="rounded-full border border-amber-300/40 bg-amber-400/18 px-2 py-0.5 text-[10px] font-medium text-amber-100">Failing: 1</span>
         </div>
-        <div className="rounded-xl border border-white/20 bg-slate-900/45 p-3 font-mono text-[11px] leading-relaxed text-slate-200">
+        <div className="rounded-xl border border-white/22 bg-slate-900/55 p-3 font-mono text-[11px] leading-relaxed text-slate-200">
           <div>def solve(nums, target):</div>
           <div className="opacity-85">  seen = {'{}'}</div>
           <div className="opacity-85">  return -1, -1</div>
@@ -145,8 +145,8 @@ function TilePreview({ preview, tone }: Pick<FeatureTile, 'preview' | 'tone'>) {
     return (
       <div className={`rounded-2xl border p-4 ${surfaceClass}`}>
         <div className="space-y-2">
-          <div className="w-[88%] rounded-xl border border-white/16 bg-white/8 px-3 py-2 text-[11px] text-slate-200">Hint only: check seen before insert.</div>
-          <div className="ml-auto w-[82%] rounded-xl border border-white/16 bg-white/6 px-3 py-2 text-[11px] text-slate-200">Need one concise next step.</div>
+          <div className="w-[88%] rounded-xl border border-white/22 bg-white/10 px-3 py-2 text-[11px] text-slate-200">Hint only: check seen before insert.</div>
+          <div className="ml-auto w-[82%] rounded-xl border border-white/22 bg-white/10 px-3 py-2 text-[11px] text-slate-200">Need one concise next step.</div>
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {['Hint', 'Explain', 'Next step'].map((chip) => (
@@ -164,10 +164,10 @@ function TilePreview({ preview, tone }: Pick<FeatureTile, 'preview' | 'tone'>) {
       <div className={`rounded-2xl border p-4 ${surfaceClass}`}>
         <div className="mb-3 flex flex-wrap gap-1.5">
           {['Array', 'HashMap', 'Medium'].map((chip) => (
-            <span key={chip} className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] text-slate-100">{chip}</span>
+            <span key={chip} className="rounded-full border border-white/22 bg-white/10 px-2 py-0.5 text-[10px] text-slate-100">{chip}</span>
           ))}
         </div>
-        <div className="rounded-xl border border-white/18 bg-white/6 p-2">
+        <div className="rounded-xl border border-white/22 bg-white/10 p-2">
           <div className="mb-1.5 h-2 w-2/3 rounded-full bg-white/40" />
           <div className="mb-1.5 h-2 w-5/6 rounded-full bg-white/30" />
           <div className="flex items-center justify-between text-[10px] text-slate-200/90">
@@ -184,7 +184,7 @@ function TilePreview({ preview, tone }: Pick<FeatureTile, 'preview' | 'tone'>) {
       <div className={`rounded-2xl border p-4 ${surfaceClass}`}>
         <div className="mb-2 grid grid-cols-3 gap-2">
           {['Streak', 'Autonomy', 'Breakpoints'].map((kpi) => (
-            <div key={kpi} className="rounded-xl border border-white/15 bg-white/8 p-2 text-center">
+            <div key={kpi} className="rounded-xl border border-white/22 bg-white/10 p-2 text-center">
               <div className="text-[9px] uppercase tracking-[0.08em] text-slate-300">{kpi}</div>
               <div className="mt-1 text-[12px] font-semibold text-slate-100">{kpi === 'Streak' ? '08' : kpi === 'Autonomy' ? '72%' : '3'}</div>
             </div>
@@ -209,7 +209,7 @@ function TilePreview({ preview, tone }: Pick<FeatureTile, 'preview' | 'tone'>) {
               className={`rounded-xl border px-2 py-1.5 text-center text-[10px] font-medium ${
                 lang === 'EN'
                   ? 'border-sky-300/50 bg-sky-400/22 text-sky-100'
-                  : 'border-white/18 bg-white/8 text-slate-200'
+                  : 'border-white/22 bg-white/10 text-slate-200'
               }`}
             >
               {lang}
@@ -246,8 +246,7 @@ export function FeatureGrid() {
             Built for fast recovery loops
           </p>
           <h2 className="text-balance text-[2rem] font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-100 md:text-[2.3rem] lg:text-[2.55rem] xl:text-[2.9rem] leading-[1.04]">
-            A learning surface tuned for
-            {' '}
+            A learning surface tuned for{' '}
             <span className="text-blue-600 dark:text-sky-300">measurable momentum</span>
           </h2>
         </div>
@@ -262,23 +261,56 @@ export function FeatureGrid() {
           return (
             <motion.article
               key={tile.id}
-              className={`group relative isolate overflow-hidden rounded-[28px] border border-black/10 bg-white/70 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur-xl dark:border-white/12 dark:bg-white/[0.05] dark:shadow-[0_20px_45px_rgba(2,8,23,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] md:p-6 ${layoutClass(tile.layout)}`}
+              className={`group relative isolate overflow-hidden rounded-[30px]
+  border border-black/10 bg-white/70
+  shadow-[0_18px_60px_rgba(2,8,23,0.10)]
+  backdrop-blur-xl
+  dark:border-white/12 dark:bg-white/[0.035]
+  dark:shadow-[0_24px_80px_rgba(0,0,0,0.55)]
+  md:p-6 p-5 ${layoutClass(tile.layout)}`}
               style={{ ['--mx' as string]: '50%', ['--my' as string]: '50%' }}
               onMouseMove={onTileMouseMove}
               onMouseLeave={onTileMouseLeave}
-              whileHover={reduceMotion ? undefined : { y: -7, rotateX: 1.6, rotateY: -1.8 }}
-              transition={{ duration: 0.24, ease: 'easeOut' }}
+              whileHover={reduceMotion ? undefined : { y: -10, scale: 1.01 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
             >
-              <div className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] bg-[radial-gradient(560px_circle_at_var(--mx)_var(--my),rgba(59,130,246,0.15),transparent_52%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-[radial-gradient(620px_circle_at_var(--mx)_var(--my),rgba(125,211,252,0.2),transparent_56%)]" />
-              <div className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] bg-gradient-to-b from-white/45 via-transparent to-transparent dark:from-white/[0.08]" />
-              <div className="pointer-events-none absolute inset-x-6 top-0 z-10 h-px bg-gradient-to-r from-transparent via-white/85 to-transparent dark:via-sky-100/40" />
-              <div className="pointer-events-none absolute inset-[1px] rounded-[26px] border border-white/30 dark:border-white/10" />
+              {/* Premium gradient border ring */}
+              <div className="pointer-events-none absolute inset-0 rounded-[inherit] p-[1px]">
+                <div className="absolute inset-0 rounded-[inherit] bg-[conic-gradient(from_180deg_at_50%_50%,rgba(56,189,248,0.35),rgba(99,102,241,0.22),rgba(52,211,153,0.20),rgba(56,189,248,0.35))] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="absolute inset-0 rounded-[inherit] bg-[conic-gradient(from_180deg_at_50%_50%,rgba(255,255,255,0.18),rgba(255,255,255,0.08),rgba(255,255,255,0.14))] opacity-100 dark:opacity-60" />
+                <div className="absolute inset-[1px] rounded-[28px] bg-white/70 dark:bg-[#0b1220]/55" />
+              </div>
+
+              {/* Cursor glow */}
+              <div
+                className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                style={{
+                  background:
+                    'radial-gradient(520px circle at var(--mx) var(--my), rgba(56,189,248,0.22), transparent 55%)',
+                }}
+              />
+
+              {/* Subtle top highlight line */}
+              <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/85 to-transparent dark:via-white/18" />
+
+              {/* Ultra-subtle noise (makes it feel “expensive”) */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.035] mix-blend-overlay dark:opacity-[0.06]"
+                style={{
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E\")",
+                }}
+              />
 
               <div className="relative z-20 flex items-start justify-between gap-3">
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-white/10 text-slate-700 dark:text-slate-200">
-                  <Icon className="h-5 w-5" aria-hidden="true" />
+                <span className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl
+  border border-white/25 bg-white/10 text-slate-700
+  shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
+  dark:border-white/12 dark:bg-white/[0.06] dark:text-slate-100">
+                  <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
                 </span>
-                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${toneClass(tile.tone)}`}>
+                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.10em]
+  shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ${toneClass(tile.tone)}`}>
                   {tile.tag}
                 </span>
               </div>
