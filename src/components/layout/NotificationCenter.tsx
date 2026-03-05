@@ -135,15 +135,19 @@ function PanelContent({
     onClose()
   }
 
+  const actionButtonBaseClass =
+    'inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border px-3 text-[11.5px] font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent'
+
   return (
     <div
-      className={`flex max-h-[min(78vh,560px)] min-h-[420px] w-full flex-col rounded-[20px] border px-3 py-3 shadow-[0_24px_70px_rgba(2,8,23,0.34)] backdrop-blur-xl ${
+      className={`relative flex max-h-[min(78vh,560px)] min-h-[420px] w-full flex-col rounded-[20px] border px-3 py-3 shadow-[0_24px_70px_rgba(2,8,23,0.34)] backdrop-blur-xl ${
         theme === 'dark'
-          ? 'border-pebble-border/40 bg-[rgba(10,16,30,0.92)]'
-          : 'border-pebble-border/35 bg-[rgba(244,248,255,0.94)]'
+          ? 'isolate overflow-hidden border-pebble-border/45 bg-[rgba(10,16,30,0.975)]'
+          : 'isolate overflow-hidden border-pebble-border/40 bg-[rgba(246,249,255,0.975)]'
       }`}
     >
-      <div className="flex items-center justify-between gap-3 px-1">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-pebble-overlay/[0.06] via-transparent to-transparent" />
+      <div className="flex items-start justify-between gap-3 px-1">
         <div className="flex items-center gap-2">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-pebble-border/35 bg-pebble-overlay/[0.08] text-pebble-text-secondary">
             <Bell className="h-4 w-4" aria-hidden="true" />
@@ -153,11 +157,11 @@ function PanelContent({
             <p className="text-[11px] text-pebble-text-muted">{unreadCount} unread</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => markAllNotificationsRead()}
-            className="inline-flex h-8 items-center gap-1 rounded-lg border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2.5 text-[11px] font-medium text-pebble-text-secondary transition hover:border-pebble-border/55 hover:bg-pebble-overlay/[0.14] hover:text-pebble-text-primary"
+            className={`${actionButtonBaseClass} border-pebble-border/38 bg-pebble-overlay/[0.09] text-pebble-text-secondary hover:border-pebble-border/60 hover:bg-pebble-overlay/[0.16] hover:text-pebble-text-primary`}
           >
             <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />
             Mark all
@@ -165,7 +169,7 @@ function PanelContent({
           <button
             type="button"
             onClick={() => clearNotifications()}
-            className="inline-flex h-8 rounded-lg border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2 text-[11px] font-medium text-pebble-text-secondary transition hover:border-pebble-border/55 hover:bg-pebble-overlay/[0.14] hover:text-pebble-text-primary"
+            className={`${actionButtonBaseClass} border-rose-400/32 bg-rose-500/[0.08] text-rose-700 dark:text-rose-200 hover:border-rose-400/48 hover:bg-rose-500/[0.13]`}
           >
             Clear
           </button>
@@ -173,7 +177,7 @@ function PanelContent({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-pebble-border/35 bg-pebble-overlay/[0.08] text-pebble-text-secondary transition hover:border-pebble-border/55 hover:bg-pebble-overlay/[0.14] hover:text-pebble-text-primary"
+              className={`${actionButtonBaseClass} h-9 w-9 border-pebble-border/38 bg-pebble-overlay/[0.09] px-0 text-pebble-text-secondary hover:border-pebble-border/60 hover:bg-pebble-overlay/[0.16] hover:text-pebble-text-primary`}
               aria-label="Close notifications"
             >
               <X className="h-4 w-4" aria-hidden="true" />
@@ -202,7 +206,7 @@ function PanelContent({
         })}
       </div>
 
-      <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="pebble-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="space-y-2">
           {filteredItems.length === 0
             ? <EmptyState />
@@ -225,7 +229,7 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
   return (
     <>
       <div
-        className="absolute right-0 top-[calc(100%+0.65rem)] z-[180] hidden w-[380px] lg:block"
+        className="absolute right-0 top-[calc(100%+0.65rem)] z-[260] hidden w-[380px] lg:block"
         data-notification-center-root="true"
       >
         <PanelContent
@@ -237,7 +241,7 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
       </div>
 
       <div
-        className="fixed inset-0 z-[185] lg:hidden"
+        className="fixed inset-0 z-[260] lg:hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Notifications panel"

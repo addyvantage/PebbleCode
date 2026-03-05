@@ -2,6 +2,7 @@ import { Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
+import { StatusPill } from '../components/ui/StatusPill'
 import { Component as EtheralShadow } from '../components/ui/etheral-shadow'
 import { buttonClass } from '../components/ui/buttonStyles'
 import { InteractiveGradientButton } from '../components/ui/interactive-gradient-button'
@@ -14,6 +15,7 @@ import { TodayPlanCard } from '../components/home/TodayPlanCard'
 import { RecommendedNextCard } from '../components/home/RecommendedNextCard'
 import { FeatureGrid } from '../components/home/FeatureGrid'
 import { SiteFooter } from '../components/layout/SiteFooter'
+import { FooterSeparator } from '../components/home/FooterSeparator'
 
 function classNames(...values: Array<string | undefined>) {
   return values.filter(Boolean).join(' ')
@@ -30,6 +32,15 @@ export function LandingPage() {
   const previewInnerOutlineClass = theme === 'dark'
     ? 'border-[rgba(167,179,208,0.52)]'
     : 'border-[rgba(129,144,174,0.56)]'
+  const previewOuterCardClass = theme === 'dark'
+    ? 'border-[rgba(193,209,236,0.38)] bg-[linear-gradient(155deg,rgba(34,45,71,0.97)_0%,rgba(24,33,56,0.985)_56%,rgba(17,25,44,0.99)_100%)] shadow-[0_28px_68px_rgba(1,6,18,0.58),inset_0_1px_0_rgba(228,238,255,0.08)]'
+    : 'border-[rgba(144,164,200,0.66)] bg-[linear-gradient(152deg,rgba(236,243,255,0.985)_0%,rgba(228,238,252,0.992)_58%,rgba(219,231,248,0.995)_100%)] shadow-[0_24px_56px_rgba(66,90,134,0.22),inset_0_1px_0_rgba(255,255,255,0.92)]'
+  const previewCodePanelClass = theme === 'dark'
+    ? 'bg-[linear-gradient(160deg,rgba(47,58,88,0.95)_0%,rgba(39,49,77,0.98)_100%)] shadow-[inset_0_1px_0_rgba(228,239,255,0.06)]'
+    : 'bg-[linear-gradient(160deg,rgba(223,233,248,0.95)_0%,rgba(213,226,245,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]'
+  const previewCoachPanelClass = theme === 'dark'
+    ? 'bg-[linear-gradient(165deg,rgba(62,74,104,0.86)_0%,rgba(48,59,88,0.94)_100%)] shadow-[inset_0_1px_0_rgba(225,236,255,0.08)]'
+    : 'bg-[linear-gradient(165deg,rgba(227,236,250,0.92)_0%,rgba(218,230,247,0.96)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]'
   const sideCardSurfaceClass = theme === 'dark'
     ? 'bg-pebble-overlay/[0.04]'
     : 'bg-[rgba(231,237,249,0.94)] border-pebble-border/28 shadow-[0_14px_34px_rgba(55,72,110,0.14)]'
@@ -109,7 +120,7 @@ export function LandingPage() {
               </div>
 
               <div className="col-span-1 flex min-h-0 min-w-0 items-center lg:col-span-4 lg:justify-end lg:translate-x-14 xl:col-span-5 xl:translate-x-16">
-                <div className="w-full max-w-[620px] rounded-[14px] border border-pebble-border/34 bg-pebble-overlay/[0.08] p-2.5 shadow-[0_26px_60px_rgba(2,8,23,0.26)] lg:p-3">
+                <div className={`w-full max-w-[620px] rounded-[14px] border p-2.5 lg:p-3 ${previewOuterCardClass}`}>
                   <div className="flex items-center justify-between gap-2">
                     <p className={`text-[13px] font-semibold uppercase tracking-[0.08em] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
                       {t('landing.previewLabel')}
@@ -120,18 +131,18 @@ export function LandingPage() {
                   </div>
 
                   <div className="mt-1.5 space-y-1.5">
-                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} bg-pebble-canvas/84 p-2`}>
+                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} p-2 ${previewCodePanelClass}`}>
                       <div className="mb-1.5 flex items-center justify-between text-[13px] text-pebble-text-primary">
                         <span>{t('landing.previewUnit')}</span>
                         <span>{t('landing.previewTests')}</span>
                       </div>
-                      <pre dir="ltr" className={`ltrSafe overflow-hidden rounded-[6px] border ${previewInnerOutlineClass} bg-pebble-canvas/92 p-1.5 font-mono text-[13px] leading-snug text-pebble-text-primary`}>{`def two_sum(nums, target):\n    seen = {}\n    # TODO\n    return -1, -1`}</pre>
-                      <div className="mt-1.5 inline-flex rounded-full border border-amber-500/60 bg-amber-500/16 px-2 py-0.5 text-[11px] font-semibold text-amber-800 shadow-[0_1px_0_rgba(255,255,255,0.55)_inset] dark:border-amber-300/56 dark:bg-amber-400/18 dark:text-amber-100 dark:shadow-[0_0_14px_rgba(251,191,36,0.15)]">
+                      <pre dir="ltr" className={`ltrSafe overflow-hidden rounded-[6px] border ${previewInnerOutlineClass} bg-pebble-canvas/95 p-1.5 font-mono text-[13px] leading-snug text-pebble-text-primary`}>{`def two_sum(nums, target):\n    seen = {}\n    # TODO\n    return -1, -1`}</pre>
+                      <StatusPill variant="fail" showIcon className="mt-1.5 max-w-full whitespace-normal break-words leading-tight">
                         {t('landing.previewFail')}
-                      </div>
+                      </StatusPill>
                     </div>
 
-                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} bg-pebble-overlay/[0.12] p-2`}>
+                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} p-2 ${previewCoachPanelClass}`}>
                       <div className="flex items-center gap-1.5">
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-pebble-accent/28 text-[11px] font-semibold text-pebble-text-primary">
                           P
@@ -200,6 +211,7 @@ export function LandingPage() {
 
         <FeatureGrid />
 
+        <FooterSeparator />
         <SiteFooter />
       </div>
     </section>

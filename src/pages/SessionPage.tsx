@@ -110,16 +110,25 @@ import { ProgramLangDropdown, type ProgramLangOption } from '../components/sessi
 import { StopwatchControl } from '../components/session/StopwatchControl'
 import { ConfirmDialog } from '../components/modals/ConfirmDialog'
 import {
-  getGlobalDefaultLanguage,
   loadProblemCodeByLang,
   saveProblemCodeByLang,
-  setGlobalDefaultLanguage,
   type ProblemCodeByLang,
   type ProblemCodeByLangEntry,
 } from '../lib/problemCodeByLangStore'
 import { getCurriculumUnitModeDescriptor, getProblemModeDescriptor } from '../lib/modeRegistry'
 import { telemetry } from '../lib/telemetry'
 import { pushNotification } from '../lib/notificationsStore'
+import {
+  getDefaultLearningTrack,
+  loadEditorLanguagePreference,
+  loadEditorLanguageUserOverride,
+  loadLearningTrack,
+  saveEditorLanguagePreference,
+  saveEditorLanguageUserOverride,
+  saveLearningTrack,
+  toDefaultEditorLanguage,
+  type LearningTrack,
+} from '../lib/sessionPreferencesStore'
 
 type StruggleNudgeState = {
   level: StruggleLevel
@@ -387,38 +396,47 @@ export function SessionPage() {
 
   useBodyScrollLock(true)
 
-  const selectedLanguage: PlacementLanguage = useMemo(() => {
+  const learningTrack = useMemo<LearningTrack>(() => {
+    const persistedTrack = loadLearningTrack()
     const queryLanguage = searchParams.get('lang')
-    if (isPlacementLanguage(queryLanguage)) {
-      return queryLanguage
-    }
-    return (
+    const queryLevel = searchParams.get('level')
+    const baseLanguage =
+      (isPlacementLanguage(queryLanguage) ? queryLanguage : null) ??
       storedState.curriculum?.selectedLanguage ??
       storedState.placement?.language ??
       storedState.onboarding?.language ??
-      'python'
-    )
-  }, [searchParams, storedState])
-
-  const selectedLevel: PlacementLevel = useMemo(() => {
-    const queryLevel = searchParams.get('level')
-    if (isPlacementLevel(queryLevel)) {
-      return queryLevel
-    }
-    return (
+      persistedTrack?.languageFocus ??
+      getDefaultLearningTrack().languageFocus
+    const baseLevel =
+      (isPlacementLevel(queryLevel) ? queryLevel : null) ??
       storedState.curriculum?.selectedLevel ??
       storedState.placement?.level ??
       storedState.onboarding?.level ??
-      'beginner'
-    )
+      persistedTrack?.level ??
+      getDefaultLearningTrack().level
+
+    return {
+      languageFocus: baseLanguage,
+      level: baseLevel,
+    }
   }, [searchParams, storedState])
+
+  const selectedLanguage: PlacementLanguage = learningTrack.languageFocus
+  const selectedLevel: PlacementLevel = learningTrack.level
 
   const activeProblemBase = useMemo(() => getProblemById(queryProblemId), [queryProblemId])
   const activeProblem = useMemo(
     () => (activeProblemBase ? getLocalizedProblem(activeProblemBase, uiLanguage) : null),
     [activeProblemBase, uiLanguage],
   )
-  const [editorLanguage, setEditorLanguage] = useState<SessionEditorLanguage>(DEFAULT_EDITOR_LANGUAGE)
+  const [editorLanguage, setEditorLanguage] = useState<SessionEditorLanguage>(() => {
+    return (
+      loadEditorLanguagePreference()
+      ?? toDefaultEditorLanguage(learningTrack)
+      ?? DEFAULT_EDITOR_LANGUAGE
+    )
+  })
+  const [editorLanguageUserOverride, setEditorLanguageUserOverride] = useState<boolean>(() => loadEditorLanguageUserOverride())
   const [problemCodeByLang, setProblemCodeByLang] = useState<ProblemCodeByLang>(() => loadProblemCodeByLang())
 
   const [units, setUnits] = useState<CurriculumUnit[]>([])
@@ -443,34 +461,31 @@ export function SessionPage() {
     }
 
     if (activeProblemBase) {
-      return activeProblemBase.languageSupport
-        .map((problemLanguage) => {
-          const id: SessionEditorLanguage = problemLanguage === 'sql'
-            ? 'sql'
-            : fromLegacyCodeLanguageId(problemLanguage)
-          const runtimeReason = id === 'sql' ? undefined : runtimeDisabledReason(id)
-          const templateReason = id === 'sql'
-            ? undefined
-            : (() => {
-                const starter = getProblemStarterCode(activeProblemBase, toLegacyCodeLanguageId(id))
-                if (starter.trim()) {
-                  return undefined
-                }
-                const message = `[session] Missing stdio template for problem="${activeProblemBase.id}" language="${id}".`
-                if (import.meta.env.DEV) {
-                  console.error(message)
-                }
-                return message
-              })()
-          return {
-            id,
-            disabled: Boolean(runtimeReason || templateReason),
-            disabledReason: runtimeReason ?? templateReason,
+      if (activeProblemBase.kind === 'sql') {
+        return [{ id: 'sql', disabled: false }]
+      }
+      return LANGUAGE_IDS.map((id) => {
+        const runtimeReason = runtimeDisabledReason(id)
+        const templateReason = (() => {
+          const starter = getProblemStarterCode(activeProblemBase, toLegacyCodeLanguageId(id))
+          if (starter.trim()) {
+            return undefined
           }
-        })
+          const message = `[session] Missing stdio template for problem="${activeProblemBase.id}" language="${id}".`
+          if (import.meta.env.DEV) {
+            console.error(message)
+          }
+          return message
+        })()
+        return {
+          id,
+          disabled: Boolean(runtimeReason || templateReason),
+          disabledReason: runtimeReason ?? templateReason,
+        }
+      })
     }
 
-    const curriculumLanguages: LanguageId[] = [fromLegacyCodeLanguageId(selectedLanguage)]
+    const curriculumLanguages: LanguageId[] = [...LANGUAGE_IDS]
     if (!activeCurriculumUnit) {
       return curriculumLanguages.map((id) => ({ id, disabled: false }))
     }
@@ -530,7 +545,7 @@ export function SessionPage() {
           : undefined,
       }
     })
-  }, [activeCurriculumUnit, activeProblemBase, runtimeProbeByLanguage, selectedLanguage, t])
+  }, [activeCurriculumUnit, activeProblemBase, runtimeProbeByLanguage, t])
 
   const languageOptions = useMemo<SessionEditorLanguage[]>(
     () => languageOptionsWithState.filter((option) => !option.disabled).map((option) => option.id),
@@ -593,6 +608,18 @@ export function SessionPage() {
       cancelled = true
     }
   }, [])
+  useEffect(() => {
+    saveLearningTrack(learningTrack)
+  }, [learningTrack])
+
+  useEffect(() => {
+    saveEditorLanguagePreference(editorLanguage)
+  }, [editorLanguage])
+
+  useEffect(() => {
+    saveEditorLanguageUserOverride(editorLanguageUserOverride)
+  }, [editorLanguageUserOverride])
+
   const [draftByUnitId, setDraftByUnitId] = useState<Record<string, Partial<Record<SessionEditorLanguage, string>>>>({})
   const [unitProgress, setUnitProgress] = useState<UnitProgressMap>(() => {
     const persisted = loadUnitProgress()
@@ -669,8 +696,14 @@ export function SessionPage() {
       return 'python'
     }
     const editorProblemLanguage = toProblemLanguage(editorLanguage)
-    if (editorProblemLanguage && activeProblemBase.languageSupport.includes(editorProblemLanguage)) {
-      return editorProblemLanguage
+    if (editorProblemLanguage) {
+      if (editorProblemLanguage === 'sql') {
+        if (activeProblemBase.kind === 'sql') {
+          return 'sql'
+        }
+      } else {
+        return editorProblemLanguage
+      }
     }
     return getDefaultProblemLanguage(activeProblemBase)
   }, [activeProblemBase, editorLanguage])
@@ -680,6 +713,7 @@ export function SessionPage() {
   const runtimeLanguage: LanguageId = sessionLanguage === 'sql'
     ? fromLegacyCodeLanguageId(selectedLanguage)
     : sessionLanguage
+  const editorPlacementLanguage = toPlacementLanguage(sessionLanguage) ?? selectedLanguage
   const sessionLanguageLabel = sessionLanguage === 'sql'
     ? 'SQL'
     : getLanguageDescriptor(sessionLanguage).label
@@ -723,12 +757,11 @@ export function SessionPage() {
   }, [currentSessionKey, currentUnitIndex, sessionLanguage])
 
   useEffect(() => {
-    const fromQuery = resolveEntryLanguage(searchParams.get('lang'), languageOptions)
     const fromSessionEntry = currentSessionKey
       ? resolveEntryLanguage(problemCodeByLang[currentSessionKey]?.selectedLanguage ?? null, languageOptions)
       : null
-    const fromGlobal = resolveEntryLanguage(getGlobalDefaultLanguage(), languageOptions)
-    const fromPlacement = resolveEntryLanguage(fromLegacyCodeLanguageId(selectedLanguage), languageOptions)
+    const fromStoredEditorPref = resolveEntryLanguage(loadEditorLanguagePreference(), languageOptions)
+    const fromTrack = resolveEntryLanguage(toDefaultEditorLanguage(learningTrack), languageOptions)
     const fromProblemDefault = (() => {
       if (!activeProblemBase) {
         return null
@@ -742,11 +775,11 @@ export function SessionPage() {
       )
     })()
     const nextLanguage =
-      fromQuery
+      resolveEntryLanguage(editorLanguage, languageOptions)
       ?? fromSessionEntry
-      ?? fromGlobal
+      ?? fromStoredEditorPref
+      ?? fromTrack
       ?? fromProblemDefault
-      ?? fromPlacement
       ?? languageOptions[0]
       ?? DEFAULT_EDITOR_LANGUAGE
 
@@ -754,11 +787,22 @@ export function SessionPage() {
   }, [
     activeProblemBase,
     currentSessionKey,
+    editorLanguage,
+    learningTrack,
     languageOptions,
     problemCodeByLang,
-    searchParams,
-    selectedLanguage,
   ])
+
+  useEffect(() => {
+    if (editorLanguageUserOverride) {
+      return
+    }
+    const trackLanguage = resolveEntryLanguage(toDefaultEditorLanguage(learningTrack), languageOptions)
+    if (!trackLanguage) {
+      return
+    }
+    setEditorLanguage((prev) => (prev === trackLanguage ? prev : trackLanguage))
+  }, [editorLanguageUserOverride, languageOptions, learningTrack])
 
   useEffect(() => {
     saveUnitProgress(unitProgress)
@@ -1398,7 +1442,7 @@ export function SessionPage() {
             logRunEvent({
               unitId: currentUnit.id,
               trackId,
-              language: selectedLanguage,
+              language: editorPlacementLanguage,
               passed: false,
               passCount: 0,
               total: currentUnit.tests.length,
@@ -1410,7 +1454,7 @@ export function SessionPage() {
             logSubmitEvent({
               unitId: currentUnit.id,
               trackId,
-              language: selectedLanguage,
+              language: editorPlacementLanguage,
               accepted: false,
               passCount: 0,
               total: currentUnit.tests.length,
@@ -1457,7 +1501,7 @@ export function SessionPage() {
             logRunEvent({
               unitId: currentUnit.id,
               trackId,
-              language: selectedLanguage,
+              language: editorPlacementLanguage,
               passed: false,
               passCount: 0,
               total: currentUnit.tests.length,
@@ -1469,7 +1513,7 @@ export function SessionPage() {
             logSubmitEvent({
               unitId: currentUnit.id,
               trackId,
-              language: selectedLanguage,
+              language: editorPlacementLanguage,
               accepted: false,
               passCount: 0,
               total: currentUnit.tests.length,
@@ -1500,10 +1544,10 @@ export function SessionPage() {
                 input: test.input,
                 expected: test.expected,
                 actual: '',
-                stderr: t('run.functionModeUnavailable', { language: selectedLanguage }),
+                stderr: t('run.functionModeUnavailable', { language: sessionLanguageLabel }),
                 diagnostic: {
                   status: 'internal_error',
-                  details: t('run.functionModeUnavailable', { language: selectedLanguage }),
+                  details: t('run.functionModeUnavailable', { language: sessionLanguageLabel }),
                   locationKind: 'unknown',
                   compilerLine: null,
                   editorLine: null,
@@ -1516,18 +1560,18 @@ export function SessionPage() {
             )
             setTestResultsByIndex(nextResults)
             setRunStatus('error')
-            setRunMessage(t('run.functionModeUnavailable', { language: selectedLanguage }))
+            setRunMessage(t('run.functionModeUnavailable', { language: sessionLanguageLabel }))
             setSubmitAccepted(false)
             const errorType = classifyErrorType({
               passed: false,
-              stderr: t('run.functionModeUnavailable', { language: selectedLanguage }),
+              stderr: t('run.functionModeUnavailable', { language: sessionLanguageLabel }),
               exitCode: null,
             })
             if (mode === 'run') {
               logRunEvent({
                 unitId: currentUnit.id,
                 trackId,
-                language: selectedLanguage,
+                language: editorPlacementLanguage,
                 passed: false,
                 passCount: 0,
                 total: currentUnit.tests.length,
@@ -1539,7 +1583,7 @@ export function SessionPage() {
               logSubmitEvent({
                 unitId: currentUnit.id,
                 trackId,
-                language: selectedLanguage,
+                language: editorPlacementLanguage,
                 accepted: false,
                 passCount: 0,
                 total: currentUnit.tests.length,
@@ -1635,10 +1679,10 @@ export function SessionPage() {
                 input: test.input,
                 expected: test.expected,
                 actual: '',
-                stderr: t('run.functionWrapperUnavailable', { language: selectedLanguage }),
+                stderr: t('run.functionWrapperUnavailable', { language: sessionLanguageLabel }),
                 diagnostic: {
                   status: 'internal_error',
-                  details: t('run.functionWrapperUnavailable', { language: selectedLanguage }),
+                  details: t('run.functionWrapperUnavailable', { language: sessionLanguageLabel }),
                   locationKind: 'unknown',
                   compilerLine: null,
                   editorLine: null,
@@ -1721,7 +1765,7 @@ export function SessionPage() {
         logRunEvent({
           unitId: currentUnit.id,
           trackId,
-          language: selectedLanguage,
+          language: editorPlacementLanguage,
           passed: allPassed,
           passCount: passedCount,
           total: currentUnit.tests.length,
@@ -1742,7 +1786,7 @@ export function SessionPage() {
         logSubmitEvent({
           unitId: currentUnit.id,
           trackId,
-          language: selectedLanguage,
+          language: editorPlacementLanguage,
           accepted: allPassed,
           passCount: passedCount,
           total: currentUnit.tests.length,
@@ -2048,11 +2092,12 @@ export function SessionPage() {
       },
     }))
     setEditorLanguage(newLang)
+    const trackDefaultLanguage = resolveEntryLanguage(toDefaultEditorLanguage(learningTrack), languageOptions)
+    setEditorLanguageUserOverride(trackDefaultLanguage ? newLang !== trackDefaultLanguage : true)
 
     const nextStore: ProblemCodeByLang = { ...problemCodeByLang, [currentSessionKey]: updatedEntry }
     setProblemCodeByLang(nextStore)
     saveProblemCodeByLang(nextStore)
-    setGlobalDefaultLanguage(newLang)
 
     // Reset run state
     setRunStatus('idle')
@@ -2066,18 +2111,28 @@ export function SessionPage() {
     previousCodeRef.current = newCode
     queueLiveCodeSnapshot(newCode, true)
   }, [
-    activeProblemBase,
     currentDefaultCode,
     currentSessionKey,
     currentUnit,
     draftByUnitId,
     languageOptionsWithState,
+    languageOptions,
+    learningTrack,
     problemCodeByLang,
     queueLiveCodeSnapshot,
     resolveSessionTemplate,
     sessionLanguage,
     t,
   ])
+
+  const resetEditorLanguageToTrack = useCallback(() => {
+    const trackEditorLanguage = resolveEntryLanguage(toDefaultEditorLanguage(learningTrack), languageOptions)
+    if (!trackEditorLanguage) {
+      return
+    }
+    switchLanguage(trackEditorLanguage)
+    setEditorLanguageUserOverride(false)
+  }, [languageOptions, learningTrack, switchLanguage])
 
   const handleAssistAction = useCallback((action: StruggleAssistAction) => {
     if (!currentUnit) {
@@ -2086,7 +2141,7 @@ export function SessionPage() {
     logAssistEvent({
       unitId: currentUnit.id,
       trackId,
-      language: selectedLanguage,
+      language: editorPlacementLanguage,
       action,
     })
     ingestStruggleEvent({
@@ -2183,7 +2238,10 @@ export function SessionPage() {
       ? [sessionLanguageLabel, t('tags.stdoutBasics'), t('tags.practice')]
       : [sessionLanguageLabel, t('tags.practice'), t('tags.runtimeVerified')]
   return (
-    <section className={`session-shell flex h-full min-h-0 flex-col overflow-x-hidden ${pagePrefs.compactDensity ? 'text-[13px]' : ''}`}>
+    <section
+      className={`session-shell flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden ${pagePrefs.compactDensity ? 'text-[13px]' : ''}`}
+    >
+      {/* Viewport-locked shell: each column scrolls internally, page height never grows. */}
       <header className="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2.5 border-b border-pebble-border/25 bg-pebble-overlay/[0.04] px-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <Link
@@ -2195,9 +2253,18 @@ export function SessionPage() {
             <Home className="h-4 w-4" aria-hidden="true" />
           </Link>
 
-          <span className="hidden rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2 py-1 text-xs text-pebble-text-secondary md:inline-flex">
-            {sessionLanguageLabel} • {levelLabel}
+          <span
+            title="Track controls recommendations and pacing. You can solve in any language."
+            className="hidden rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2 py-1 text-xs text-pebble-text-secondary md:inline-flex"
+          >
+            Track: {languageMeta.label} • {levelLabel}
           </span>
+          <Link
+            to="/onboarding"
+            className="hidden text-xs font-medium text-pebble-accent transition hover:text-pebble-accent-strong md:inline-flex"
+          >
+            Change track
+          </Link>
         </div>
 
         <div className="flex min-w-0 items-center justify-center gap-2">
@@ -2290,7 +2357,7 @@ export function SessionPage() {
                     problemId: currentUnit?.id ?? 'unknown',
                     problemTitle: activeProblem?.title ?? currentUnit?.title ?? 'Problem',
                     difficulty: activeProblem?.difficulty ?? sessionDifficultyLabel,
-                    language: selectedLanguage,
+                    language: editorPlacementLanguage,
                     userId: reportUserId,
                     userName: reportUserName,
                     userEmail: auth.profile?.email ?? auth.user?.email ?? '',
@@ -2342,7 +2409,7 @@ export function SessionPage() {
                   body: JSON.stringify({
                     problemId: currentUnit?.id ?? 'unknown',
                     finalCode: '', // omit code for privacy — just share metadata
-                    language: selectedLanguage,
+                    language: editorPlacementLanguage,
                     status: runStatus,
                     runtimeMs: 0,
                     recoveryTimeMs: 0,
@@ -2396,7 +2463,7 @@ export function SessionPage() {
       </header>
 
       <main className="min-h-0 flex-1 overflow-hidden p-2.5">
-        <div className="grid h-full min-h-0 grid-cols-[clamp(380px,24vw,420px)_minmax(0,1fr)_clamp(360px,24vw,400px)] gap-2.5">
+        <div className="grid h-full min-h-0 overflow-hidden grid-cols-[clamp(380px,24vw,420px)_minmax(0,1fr)_clamp(360px,24vw,400px)] gap-2.5">
           <ProblemStatementPanel
             unitId={currentUnit.id}
             title={activeProblem?.title ?? currentUnitCopy?.title ?? currentUnit.title}
@@ -2412,15 +2479,16 @@ export function SessionPage() {
             difficultyLabel={sessionDifficultyLabel}
             tags={sessionTags}
             language={sessionLanguage === 'sql' ? 'sql' : toLegacyCodeLanguageId(sessionLanguage)}
+            trackLanguage={selectedLanguage}
             functionMode={currentFunctionConfig?.evalMode === 'function'}
             submissions={currentUnitSubmissions}
             sqlSchema={activeProblem?.sqlMeta?.tables}
             sqlSchemaText={activeProblem?.statement.schemaText}
-            className="min-h-0"
+            className="min-h-0 min-w-0"
           />
 
           <div
-            className="grid min-h-0 gap-2.5"
+            className="grid min-h-0 min-w-0 gap-2.5 overflow-hidden"
             style={{
               gridTemplateRows: 'minmax(0,1fr) clamp(240px,30vh,340px)',
             }}
@@ -2439,6 +2507,8 @@ export function SessionPage() {
                     value={sessionLanguage}
                     options={dropdownLanguageOptions}
                     onChange={switchLanguage}
+                    footerActionLabel="Reset editor language to track"
+                    onFooterAction={resetEditorLanguageToTrack}
                   />
 
                   <StopwatchControl sessionKey={currentUnit.id} />
@@ -2490,7 +2560,7 @@ export function SessionPage() {
                 </div>
               </div>
 
-              <div dir="ltr" className="ltrSafe min-h-0 flex-1">
+              <div dir="ltr" className="ltrSafe min-h-0 flex-1 overflow-hidden">
                 <Editor
                   height="100%"
                   language={getMonacoLanguageForSession(sessionLanguage)}
@@ -2539,7 +2609,7 @@ export function SessionPage() {
               resultsByIndex={testResultsByIndex}
               summaryLabel={summaryLabel}
               sqlPreview={sqlPreviewTable}
-              className="min-h-0"
+              className="min-h-0 min-w-0"
             />
           </div>
 
@@ -2562,7 +2632,7 @@ export function SessionPage() {
             getStruggleContext={getStruggleContextSummary}
             onAssistAction={handleAssistAction}
             onStruggleDismiss={handleStruggleDismiss}
-            className="h-full min-h-0"
+            className="h-full min-h-0 min-w-0"
           />
         </div>
       </main>

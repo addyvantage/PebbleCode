@@ -238,7 +238,8 @@ export function AppLayout() {
         </div>
       ) : (
         <div className="relative flex min-h-[100dvh] flex-col">
-          <header className="w-full">
+          {/* Keep header/popup layer above page content stacking contexts. */}
+          <header className="relative z-[240] w-full">
             <Card className={`pebble-header rounded-none p-0 ${isLandingRoute ? 'mb-0' : 'mb-1'}`}>
               <PageContainer>
                 <div className="flex items-center justify-between px-1.5 py-0 sm:px-2.5 sm:py-0">
@@ -246,9 +247,9 @@ export function AppLayout() {
                     <NavLink
                       to="/"
                       aria-label="PebbleCode home"
-                      className="-ml-1 inline-flex h-10 sm:h-11 md:h-12 items-center overflow-hidden flex-shrink-0"
+                      className="-ml-4 inline-flex h-10 sm:h-11 md:h-12 items-center flex-shrink-0"
                     >
-                      <BrandLogo className="h-10 sm:h-11 md:h-12 w-auto select-none pointer-events-none object-contain" />
+                      <BrandLogo className="-translate-y-px h-10 sm:h-11 md:h-12 w-[152px] sm:w-[172px] md:w-[192px] select-none pointer-events-none object-contain object-left block" />
                     </NavLink>
                   </div>
 
@@ -404,7 +405,7 @@ export function AppLayout() {
             </Card>
           </header>
 
-          <main className={isLandingRoute ? 'flex-1 min-h-0' : 'flex-1 pb-4'}>
+          <main className={isLandingRoute ? 'relative z-0 flex-1 min-h-0' : 'relative z-0 flex-1 pb-4'}>
             {isLandingRoute ? (
               <div className="min-h-0">
                 <Outlet />

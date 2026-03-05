@@ -423,6 +423,36 @@ html {
 }
 
 @layer utilities {
+  .pebble-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--pebble-border), 0.36) transparent;
+  }
+
+  .pebble-scrollbar:hover {
+    scrollbar-color: rgba(var(--pebble-border), 0.52) transparent;
+  }
+
+  .pebble-scrollbar::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+
+  .pebble-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .pebble-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    background-color: rgba(var(--pebble-border), 0.34);
+    transition: background-color 180ms ease;
+  }
+
+  .pebble-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--pebble-border), 0.5);
+  }
+
   .rtlText {
     direction: rtl;
     text-align: right;
@@ -779,4 +809,23 @@ html {
   60%  {               transform: translateY(66vh)   rotate(490deg) translateX(18px); opacity: 0.8; }
   80%  {               transform: translateY(88vh)   rotate(620deg) translateX(-10px); }
   100% { opacity: 0;   transform: translateY(110vh)  rotate(720deg) translateX(4px); }
+}
+
+@keyframes pebbleFooterSparkle {
+  0% {
+    opacity: 0.2;
+    transform: translateY(2px) scale(0.75);
+  }
+  25% {
+    opacity: 0.95;
+    transform: translateY(0) scale(1);
+  }
+  55% {
+    opacity: 0.35;
+    transform: translateY(-1px) scale(0.85);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateY(2px) scale(0.75);
+  }
 }

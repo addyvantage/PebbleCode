@@ -628,7 +628,7 @@ export function PebbleChatPanel({
           {settingsOpen && (
             <div className="absolute right-0 top-10 z-20 w-72 rounded-xl border border-pebble-border/35 bg-pebble-panel/95 p-3 shadow-[0_14px_34px_rgba(2,8,23,0.3)]">
               <p className="text-xs uppercase tracking-[0.06em] text-pebble-text-muted">{t('chat.language')}</p>
-              <div className="mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
+              <div className="pebble-scrollbar mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
                 {LANGUAGES.map((language) => {
                   const selected = language.code === lang
                   return (
@@ -720,7 +720,8 @@ export function PebbleChatPanel({
         </p>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-xl border border-pebble-border/30 bg-pebble-canvas/45 p-2 pr-2">
+      {/* Messages own the vertical scroll so long hints never stretch the session shell. */}
+      <div className="pebble-scrollbar min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-xl border border-pebble-border/30 bg-pebble-canvas/45 p-2 pr-2">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -737,7 +738,7 @@ export function PebbleChatPanel({
             {message.agentResponse ? (
               <AgentResponseView response={message.agentResponse} />
             ) : (
-              <p className={`whitespace-pre-wrap ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(message.text)}</p>
+              <p className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(message.text)}</p>
             )}
           </div>
         ))}
@@ -776,7 +777,7 @@ export function PebbleChatPanel({
             <p className="mb-1 inline-flex rounded-full border border-pebble-border/35 px-2 py-0.5 text-[10px] uppercase tracking-[0.04em] text-pebble-text-secondary">
               {t('chat.typing')}
             </p>
-            <p className={`whitespace-pre-wrap ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(typedDraft)}</p>
+            <p className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(typedDraft)}</p>
           </div>
         )}
       </div>
@@ -791,7 +792,7 @@ export function PebbleChatPanel({
         />
       ) : null}
 
-      <div className="space-y-1.5">
+      <div className="shrink-0 space-y-1.5 border-t border-pebble-border/20 pt-1.5">
         {(isGenerating || !!lastAsked) && (
           <div className="flex items-center justify-end gap-1.5">
             {isGenerating ? (

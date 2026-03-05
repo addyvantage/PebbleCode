@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { PlacementLanguage } from '../../data/onboardingData'
+import { isPlacementLanguage, type PlacementLanguage } from '../../data/onboardingData'
 import type { ProblemExample, SqlTableSchema } from '../../data/problemsBank'
 import { getLocalizedUnitSolution } from '../../data/solutionsBank'
 import type { UnitSubmission } from '../../lib/submissionsStore'
@@ -26,6 +26,7 @@ type ProblemStatementPanelProps = {
   difficultyLabel: string
   tags: string[]
   language: PlacementLanguage | 'sql'
+  trackLanguage?: PlacementLanguage
   functionMode?: boolean
   submissions: UnitSubmission[]
   sqlSchema?: SqlTableSchema[]
@@ -65,6 +66,7 @@ export function ProblemStatementPanel({
   difficultyLabel,
   tags,
   language,
+  trackLanguage,
   functionMode = false,
   submissions,
   sqlSchema,
@@ -75,23 +77,63 @@ export function ProblemStatementPanel({
   const isUrdu = isRTL
   const proseClass = isUrdu ? 'rtlText' : ''
   const [activeTab, setActiveTab] = useState<'problem' | 'solutions' | 'submissions'>('problem')
-  const [solutionLanguage, setSolutionLanguage] = useState<PlacementLanguage>(
-    language === 'sql' ? 'python' : language,
-  )
+  const [solutionLanguage, setSolutionLanguage] = useState<PlacementLanguage>('python')
   const [copied, setCopied] = useState(false)
   const [selectedSubmissionId, setSelectedSubmissionId] = useState('')
 
   const solution = useMemo(() => getLocalizedUnitSolution(unitId, lang), [lang, unitId])
+  const preferredSolutionLanguage: PlacementLanguage = language === 'sql'
+    ? (trackLanguage ?? 'python')
+    : language
+  const fallbackSolutionLanguage: PlacementLanguage = trackLanguage ?? 'python'
   const resolvedExamples = examples?.map((item) => ({
     input: item.input,
     expected: item.output,
   })) ?? tests.slice(0, 2)
 
+  const availableSolutionLanguages = useMemo(() => {
+    if (!solution) {
+      return [] as PlacementLanguage[]
+    }
+    const languages = (Object.keys(solution.implementations) as string[])
+      .filter((langKey): langKey is PlacementLanguage => isPlacementLanguage(langKey))
+      .filter((langKey) => Boolean(solution.implementations[langKey]))
+    const order = [preferredSolutionLanguage, fallbackSolutionLanguage, 'python'] as PlacementLanguage[]
+    languages.sort((left, right) => {
+      const leftRank = order.indexOf(left)
+      const rightRank = order.indexOf(right)
+      if (leftRank === -1 && rightRank === -1) {
+        return left.localeCompare(right)
+      }
+      if (leftRank === -1) {
+        return 1
+      }
+      if (rightRank === -1) {
+        return -1
+      }
+      return leftRank - rightRank
+    })
+    return languages
+  }, [fallbackSolutionLanguage, preferredSolutionLanguage, solution])
+
+  const defaultSolutionLanguage = useMemo<PlacementLanguage>(() => {
+    if (solution?.implementations[preferredSolutionLanguage]) {
+      return preferredSolutionLanguage
+    }
+    if (solution?.implementations[fallbackSolutionLanguage]) {
+      return fallbackSolutionLanguage
+    }
+    if (solution?.implementations.python) {
+      return 'python'
+    }
+    return availableSolutionLanguages[0] ?? 'python'
+  }, [availableSolutionLanguages, fallbackSolutionLanguage, preferredSolutionLanguage, solution])
+
   useEffect(() => {
-    setSolutionLanguage(language === 'sql' ? 'python' : language)
+    setSolutionLanguage(defaultSolutionLanguage)
     setCopied(false)
     setSelectedSubmissionId('')
-  }, [language, unitId])
+  }, [defaultSolutionLanguage, unitId])
 
   useEffect(() => {
     if (!copied) {
@@ -102,24 +144,7 @@ export function ProblemStatementPanel({
     return () => window.clearTimeout(timeoutId)
   }, [copied])
 
-  const availableSolutionLanguages = useMemo(() => {
-    if (!solution) {
-      return [] as PlacementLanguage[]
-    }
-    const languages: PlacementLanguage[] = []
-    if (language !== 'sql' && solution.implementations[language]) {
-      languages.push(language)
-    }
-    if (!languages.includes('python') && solution.implementations.python) {
-      languages.push('python')
-    }
-    return languages
-  }, [language, solution])
-
-  const selectedSolutionCode =
-    solution?.implementations[solutionLanguage] ??
-    solution?.implementations.python ??
-    null
+  const selectedSolutionCode = solution?.implementations[solutionLanguage] ?? null
 
   useEffect(() => {
     if (availableSolutionLanguages.length === 0) {
@@ -178,7 +203,7 @@ export function ProblemStatementPanel({
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div className="pebble-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-3">
         {activeTab === 'problem' && (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -366,7 +391,7 @@ export function ProblemStatementPanel({
                     </button>
                   </div>
 
-                  {language !== 'sql' && !solution?.implementations[language] && solution?.implementations.python ? (
+                  {language !== 'sql' && !solution?.implementations[language] ? (
                     <p className={classNames('text-xs text-pebble-text-secondary', proseClass)}>{t('solutions.languageFallback', { language: LANGUAGE_LABELS[language] })}</p>
                   ) : null}
 
@@ -387,12 +412,18 @@ export function ProblemStatementPanel({
                     ))}
                   </div>
 
-                  <pre
-                    dir="ltr"
-                    className="max-h-72 overflow-auto rounded-xl border border-pebble-border/30 bg-pebble-canvas/55 p-3 text-[12px] leading-relaxed text-pebble-text-primary"
-                  >
-                    <code>{selectedSolutionCode}</code>
-                  </pre>
+                  {selectedSolutionCode ? (
+                    <pre
+                      dir="ltr"
+                      className="max-h-72 overflow-auto rounded-xl border border-pebble-border/30 bg-pebble-canvas/55 p-3 text-[12px] leading-relaxed text-pebble-text-primary"
+                    >
+                      <code>{selectedSolutionCode}</code>
+                    </pre>
+                  ) : (
+                    <div className="rounded-xl border border-pebble-border/30 bg-pebble-overlay/[0.06] p-3 text-sm text-pebble-text-secondary">
+                      Solution not available in this language yet.
+                    </div>
+                  )}
                 </section>
               </>
             )}

@@ -134,11 +134,11 @@ export function TestResultsPanel({
         })}
       </div>
 
-      <div className="min-h-0 flex-1 rounded-xl border border-pebble-border/30 bg-pebble-canvas/45 p-2.5">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-pebble-border/30 bg-pebble-canvas/45 p-2.5">
         {!selectedTest ? (
           <p className="text-sm text-pebble-text-secondary">{t('tests.noCases')}</p>
         ) : (
-          <div className="grid h-full content-start gap-2">
+          <div className="pebble-scrollbar grid h-full min-h-0 content-start gap-2 overflow-y-auto pr-1">
                 <FieldBlock label={t('tests.input')} value={selectedTest.input || t('common.empty')} isUrdu={isUrdu} />
                 <FieldBlock
                   label={t('tests.expected')}

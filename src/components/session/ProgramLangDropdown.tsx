@@ -14,6 +14,8 @@ type ProgramLangDropdownProps = {
   value: SessionLanguageId
   options: ProgramLangOption[]
   onChange: (id: SessionLanguageId) => void
+  footerActionLabel?: string
+  onFooterAction?: () => void
 }
 
 function clampIndex(index: number, size: number) {
@@ -27,6 +29,8 @@ export function ProgramLangDropdown({
   value,
   options,
   onChange,
+  footerActionLabel,
+  onFooterAction,
 }: ProgramLangDropdownProps) {
   const { theme } = useTheme()
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -182,6 +186,18 @@ export function ProgramLangDropdown({
             </button>
           )
         })}
+        {footerActionLabel && onFooterAction ? (
+          <button
+            type="button"
+            onClick={() => {
+              onFooterAction()
+              setOpen(false)
+            }}
+            className="mt-1 flex w-full items-center justify-center rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.08] px-2 py-1.5 text-[11px] font-medium text-pebble-text-secondary transition hover:bg-pebble-overlay/[0.16]"
+          >
+            {footerActionLabel}
+          </button>
+        ) : null}
       </div>
     </div>
   )
