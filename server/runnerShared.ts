@@ -1,6 +1,13 @@
-export const SUPPORTED_LANGUAGES = ['python', 'javascript', 'cpp', 'java', 'c'] as const
+import {
+  LANGUAGE_IDS,
+  isLanguageId,
+  normalizeSessionLanguageId,
+  type LanguageId,
+} from '../shared/languageRegistry.ts'
 
-export type RunLanguage = (typeof SUPPORTED_LANGUAGES)[number]
+export const SUPPORTED_LANGUAGES = LANGUAGE_IDS
+
+export type RunLanguage = LanguageId
 
 export type RunRequestBody = {
   language?: unknown
@@ -52,14 +59,19 @@ function parseFiniteNumber(value: unknown, fallback: number) {
   return value
 }
 
-function isRunLanguage(value: unknown): value is RunLanguage {
-  return typeof value === 'string' && SUPPORTED_LANGUAGES.includes(value as RunLanguage)
+function normalizeRunLanguage(value: unknown): RunLanguage | null {
+  const normalized = normalizeSessionLanguageId(value)
+  if (!normalized || normalized === 'sql') {
+    return null
+  }
+  return isLanguageId(normalized) ? normalized : null
 }
 
 export function normalizeRunRequest(body: RunRequestBody):
   | { ok: true; value: NormalizedRunRequest }
   | { ok: false; status: number; error: string } {
-  if (!isRunLanguage(body.language)) {
+  const language = normalizeRunLanguage(body.language)
+  if (!language) {
     return {
       ok: false,
       status: 400,
@@ -93,7 +105,7 @@ export function normalizeRunRequest(body: RunRequestBody):
   return {
     ok: true,
     value: {
-      language: body.language,
+      language,
       code: body.code,
       stdin: stdinRaw.slice(0, MAX_STDIN_CHARS),
       timeoutMs,

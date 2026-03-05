@@ -7,6 +7,7 @@ import type { NormalizedRunRequest, RunnerResponse, RunnerStatus, RunLanguage } 
 const TMP_ROOT = path.resolve(process.cwd(), '.pebble_tmp')
 const MAX_STDOUT_CHARS = 16_000
 const MAX_STDERR_CHARS = 16_000
+const C_FUNCTION_MODE_SPLIT_MARKER = '/*__PEBBLE_C_FUNCTION_MODE_SPLIT__*/'
 
 function trimOutput(value: string, maxChars: number) {
   if (value.length <= maxChars) {
@@ -56,11 +57,11 @@ type ToolchainResult = {
 }
 
 const TOOLCHAIN_BY_LANGUAGE: Record<RunLanguage, ToolchainProbe[]> = {
-  python: [{ command: 'python3', args: ['--version'] }],
+  python3: [{ command: 'python3', args: ['--version'] }],
   javascript: [{ command: 'node', args: ['-v'] }],
-  cpp: [{ command: 'g++', args: ['--version'] }],
+  cpp17: [{ command: 'g++', args: ['--version'] }],
   c: [{ command: 'gcc', args: ['--version'] }],
-  java: [
+  java17: [
     { command: 'javac', args: ['-version'] },
     { command: 'java', args: ['-version'] },
   ],
@@ -265,9 +266,9 @@ async function ensureLanguageToolchain(language: RunLanguage): Promise<Toolchain
   return { ok: true, message: '' }
 }
 
-function inferInterpretedFailureStatus(language: 'python' | 'javascript', stderr: string): RunnerStatus {
+function inferInterpretedFailureStatus(language: 'python3' | 'javascript', stderr: string): RunnerStatus {
   const normalized = stderr.toLowerCase()
-  if (language === 'python') {
+  if (language === 'python3') {
     if (normalized.includes('syntaxerror') || normalized.includes('indentationerror')) {
       return 'compile_error'
     }
@@ -301,7 +302,7 @@ async function runPython(runDir: string, code: string, stdin: string, timeoutMs:
     processResult.stderr = `Execution timed out after ${timeoutMs}ms.`
   }
 
-  return buildResult(startedAt, processResult, inferInterpretedFailureStatus('python', processResult.stderr))
+  return buildResult(startedAt, processResult, inferInterpretedFailureStatus('python3', processResult.stderr))
 }
 
 async function runJavaScript(runDir: string, code: string, stdin: string, timeoutMs: number, startedAt: number) {
@@ -375,9 +376,28 @@ async function runCpp(runDir: string, code: string, stdin: string, timeoutMs: nu
 }
 
 async function runC(runDir: string, code: string, stdin: string, timeoutMs: number, startedAt: number) {
-  const sourcePath = path.join(runDir, 'main.c')
-  const outputPath = path.join(runDir, 'main.out')
-  await fs.writeFile(sourcePath, code, 'utf8')
+  const markerIndex = code.indexOf(C_FUNCTION_MODE_SPLIT_MARKER)
+  const hasFunctionModeSplit = markerIndex >= 0
+  const sourcePath = hasFunctionModeSplit ? path.join(runDir, 'user.c') : path.join(runDir, 'main.c')
+  const harnessPath = path.join(runDir, 'main.c')
+  const outputPath = path.join(runDir, hasFunctionModeSplit ? 'run' : 'main.out')
+
+  if (hasFunctionModeSplit) {
+    const userCode = code.slice(0, markerIndex).trim()
+    const harnessCode = code.slice(markerIndex + C_FUNCTION_MODE_SPLIT_MARKER.length).trim()
+    if (!userCode || !harnessCode) {
+      return createRunnerResponse('validation_error', startedAt, {
+        exitCode: null,
+        stdout: '',
+        stderr: 'Invalid C function-mode wrapper payload.',
+        timedOut: false,
+      })
+    }
+    await fs.writeFile(sourcePath, `${userCode}\n`, 'utf8')
+    await fs.writeFile(harnessPath, `${harnessCode}\n`, 'utf8')
+  } else {
+    await fs.writeFile(sourcePath, code, 'utf8')
+  }
 
   const compileRemaining = remainingTimeMs(startedAt, timeoutMs)
   if (compileRemaining <= 0) {
@@ -386,7 +406,9 @@ async function runC(runDir: string, code: string, stdin: string, timeoutMs: numb
 
   const compileResult = await runProcess({
     command: 'gcc',
-    args: ['-std=gnu11', '-O2', '-Wall', '-Wextra', sourcePath, '-o', outputPath, '-lm'],
+    args: hasFunctionModeSplit
+      ? ['-O2', '-std=c11', '-pipe', sourcePath, harnessPath, '-o', outputPath]
+      : ['-std=gnu11', '-O2', '-Wall', '-Wextra', sourcePath, '-o', outputPath, '-lm'],
     cwd: runDir,
     stdin: '',
     timeoutMs: compileRemaining,
@@ -483,13 +505,13 @@ export async function runCodeLocally(input: NormalizedRunRequest): Promise<Runne
       })
     }
 
-    if (input.language === 'python') {
+    if (input.language === 'python3') {
       return await runPython(runDir, input.code, input.stdin, input.timeoutMs, startedAt)
     }
     if (input.language === 'javascript') {
       return await runJavaScript(runDir, input.code, input.stdin, input.timeoutMs, startedAt)
     }
-    if (input.language === 'cpp') {
+    if (input.language === 'cpp17') {
       return await runCpp(runDir, input.code, input.stdin, input.timeoutMs, startedAt)
     }
     if (input.language === 'c') {

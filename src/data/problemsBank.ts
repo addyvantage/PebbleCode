@@ -1615,7 +1615,11 @@ export function getDefaultProblemLanguage(problem: ProblemDefinition): ProblemLa
   if (problem.languageSupport.includes('python')) {
     return 'python'
   }
-  return problem.languageSupport[0] ?? 'python'
+  const fallback = problem.languageSupport[0]
+  if (fallback) {
+    return fallback
+  }
+  throw new Error(`[problems] Problem "${problem.id}" does not declare any supported language.`)
 }
 
 function normalizeSqlQuery(query: string) {

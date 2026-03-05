@@ -79,7 +79,6 @@ import {
   getProblemTimeEstimateMinutes,
   getProblemStarterCode,
   getSqlCheckerFailures,
-  isProblemLanguage,
   type ProblemDefinition,
   type ProblemLanguage,
   type SqlPreviewTable,
@@ -98,12 +97,14 @@ import {
 } from '../lib/struggleEngine'
 import { buildRunFailureDiagnostic } from '../lib/runDiagnostics'
 import {
-  DEFAULT_LANGUAGE,
-  getMonacoLanguage,
-  isPebbleLanguageId,
-  SUPPORTED_LANGUAGES,
-  type PebbleLanguageId,
-} from '../lib/languages'
+  LANGUAGE_IDS,
+  fromLegacyCodeLanguageId,
+  getLanguageDescriptor,
+  normalizeSessionLanguageId,
+  toLegacyCodeLanguageId,
+  type LanguageId,
+  type SessionLanguageId,
+} from '../../shared/languageRegistry'
 import { ProgramLangDropdown, type ProgramLangOption } from '../components/session/ProgramLangDropdown'
 import { StopwatchControl } from '../components/session/StopwatchControl'
 import { ConfirmDialog } from '../components/modals/ConfirmDialog'
@@ -115,7 +116,7 @@ import {
   type ProblemCodeByLang,
   type ProblemCodeByLangEntry,
 } from '../lib/problemCodeByLangStore'
-import { getCurriculumBoilerplate, getProblemBoilerplate } from '../lib/boilerplate'
+import { getCurriculumUnitModeDescriptor, getProblemModeDescriptor } from '../lib/modeRegistry'
 import { telemetry } from '../lib/telemetry'
 
 type StruggleNudgeState = {
@@ -123,16 +124,52 @@ type StruggleNudgeState = {
   visible: boolean
 }
 
-type SessionEditorLanguage = PebbleLanguageId
+type RuntimeProbeState = {
+  ok: boolean
+  reason?: string
+}
 
-function getRuntimeSourceFile(language: PlacementLanguage) {
-  if (language === 'python') {
+const TOOLCHAIN_PROBES: Record<LanguageId, { code: string; stdin: string }> = {
+  python3: {
+    code: 'print("")\n',
+    stdin: '',
+  },
+  javascript: {
+    code: 'process.stdout.write("")\n',
+    stdin: '',
+  },
+  cpp17: {
+    code: '#include <iostream>\nint main(){ return 0; }\n',
+    stdin: '',
+  },
+  java17: {
+    code: 'public class Main { public static void main(String[] args) { } }\n',
+    stdin: '',
+  },
+  c: {
+    code: '#include <stdio.h>\nint main(void){ return 0; }\n',
+    stdin: '',
+  },
+}
+
+type SessionEditorLanguage = SessionLanguageId
+const DEFAULT_EDITOR_LANGUAGE: SessionEditorLanguage = 'python3'
+
+function getMonacoLanguageForSession(language: SessionEditorLanguage) {
+  if (language === 'sql') {
+    return 'plaintext'
+  }
+  return getLanguageDescriptor(language).monacoLanguage
+}
+
+function getRuntimeSourceFile(language: LanguageId) {
+  if (language === 'python3') {
     return 'main.py'
   }
   if (language === 'javascript') {
     return 'main.cjs'
   }
-  if (language === 'java') {
+  if (language === 'java17') {
     return 'Main.java'
   }
   if (language === 'c') {
@@ -141,7 +178,7 @@ function getRuntimeSourceFile(language: PlacementLanguage) {
   return 'main.cpp'
 }
 
-function buildDirectSourceMap(language: PlacementLanguage, code: string): RunnerSourceMap {
+function buildDirectSourceMap(language: LanguageId, code: string): RunnerSourceMap {
   const lineCount = Math.max(1, code.split(/\r?\n/).length)
   return {
     fileName: getRuntimeSourceFile(language),
@@ -271,26 +308,32 @@ function buildProblemUnit(
 }
 
 function toPlacementLanguage(language: SessionEditorLanguage): PlacementLanguage | null {
-  if (
-    language === 'python'
-    || language === 'javascript'
-    || language === 'cpp'
-    || language === 'java'
-    || language === 'c'
-  ) {
-    return language
+  if (language === 'sql') {
+    return null
   }
-  return null
+  return toLegacyCodeLanguageId(language)
+}
+
+function toProblemLanguage(language: SessionEditorLanguage): ProblemLanguage | null {
+  if (language === 'sql') {
+    return 'sql'
+  }
+  return toLegacyCodeLanguageId(language)
 }
 
 function resolveEntryLanguage(
   value: string | null,
   allowed: SessionEditorLanguage[],
 ): SessionEditorLanguage | null {
-  if (!isPebbleLanguageId(value)) {
+  const normalized = normalizeSessionLanguageId(value)
+  if (!normalized) {
     return null
   }
-  return allowed.includes(value) ? value : null
+  return allowed.includes(normalized) ? normalized : null
+}
+
+function buildMissingTemplateMessage(unitId: string, language: SessionEditorLanguage) {
+  return `[session] Missing boilerplate template for unit="${unitId}" language="${language}".`
 }
 
 function formatSqlPreviewTable(table: SqlPreviewTable) {
@@ -372,7 +415,7 @@ export function SessionPage() {
     () => (activeProblemBase ? getLocalizedProblem(activeProblemBase, uiLanguage) : null),
     [activeProblemBase, uiLanguage],
   )
-  const [editorLanguage, setEditorLanguage] = useState<SessionEditorLanguage>(DEFAULT_LANGUAGE)
+  const [editorLanguage, setEditorLanguage] = useState<SessionEditorLanguage>(DEFAULT_EDITOR_LANGUAGE)
   const [problemCodeByLang, setProblemCodeByLang] = useState<ProblemCodeByLang>(() => loadProblemCodeByLang())
 
   const [units, setUnits] = useState<CurriculumUnit[]>([])
@@ -384,31 +427,107 @@ export function SessionPage() {
   const [pagePrefs, setPagePrefs] = useState<PagePrefs>(() => loadPagePrefs())
 
   const [currentUnitIndex, setCurrentUnitIndex] = useState(0)
+  const [runtimeProbeByLanguage, setRuntimeProbeByLanguage] = useState<Partial<Record<LanguageId, RuntimeProbeState>>>({})
+  const activeCurriculumUnit = units[currentUnitIndex] ?? null
   const languageOptionsWithState = useMemo<Array<{ id: SessionEditorLanguage; disabled: boolean; disabledReason?: string }>>(() => {
-    const functionModeUnavailableReason = t('run.functionModeUnavailableC')
+    const runtimeStateFor = (language: LanguageId): RuntimeProbeState | null => {
+      return runtimeProbeByLanguage[language] ?? null
+    }
+
+    const runtimeDisabledReason = (language: LanguageId): string | undefined => {
+      const state = runtimeStateFor(language)
+      return state && !state.ok ? (state.reason ?? 'Language runtime is unavailable in this environment.') : undefined
+    }
 
     if (activeProblemBase) {
       return activeProblemBase.languageSupport
-        .filter((l) => isPebbleLanguageId(l))
-        .map((id) => ({ id: id as SessionEditorLanguage, disabled: false }))
+        .map((problemLanguage) => {
+          const id: SessionEditorLanguage = problemLanguage === 'sql'
+            ? 'sql'
+            : fromLegacyCodeLanguageId(problemLanguage)
+          const runtimeReason = id === 'sql' ? undefined : runtimeDisabledReason(id)
+          const templateReason = id === 'sql'
+            ? undefined
+            : (() => {
+                const starter = getProblemStarterCode(activeProblemBase, toLegacyCodeLanguageId(id))
+                if (starter.trim()) {
+                  return undefined
+                }
+                const message = `[session] Missing stdio template for problem="${activeProblemBase.id}" language="${id}".`
+                if (import.meta.env.DEV) {
+                  console.error(message)
+                }
+                return message
+              })()
+          return {
+            id,
+            disabled: Boolean(runtimeReason || templateReason),
+            disabledReason: runtimeReason ?? templateReason,
+          }
+        })
     }
 
-    const curriculumLanguages: SessionEditorLanguage[] = ['python', 'javascript', 'cpp', 'java', 'c']
-    const currentUnitId = units[currentUnitIndex]?.id
-    if (!currentUnitId) {
+    const curriculumLanguages: LanguageId[] = [...LANGUAGE_IDS]
+    if (!activeCurriculumUnit) {
       return curriculumLanguages.map((id) => ({ id, disabled: false }))
     }
 
     return curriculumLanguages.map((languageId) => {
       const placementLanguage = toPlacementLanguage(languageId)
-      const available = placementLanguage ? getUnitFunctionMode(placementLanguage, currentUnitId) !== null : false
+      if (!placementLanguage) {
+        return {
+          id: languageId,
+          disabled: true,
+        }
+      }
+
+      const runtimeReason = runtimeDisabledReason(languageId)
+      if (runtimeReason) {
+        return {
+          id: languageId,
+          disabled: true,
+          disabledReason: runtimeReason,
+        }
+      }
+
+      const fnConfig = getUnitFunctionMode(placementLanguage, activeCurriculumUnit.id)
+      if (!fnConfig) {
+        const displayLanguage = getLanguageDescriptor(languageId).label
+        return {
+          id: languageId,
+          disabled: true,
+          disabledReason: t('run.functionModeUnavailable', { language: displayLanguage }),
+        }
+      }
+
+      const sampleCase = activeCurriculumUnit.tests
+        .map((test) => fnConfig.parseTestCase(test))
+        .find((item): item is NonNullable<typeof item> => item !== null)
+      const harnessSupported = placementLanguage === 'python'
+        ? buildFunctionModeRunnable({
+          language: placementLanguage,
+          userCode: fnConfig.starterStub,
+          methodName: fnConfig.methodName,
+          cases: sampleCase ? [sampleCase] : [],
+        }) !== null
+        : buildSingleCaseFunctionModeRunnable({
+          language: placementLanguage,
+          userCode: fnConfig.starterStub,
+          methodName: fnConfig.methodName,
+          args: sampleCase?.args ?? [],
+          inputText: sampleCase?.input ?? '',
+          signatureLabel: fnConfig.signatureLabel,
+        }) !== null
+
       return {
         id: languageId,
-        disabled: !available,
-        disabledReason: !available && languageId === 'c' ? functionModeUnavailableReason : undefined,
+        disabled: !harnessSupported,
+        disabledReason: !harnessSupported
+          ? t('run.functionWrapperUnavailable', { language: getLanguageDescriptor(languageId).label })
+          : undefined,
       }
     })
-  }, [activeProblemBase, currentUnitIndex, t, units])
+  }, [activeCurriculumUnit, activeProblemBase, runtimeProbeByLanguage, t])
 
   const languageOptions = useMemo<SessionEditorLanguage[]>(
     () => languageOptionsWithState.filter((option) => !option.disabled).map((option) => option.id),
@@ -418,19 +537,59 @@ export function SessionPage() {
   const dropdownLanguageOptions = useMemo<ProgramLangOption[]>(() => {
     const options: ProgramLangOption[] = []
     for (const { id, disabled, disabledReason } of languageOptionsWithState) {
-      const languageMeta = SUPPORTED_LANGUAGES.find((language) => language.id === id)
-      if (!languageMeta) {
-        continue
-      }
+      const label = id === 'sql' ? 'SQL (Simulated)' : getLanguageDescriptor(id).label
       options.push({
         id,
-        label: languageMeta.label,
+        label,
         disabled,
         disabledReason,
       })
     }
     return options
   }, [languageOptionsWithState])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function probeRuntimes() {
+      const languages: LanguageId[] = [...LANGUAGE_IDS]
+      const entries = await Promise.all(
+        languages.map(async (language) => {
+          const probe = TOOLCHAIN_PROBES[language]
+          const result = await requestRunApi(
+            {
+              language,
+              code: probe.code,
+              stdin: probe.stdin,
+              timeoutMs: 1500,
+            },
+            { requestTimeoutMs: 2500 },
+          )
+
+          if (result.status === 'toolchain_unavailable') {
+            return [language, { ok: false, reason: result.stderr.trim() || `Toolchain unavailable for ${language}.` }] as const
+          }
+          if (result.status === 'internal_error' && /runner not configured|failed to reach/i.test(result.stderr)) {
+            return [language, { ok: false, reason: result.stderr.trim() || `Runner unavailable for ${language}.` }] as const
+          }
+
+          return [language, { ok: true }] as const
+        }),
+      )
+
+      if (cancelled) {
+        return
+      }
+
+      setRuntimeProbeByLanguage(Object.fromEntries(entries))
+    }
+
+    void probeRuntimes()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
   const [draftByUnitId, setDraftByUnitId] = useState<Record<string, string>>({})
   const [unitProgress, setUnitProgress] = useState<UnitProgressMap>(() => {
     const persisted = loadUnitProgress()
@@ -486,6 +645,7 @@ export function SessionPage() {
   const struggleStateRef = useRef<StruggleEngineState>(struggleEngineRef.current.getState())
   const previousCodeRef = useRef('')
   const liveCodeRef = useRef('')
+  const hydratedEditorKeyRef = useRef('')
   const liveCodeDebounceRef = useRef<number | null>(null)
   const codeByLangPersistDebounceRef = useRef<number | null>(null)
 
@@ -503,13 +663,18 @@ export function SessionPage() {
     if (!activeProblemBase) {
       return 'python'
     }
-    if (isProblemLanguage(editorLanguage) && activeProblemBase.languageSupport.includes(editorLanguage)) {
-      return editorLanguage
+    const editorProblemLanguage = toProblemLanguage(editorLanguage)
+    if (editorProblemLanguage && activeProblemBase.languageSupport.includes(editorProblemLanguage)) {
+      return editorProblemLanguage
     }
     return getDefaultProblemLanguage(activeProblemBase)
   }, [activeProblemBase, editorLanguage])
-  const sessionLanguage: SessionEditorLanguage = activeProblem ? activeProblemLanguage : editorLanguage
-  const runtimeLanguage: PlacementLanguage = toPlacementLanguage(sessionLanguage) ?? selectedLanguage
+  const sessionLanguage: SessionEditorLanguage = activeProblem
+    ? (activeProblemLanguage === 'sql' ? 'sql' : fromLegacyCodeLanguageId(activeProblemLanguage))
+    : editorLanguage
+  const runtimeLanguage: LanguageId = sessionLanguage === 'sql'
+    ? fromLegacyCodeLanguageId(selectedLanguage)
+    : sessionLanguage
   const isSqlMode = activeProblemBase?.kind === 'sql' && sessionLanguage === 'sql'
   const activeProblemStarter = useMemo(() => {
     if (!activeProblemBase) {
@@ -517,7 +682,6 @@ export function SessionPage() {
     }
     const starter =
       getLocalizedStarter(activeProblemBase, uiLanguage)
-      ?? getProblemBoilerplate(activeProblemBase, activeProblemLanguage)
       ?? getProblemStarterCode(activeProblemBase, activeProblemLanguage)
     if (activeProblemBase.kind !== 'sql') {
       return starter
@@ -556,10 +720,19 @@ export function SessionPage() {
       ? resolveEntryLanguage(problemCodeByLang[currentSessionKey]?.selectedLanguage ?? null, languageOptions)
       : null
     const fromGlobal = resolveEntryLanguage(getGlobalDefaultLanguage(), languageOptions)
-    const fromPlacement = resolveEntryLanguage(selectedLanguage, languageOptions)
-    const fromProblemDefault = activeProblemBase
-      ? resolveEntryLanguage(getDefaultProblemLanguage(activeProblemBase), languageOptions)
-      : null
+    const fromPlacement = resolveEntryLanguage(fromLegacyCodeLanguageId(selectedLanguage), languageOptions)
+    const fromProblemDefault = (() => {
+      if (!activeProblemBase) {
+        return null
+      }
+      const defaultProblemLanguage = getDefaultProblemLanguage(activeProblemBase)
+      return resolveEntryLanguage(
+        defaultProblemLanguage === 'sql'
+          ? 'sql'
+          : fromLegacyCodeLanguageId(defaultProblemLanguage),
+        languageOptions,
+      )
+    })()
     const nextLanguage =
       fromQuery
       ?? fromSessionEntry
@@ -567,7 +740,7 @@ export function SessionPage() {
       ?? fromProblemDefault
       ?? fromPlacement
       ?? languageOptions[0]
-      ?? DEFAULT_LANGUAGE
+      ?? DEFAULT_EDITOR_LANGUAGE
 
     setEditorLanguage((prev) => (prev === nextLanguage ? prev : nextLanguage))
   }, [
@@ -632,9 +805,7 @@ export function SessionPage() {
           }
 
           setUnits([problemUnit])
-          setDraftByUnitId({
-            [problemUnit.id]: problemUnit.starterCode,
-          })
+          setDraftByUnitId({})
           setCurrentUnitIndex(0)
           setSelectedTestIndex(0)
           setTestResultsByIndex({})
@@ -653,14 +824,7 @@ export function SessionPage() {
         }
 
         setUnits(nextUnits)
-        setDraftByUnitId(() => {
-          const next: Record<string, string> = {}
-          for (const unit of nextUnits) {
-            const functionConfig = getUnitFunctionMode(selectedLanguage, unit.id)
-            next[unit.id] = functionConfig?.starterStub ?? unit.starterCode
-          }
-          return next
-        })
+        setDraftByUnitId({})
 
         const preferredUnitId = storedState.curriculum?.currentUnitId
         const curriculumIndex = preferredUnitId
@@ -727,16 +891,64 @@ export function SessionPage() {
   ])
 
   const currentUnit = units[currentUnitIndex] ?? null
+  const resolveCurriculumTemplate = useCallback((unit: CurriculumUnit, language: SessionEditorLanguage) => {
+    const placementLanguage = toPlacementLanguage(language)
+    if (!placementLanguage) {
+      const message = buildMissingTemplateMessage(unit.id, language)
+      if (import.meta.env.DEV) {
+        console.error(message)
+      }
+      return `/* ${message} */\n`
+    }
+
+    const functionMode = getUnitFunctionMode(placementLanguage, unit.id)
+    if (functionMode) {
+      return functionMode.starterStub
+    }
+
+    const message = buildMissingTemplateMessage(unit.id, language)
+    if (import.meta.env.DEV) {
+      console.error(message)
+    }
+    return `/* ${message} */\n`
+  }, [])
+  const resolveProblemTemplate = useCallback((language: SessionEditorLanguage) => {
+    if (!activeProblemBase) {
+      return ''
+    }
+
+    const problemLanguage = toProblemLanguage(language)
+    if (!problemLanguage) {
+      const message = `[session] Missing stdio language mapping for problem="${activeProblemBase.id}" language="${language}".`
+      if (import.meta.env.DEV) {
+        console.error(message)
+      }
+      return `/* ${message} */\n`
+    }
+
+    const starter = getProblemStarterCode(activeProblemBase, problemLanguage) ?? ''
+    if (activeProblemBase.kind !== 'sql') {
+      return starter
+    }
+    return applySqlStarterComment(starter, t('session.sqlStarterComment'))
+  }, [activeProblemBase, t])
+  const resolveSessionTemplate = useCallback((unit: CurriculumUnit, language: SessionEditorLanguage) => {
+    if (activeProblemBase) {
+      return resolveProblemTemplate(language)
+    }
+    return resolveCurriculumTemplate(unit, language)
+  }, [activeProblemBase, resolveCurriculumTemplate, resolveProblemTemplate])
   const localizedUnits = useMemo(
     () => units.map((unit) => ({ unit, copy: getLocalizedUnitCopy(unit, uiLanguage) })),
     [uiLanguage, units],
   )
   const currentUnitCopy = currentUnit ? getLocalizedUnitCopy(currentUnit, uiLanguage) : null
-  const currentDefaultCode = currentUnit
-    ? activeProblem
-      ? activeProblemStarter
-      : getUnitFunctionMode(selectedLanguage, currentUnit.id)?.starterStub ?? currentUnit.starterCode
-    : ''
+  const currentDefaultCode = useMemo(() => {
+    if (!currentUnit) {
+      return ''
+    }
+    return resolveSessionTemplate(currentUnit, sessionLanguage)
+  }, [currentUnit, resolveSessionTemplate, sessionLanguage])
   const currentCode = currentUnit ? draftByUnitId[currentUnit.id] ?? currentDefaultCode : ''
   const currentFunctionConfig = useMemo(() => {
     if (!currentUnit || activeProblemBase) {
@@ -745,6 +957,15 @@ export function SessionPage() {
     const fnConfigLang = toPlacementLanguage(sessionLanguage) ?? selectedLanguage
     return getUnitFunctionMode(fnConfigLang, currentUnit.id)
   }, [activeProblemBase, currentUnit, selectedLanguage, sessionLanguage])
+  const currentModeDescriptor = useMemo(() => {
+    if (activeProblemBase) {
+      return getProblemModeDescriptor(activeProblemBase)
+    }
+    if (!currentUnit) {
+      return { mode: 'stdio' as const, outputType: 'text' as const }
+    }
+    return getCurriculumUnitModeDescriptor(currentUnit, sessionLanguage)
+  }, [activeProblemBase, currentUnit, sessionLanguage])
 
   const syncStruggle = useCallback((nextState: StruggleEngineState) => {
     struggleStateRef.current = nextState
@@ -828,6 +1049,41 @@ export function SessionPage() {
   const getLiveCodeSnapshot = useCallback(() => {
     return liveCodeRef.current
   }, [])
+
+  useEffect(() => {
+    if (!currentUnit) {
+      hydratedEditorKeyRef.current = ''
+      return
+    }
+
+    const hydrationKey = `${currentSessionKey}:${sessionLanguage}`
+    if (hydratedEditorKeyRef.current === hydrationKey) {
+      return
+    }
+    hydratedEditorKeyRef.current = hydrationKey
+
+    const storedEntry = problemCodeByLang[currentSessionKey]
+    const storedCode = storedEntry?.codeByLanguage[sessionLanguage]
+    const nextCode = storedCode ?? resolveSessionTemplate(currentUnit, sessionLanguage)
+    setDraftByUnitId((prev) => {
+      if (prev[currentUnit.id] === nextCode) {
+        return prev
+      }
+      return {
+        ...prev,
+        [currentUnit.id]: nextCode,
+      }
+    })
+    previousCodeRef.current = nextCode
+    queueLiveCodeSnapshot(nextCode, true)
+  }, [
+    currentSessionKey,
+    currentUnit,
+    problemCodeByLang,
+    queueLiveCodeSnapshot,
+    resolveSessionTemplate,
+    sessionLanguage,
+  ])
 
   useEffect(() => {
     if (!currentUnit) {
@@ -1056,7 +1312,7 @@ export function SessionPage() {
           }]),
         )
         setTestResultsByIndex(nextResults)
-      } else if (currentFunctionConfig?.evalMode === 'function') {
+      } else if (currentModeDescriptor.mode === 'function' && currentFunctionConfig?.evalMode === 'function') {
         const signatureCheck = validateFunctionSignature({
           language: fnLang,
           userCode: currentCode,
@@ -1332,6 +1588,8 @@ export function SessionPage() {
                 userCode: currentCode,
                 methodName: currentFunctionConfig.methodName,
                 args: currentCase.args,
+                inputText: currentCase.input,
+                signatureLabel: currentFunctionConfig.signatureLabel,
               })
               : null
 
@@ -1571,7 +1829,7 @@ export function SessionPage() {
           appendSubmission(prev, {
             unitId: currentUnit.id,
             status: allPassed ? 'accepted' : 'failed',
-            language: sessionLanguage,
+            language: sessionLanguage === 'sql' ? 'sql' : toLegacyCodeLanguageId(sessionLanguage),
             runtimeMs: durationTotal,
             passCount: passedCount,
             totalCount: currentUnit.tests.length,
@@ -1588,6 +1846,7 @@ export function SessionPage() {
     activeProblem,
     currentCode,
     currentFunctionConfig,
+    currentModeDescriptor.mode,
     currentUnit,
     executeTest,
     ingestRunOutcome,
@@ -1668,7 +1927,10 @@ export function SessionPage() {
     const selectedOption = languageOptionsWithState.find((option) => option.id === newLang)
     if (selectedOption?.disabled) {
       setRunStatus('error')
-      setRunMessage(selectedOption.disabledReason ?? t('run.functionModeUnavailable', { language: newLang }))
+      setRunMessage(
+        selectedOption.disabledReason
+          ?? t('run.functionModeUnavailable', { language: newLang === 'sql' ? 'SQL' : getLanguageDescriptor(newLang).label }),
+      )
       return
     }
 
@@ -1691,10 +1953,8 @@ export function SessionPage() {
     let newCode: string
     if (savedCode !== undefined) {
       newCode = savedCode
-    } else if (activeProblemBase) {
-      newCode = getProblemBoilerplate(activeProblemBase, newLang) ?? ''
     } else {
-      newCode = getCurriculumBoilerplate(currentUnit, newLang) ?? currentUnit.starterCode
+      newCode = resolveSessionTemplate(currentUnit, newLang)
     }
 
     // Apply
@@ -1726,6 +1986,7 @@ export function SessionPage() {
     languageOptionsWithState,
     problemCodeByLang,
     queueLiveCodeSnapshot,
+    resolveSessionTemplate,
     sessionLanguage,
     t,
   ])
@@ -1833,9 +2094,6 @@ export function SessionPage() {
     : currentUnit.id === 'hello-world'
       ? [languageMeta.label, t('tags.stdoutBasics'), t('tags.practice')]
       : [languageMeta.label, t('tags.practice'), t('tags.runtimeVerified')]
-  const showCFunctionModeNote = !activeProblemBase
-    && languageOptionsWithState.some((option) => option.id === 'c' && option.disabled)
-
   return (
     <section className={`session-shell h-[100vh] overflow-hidden ${pagePrefs.compactDensity ? 'text-[13px]' : ''}`}>
       <header className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-2.5 border-b border-pebble-border/25 bg-pebble-overlay/[0.04] px-3">
@@ -2031,7 +2289,7 @@ export function SessionPage() {
             difficulty={sessionDifficulty}
             difficultyLabel={sessionDifficultyLabel}
             tags={sessionTags}
-            language={sessionLanguage}
+            language={sessionLanguage === 'sql' ? 'sql' : toLegacyCodeLanguageId(sessionLanguage)}
             functionMode={currentFunctionConfig?.evalMode === 'function'}
             submissions={currentUnitSubmissions}
             sqlSchema={activeProblem?.sqlMeta?.tables}
@@ -2111,14 +2369,9 @@ export function SessionPage() {
               </div>
 
               <div dir="ltr" className="ltrSafe min-h-0 flex-1">
-                {showCFunctionModeNote ? (
-                  <div className="border-b border-pebble-border/20 bg-pebble-overlay/[0.06] px-3 py-1.5 text-[11px] text-pebble-text-muted">
-                    {t('run.functionModeUnavailableC')}
-                  </div>
-                ) : null}
                 <Editor
                   height="100%"
-                  language={getMonacoLanguage(sessionLanguage)}
+                  language={getMonacoLanguageForSession(sessionLanguage)}
                   beforeMount={defineMonacoThemes}
                   theme={theme === 'light' ? 'pebble-light' : 'pebble-dark'}
                   value={currentCode}

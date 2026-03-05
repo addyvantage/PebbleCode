@@ -32,6 +32,8 @@ export type SignatureValidationResult =
       reason: 'missing_class' | 'missing_method' | 'param_count_mismatch'
     }
 
+const C_FUNCTION_MODE_SPLIT_MARKER = '\n/*__PEBBLE_C_FUNCTION_MODE_SPLIT__*/\n'
+
 export function getUnitFunctionMode(language: PlacementLanguage, unitId: string) {
   return getFunctionModeTemplate(language, unitId)
 }
@@ -194,6 +196,13 @@ function normalizeParams(language: PlacementLanguage, rawParams: string) {
     return parts
   }
 
+  if (language === 'c') {
+    const normalized = rawParams.trim().replace(/\s+/g, ' ')
+    if (!normalized || normalized === 'void') {
+      return []
+    }
+  }
+
   const parts = rawParams
     .split(',')
     .map((item) => item.trim())
@@ -207,10 +216,16 @@ function countExpectedParams(signatureLabel: string) {
   if (!match) {
     return 0
   }
-  return match[1]
+  const params = match[1]
     .split(',')
     .map((part) => part.trim())
-    .filter(Boolean).length
+    .filter(Boolean)
+
+  if (params.length === 1 && params[0] === 'void') {
+    return 0
+  }
+
+  return params.length
 }
 
 function findMatching(source: string, openIndex: number, open: string, close: string) {
@@ -525,12 +540,84 @@ function getClassCheckRegex(language: PlacementLanguage) {
   return /\bclass\s+Solution\b/m
 }
 
+function extractCFunctionSignature(input: {
+  userCode: string
+  methodName: string
+}) {
+  const code = stripCommentsAndStrings(normalizeSourceText(input.userCode))
+  const signaturePattern = /\b(?:const\s+char\s*\*|char\s*\*)\s*([A-Za-z_]\w*)\s*\(([^)]*)\)/g
+
+  let firstDetected: { methodName: string; params: string[] } | null = null
+  let match: RegExpExecArray | null
+  while ((match = signaturePattern.exec(code)) !== null) {
+    const parsedName = match[1] ?? ''
+    const paramsRaw = match[2] ?? ''
+    const params = normalizeParams('c', paramsRaw)
+
+    if (!firstDetected) {
+      firstDetected = {
+        methodName: parsedName,
+        params,
+      }
+    }
+
+    if (parsedName === input.methodName) {
+      return {
+        found: true as const,
+        methodName: parsedName,
+        params,
+      }
+    }
+  }
+
+  if (firstDetected) {
+    return {
+      found: false as const,
+      methodName: firstDetected.methodName,
+      params: firstDetected.params,
+    }
+  }
+
+  return null
+}
+
 export function validateFunctionSignature(input: {
   language: PlacementLanguage
   userCode: string
   methodName: string
   signatureLabel: string
 }): SignatureValidationResult {
+  if (input.language === 'c') {
+    const extracted = extractCFunctionSignature({
+      userCode: input.userCode,
+      methodName: input.methodName,
+    })
+
+    if (!extracted || !extracted.found) {
+      const detected = extracted
+        ? `Found ${extracted.methodName}(${extracted.params.join(', ')})`
+        : 'No method definition found.'
+      return {
+        ok: false,
+        requiredSignature: input.signatureLabel,
+        detectedSignature: detected,
+        reason: 'missing_method',
+      }
+    }
+
+    const expectedParamCount = countExpectedParams(input.signatureLabel)
+    if (extracted.params.length !== expectedParamCount) {
+      return {
+        ok: false,
+        requiredSignature: input.signatureLabel,
+        detectedSignature: `${extracted.methodName}(${extracted.params.join(', ')})`,
+        reason: 'param_count_mismatch',
+      }
+    }
+
+    return { ok: true }
+  }
+
   const normalizedUserCode = normalizeSourceText(input.userCode)
   const classRegex = getClassCheckRegex(input.language)
   if (!classRegex.test(stripCommentsAndStrings(normalizedUserCode))) {
@@ -583,6 +670,15 @@ function escapeCppString(value: string) {
 }
 
 function escapeJavaString(value: string) {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')
+}
+
+function escapeCString(value: string) {
   return value
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"')
@@ -769,11 +865,45 @@ public class Main {
   return toRunnableResult(code, input.userCode, 'Main.java')
 }
 
+function buildCSingleCase(input: {
+  userCode: string
+  methodName: string
+  args: unknown[]
+  inputText?: string
+  signatureLabel?: string
+}) {
+  const signature = input.signatureLabel ?? ''
+  const hasNoParams = /\(\s*(?:void)?\s*\)/.test(signature)
+  const invocationArgs = hasNoParams
+    ? ''
+    : `"${escapeCString(input.inputText ?? '')}"`
+
+  const code = `${input.userCode.trimEnd()}
+${C_FUNCTION_MODE_SPLIT_MARKER}#include <stdio.h>
+#include <stdlib.h>
+
+char* ${input.methodName}(${hasNoParams ? 'void' : 'const char* input'});
+
+int main(void) {
+  char* __result = ${input.methodName}(${invocationArgs});
+  if (__result != NULL) {
+    fputs(__result, stdout);
+    free(__result);
+  }
+  return 0;
+}
+`
+
+  return toRunnableResult(code, input.userCode, 'user.c')
+}
+
 export function buildSingleCaseFunctionModeRunnable(input: {
   language: PlacementLanguage
   userCode: string
   methodName: string
   args: unknown[]
+  inputText?: string
+  signatureLabel?: string
 }) {
   if (input.language === 'javascript') {
     return buildJavascriptSingleCase(input)
@@ -785,6 +915,10 @@ export function buildSingleCaseFunctionModeRunnable(input: {
 
   if (input.language === 'java') {
     return buildJavaSingleCase(input)
+  }
+
+  if (input.language === 'c') {
+    return buildCSingleCase(input)
   }
 
   return null

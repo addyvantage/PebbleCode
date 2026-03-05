@@ -1,19 +1,19 @@
 import { Check, ChevronDown } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { PebbleLanguageId } from '../../lib/languages'
+import type { SessionLanguageId } from '../../../shared/languageRegistry'
 import { useTheme } from '../../hooks/useTheme'
 
 export type ProgramLangOption = {
-  id: PebbleLanguageId
+  id: SessionLanguageId
   label: string
   disabled?: boolean
   disabledReason?: string
 }
 
 type ProgramLangDropdownProps = {
-  value: PebbleLanguageId
+  value: SessionLanguageId
   options: ProgramLangOption[]
-  onChange: (id: PebbleLanguageId) => void
+  onChange: (id: SessionLanguageId) => void
 }
 
 function clampIndex(index: number, size: number) {

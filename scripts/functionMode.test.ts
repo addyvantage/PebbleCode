@@ -112,7 +112,7 @@ test('python function-mode execution: executes Solution().solve() for -> string'
 
   assert.ok(runnable)
   const run = await runCodeLocally({
-    language: 'python',
+    language: 'python3',
     code: runnable!.code,
     stdin: '',
     timeoutMs: 4000,
@@ -141,7 +141,7 @@ test('python function-mode execution: treats None return as empty string', async
 
   assert.ok(runnable)
   const run = await runCodeLocally({
-    language: 'python',
+    language: 'python3',
     code: runnable!.code,
     stdin: '',
     timeoutMs: 4000,
@@ -159,9 +159,10 @@ test('python function-mode execution: treats None return as empty string', async
   assert.equal(parsed![0]?.passed, true)
 })
 
-test('function-mode contract: C is intentionally unavailable', () => {
+test('function-mode contract: C template exists for hello-world', () => {
   const config = getUnitFunctionMode('c', 'hello-world')
-  assert.equal(config, null)
+  assert.ok(config)
+  assert.equal(config?.signatureLabel, 'char* solve()')
 })
 
 test('javascript signature: accepts CRLF + comments + multiline params', () => {
@@ -198,6 +199,45 @@ test('java signature: accepts throws clause', () => {
   })
 
   assert.deepEqual(result, { ok: true })
+})
+
+test('c signature: accepts const char* solve(void)', () => {
+  const userCode = `const char* solve(void) {\n  return "Hello, Pebble!";\n}\n`
+  const result = validateFunctionSignature({
+    language: 'c',
+    userCode,
+    methodName: 'solve',
+    signatureLabel: 'char* solve()',
+  })
+
+  assert.deepEqual(result, { ok: true })
+})
+
+test('c signature: accepts char *solve() variant', () => {
+  const userCode = `char *solve(){\n  return "Hello, Pebble!";\n}\n`
+  const result = validateFunctionSignature({
+    language: 'c',
+    userCode,
+    methodName: 'solve',
+    signatureLabel: 'char* solve()',
+  })
+
+  assert.deepEqual(result, { ok: true })
+})
+
+test('c signature: fails when solve is missing', () => {
+  const userCode = `const char* helper(void) {\n  return "Hello, Pebble!";\n}\n`
+  const result = validateFunctionSignature({
+    language: 'c',
+    userCode,
+    methodName: 'solve',
+    signatureLabel: 'char* solve()',
+  })
+
+  assert.equal(result.ok, false)
+  if (!result.ok) {
+    assert.equal(result.reason, 'missing_method')
+  }
 })
 
 test('javascript function-mode execution: executes Solution.solve()', async (t: TestContext) => {
@@ -237,7 +277,7 @@ test('cpp function-mode execution: executes Solution::solve()', async (t: TestCo
   assert.ok(runnable)
 
   const run = await runCodeLocally({
-    language: 'cpp',
+    language: 'cpp17',
     code: runnable!.code,
     stdin: '',
     timeoutMs: 4000,
@@ -250,4 +290,60 @@ test('cpp function-mode execution: executes Solution::solve()', async (t: TestCo
 
   assert.equal(run.status, 'ok')
   assert.equal(run.stdout.trim(), 'Hello, Pebble!')
+})
+
+test('c function-mode execution: executes solve() via generated harness main.c', async (t: TestContext) => {
+  const userCode = `#include <stdlib.h>\n#include <string.h>\n\nchar* solve() {\n  const char* s = "Hello, Pebble!";\n  char* out = (char*)malloc(strlen(s) + 1);\n  strcpy(out, s);\n  return out;\n}\n`
+  const runnable = buildSingleCaseFunctionModeRunnable({
+    language: 'c',
+    userCode,
+    methodName: 'solve',
+    args: [],
+  })
+  assert.ok(runnable)
+
+  const run = await runCodeLocally({
+    language: 'c',
+    code: runnable!.code,
+    stdin: '',
+    timeoutMs: 4000,
+  })
+
+  if (run.status === 'toolchain_unavailable') {
+    t.skip(`gcc unavailable: ${run.stderr}`)
+    return
+  }
+
+  assert.equal(run.status, 'ok')
+  assert.equal(run.stdout.trim(), 'Hello, Pebble!')
+})
+
+test('c function-mode execution: supports input signature wrappers for non-hello units', async (t: TestContext) => {
+  const config = getUnitFunctionMode('c', 'variables-sum')
+  assert.ok(config)
+  const userCode = `#include <stdlib.h>\n#include <string.h>\n\nchar* solve(const char* input) {\n  (void)input;\n  const char* s = "7";\n  char* out = (char*)malloc(strlen(s) + 1);\n  strcpy(out, s);\n  return out;\n}\n`
+  const runnable = buildSingleCaseFunctionModeRunnable({
+    language: 'c',
+    userCode,
+    methodName: config!.methodName,
+    args: [3, 4],
+    inputText: '3 4\n',
+    signatureLabel: config!.signatureLabel,
+  })
+  assert.ok(runnable)
+
+  const run = await runCodeLocally({
+    language: 'c',
+    code: runnable!.code,
+    stdin: '',
+    timeoutMs: 4000,
+  })
+
+  if (run.status === 'toolchain_unavailable') {
+    t.skip(`gcc unavailable: ${run.stderr}`)
+    return
+  }
+
+  assert.equal(run.status, 'ok')
+  assert.equal(run.stdout.trim(), '7')
 })

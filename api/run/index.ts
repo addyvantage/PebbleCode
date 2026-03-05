@@ -3,6 +3,7 @@ import {
   decodeLambdaPayload,
   normalizeRunRequest,
   normalizeRunnerResponse,
+  type RunLanguage,
   type RunRequestBody,
 } from './runnerShared.js'
 
@@ -64,7 +65,7 @@ function getRunnerMode() {
 }
 
 async function runViaLambda(body: {
-  language: 'python' | 'javascript' | 'cpp' | 'java' | 'c'
+  language: RunLanguage
   code: string
   stdin: string
   timeoutMs: number
@@ -121,7 +122,7 @@ async function runViaLambda(body: {
 }
 
 async function runViaRunnerUrl(body: {
-  language: 'python' | 'javascript' | 'cpp' | 'java' | 'c'
+  language: RunLanguage
   code: string
   stdin: string
   timeoutMs: number

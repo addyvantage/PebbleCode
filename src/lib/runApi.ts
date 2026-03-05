@@ -1,4 +1,6 @@
-type RunLanguage = 'python' | 'javascript' | 'cpp' | 'java' | 'c'
+import type { LanguageId } from '../../shared/languageRegistry'
+
+type RunLanguage = LanguageId
 export type RunStatus =
   | 'ok'
   | 'compile_error'

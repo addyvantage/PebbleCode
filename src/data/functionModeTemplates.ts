@@ -26,7 +26,24 @@ type UnitFunctionDefinition = {
   starterStubByLanguage: Record<PlacementLanguage, string>
 }
 
-const FUNCTION_LANGUAGES: PlacementLanguage[] = ['python', 'javascript', 'cpp', 'java']
+const FUNCTION_LANGUAGES: PlacementLanguage[] = ['python', 'javascript', 'cpp', 'java', 'c']
+
+function buildCSignatureLabel(methodName: string, unitId: string) {
+  if (unitId === 'hello-world' && methodName === 'solve') {
+    return 'char* solve()'
+  }
+  return `char* ${methodName}(const char* input)`
+}
+
+function buildCStarterStub(methodName: string, unitId: string) {
+  const signature = unitId === 'hello-world' && methodName === 'solve'
+    ? `${methodName}()`
+    : `${methodName}(const char* input)`
+  const inputGuard = unitId === 'hello-world' && methodName === 'solve'
+    ? ''
+    : '  (void)input;\n'
+  return `#include <stdlib.h>\n#include <string.h>\n\n// Return a heap-allocated C string. The harness will free() it.\nchar* ${signature} {\n${inputGuard}  const char* s = \"\";\n  char* out = (char*)malloc(strlen(s) + 1);\n  strcpy(out, s);\n  return out;\n}\n`
+}
 
 function tokensToInts(input: string) {
   return input
@@ -262,14 +279,14 @@ const UNIT_FUNCTION_DEFINITIONS: UnitFunctionDefinition[] = [
       javascript: 'Solution.solve() => string',
       cpp: 'Solution::solve() -> string',
       java: 'Solution.solve() -> String',
-      c: 'Solution::solve() -> string',
+      c: 'char* solve()',
     },
     starterStubByLanguage: {
       python: `class Solution:\n    def solve(self) -> str:\n        return ""\n`,
       javascript: `class Solution {\n  solve() {\n    return ''\n  }\n}\n`,
-      cpp: `#include <string>\nusing namespace std;\n\n${cppClassPrefix}  string solve() {\n    return \"\";\n  }${cppClassSuffix}`,
+      cpp: `#include <string>\nusing namespace std;\n\nclass Solution {\npublic:\n  string solve() {\n    return \"\";\n  }\n};\n`,
       java: `class Solution {\n  public String solve() {\n    return \"\";\n  }\n}\n`,
-      c: `#include <string>\nusing namespace std;\n\n${cppClassPrefix}  string solve() {\n    return \"\";\n  }${cppClassSuffix}`,
+      c: `#include <stdlib.h>\n#include <string.h>\n\n// Return a heap-allocated C string. The harness will free() it.\nchar* solve() {\n  const char* s = \"\";\n  char* out = (char*)malloc(strlen(s) + 1);\n  strcpy(out, s);\n  return out;\n}\n`,
     },
   },
   {
@@ -485,17 +502,21 @@ const UNIT_FUNCTION_DEFINITIONS: UnitFunctionDefinition[] = [
   },
 ]
 
-const FUNCTION_MODE_TEMPLATES: FunctionModeTemplate[] = UNIT_FUNCTION_DEFINITIONS.flatMap((definition) =>
-  FUNCTION_LANGUAGES.map((language) => ({
+const FUNCTION_MODE_TEMPLATES: FunctionModeTemplate[] = UNIT_FUNCTION_DEFINITIONS.flatMap((definition) => {
+  return FUNCTION_LANGUAGES.map((language) => ({
     unitId: definition.unitId,
     language,
     evalMode: 'function' as const,
-    signatureLabel: definition.signatureByLanguage[language],
+    signatureLabel: language === 'c'
+      ? buildCSignatureLabel(definition.methodNameByLanguage.c, definition.unitId)
+      : definition.signatureByLanguage[language],
     methodName: definition.methodNameByLanguage[language],
-    starterStub: definition.starterStubByLanguage[language],
+    starterStub: language === 'c'
+      ? buildCStarterStub(definition.methodNameByLanguage.c, definition.unitId)
+      : definition.starterStubByLanguage[language],
     parseTestCase: definition.parseTestCase,
-  })),
-)
+  }))
+})
 
 export function getFunctionModeTemplate(language: PlacementLanguage, unitId: string) {
   return FUNCTION_MODE_TEMPLATES.find(

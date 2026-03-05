@@ -11,8 +11,10 @@
     "dev:kill": "kill $(lsof -ti :3001,:5173,:5174) 2>/dev/null || true",
     "smoke": "node scripts/dev_smoke_all.mjs",
     "smoke:runner-modes": "npx tsx scripts/runnerModesSmoke.ts",
+    "self-check:language-pipeline": "npx tsx scripts/languagePipelineSelfCheck.ts",
     "test:function-mode": "npx tsx --test scripts/functionMode.test.ts",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "preview": "vite preview"
   },

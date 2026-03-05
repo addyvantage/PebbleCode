@@ -1,12 +1,17 @@
 import { safeGetJSON, safeSetJSON } from './safeStorage'
-import { DEFAULT_LANGUAGE, isPebbleLanguageId, type PebbleLanguageId } from './languages'
+import {
+  normalizeSessionLanguageId,
+  type LanguageId,
+  type SessionLanguageId,
+} from '../../shared/languageRegistry'
 
 export const DEFAULT_LANGUAGE_STORAGE_KEY = 'pebble.defaultLanguage.v1'
 export const PROBLEM_CODE_BY_LANG_STORAGE_KEY = 'pebble.problemCodeByLang.v1'
+const DEFAULT_LANGUAGE: LanguageId = 'python3'
 
 export type ProblemCodeByLangEntry = {
-  selectedLanguage: PebbleLanguageId
-  codeByLanguage: Partial<Record<PebbleLanguageId, string>>
+  selectedLanguage: SessionLanguageId
+  codeByLanguage: Partial<Record<SessionLanguageId, string>>
   updatedAt: number
 }
 
@@ -22,17 +27,17 @@ export function loadProblemCodeByLang(): ProblemCodeByLang {
     }
 
     const selectedLanguageRaw = (entry as { selectedLanguage?: unknown }).selectedLanguage
-    const selectedLanguageStr = typeof selectedLanguageRaw === 'string' ? selectedLanguageRaw : null
-    const selectedLanguage = isPebbleLanguageId(selectedLanguageStr) ? selectedLanguageStr : DEFAULT_LANGUAGE
+    const selectedLanguage = normalizeSessionLanguageId(selectedLanguageRaw) ?? DEFAULT_LANGUAGE
 
     const codeByLanguageRaw = (entry as { codeByLanguage?: unknown }).codeByLanguage
-    const codeByLanguage: Partial<Record<PebbleLanguageId, string>> = {}
+    const codeByLanguage: Partial<Record<SessionLanguageId, string>> = {}
     if (codeByLanguageRaw && typeof codeByLanguageRaw === 'object') {
       for (const [languageId, code] of Object.entries(codeByLanguageRaw as Record<string, unknown>)) {
-        if (!isPebbleLanguageId(languageId) || typeof code !== 'string') {
+        const normalizedLanguage = normalizeSessionLanguageId(languageId)
+        if (!normalizedLanguage || typeof code !== 'string') {
           continue
         }
-        codeByLanguage[languageId] = code
+        codeByLanguage[normalizedLanguage] = code
       }
     }
 
@@ -60,10 +65,10 @@ export function saveProblemCodeByLang(state: ProblemCodeByLang) {
 
 export function getGlobalDefaultLanguage() {
   const value = safeGetJSON<string>(DEFAULT_LANGUAGE_STORAGE_KEY, DEFAULT_LANGUAGE)
-  return isPebbleLanguageId(value) ? value : DEFAULT_LANGUAGE
+  return normalizeSessionLanguageId(value) ?? DEFAULT_LANGUAGE
 }
 
-export function setGlobalDefaultLanguage(languageId: PebbleLanguageId) {
+export function setGlobalDefaultLanguage(languageId: SessionLanguageId) {
   safeSetJSON(DEFAULT_LANGUAGE_STORAGE_KEY, languageId, {
     maxBytes: 64,
     silent: true,

@@ -10,6 +10,7 @@ import {
   type IdeRunLanguage,
 } from './runtimeLanguages'
 import { requestRunApi } from '../../lib/runApi'
+import { fromLegacyCodeLanguageId } from '../../../shared/languageRegistry'
 
 export type PythonRunResponse = {
   ok: boolean
@@ -86,7 +87,7 @@ export function PythonIDE({
     setIsRunning(true)
     try {
       const result: PythonRunResponse = await requestRunApi({
-        language,
+        language: fromLegacyCodeLanguageId(language),
         code,
         stdin: '',
         timeoutMs: 4000,

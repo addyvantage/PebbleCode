@@ -27,6 +27,7 @@ import { useBodyScrollLock } from '../utils/useBodyScrollLock'
 import { useI18n } from '../i18n/useI18n'
 import { logPlacementSkipEvent } from '../lib/analyticsStore'
 import { requestRunApi } from '../lib/runApi'
+import { fromLegacyCodeLanguageId } from '../../shared/languageRegistry'
 
 type CodingRunState = {
   code: string
@@ -157,7 +158,7 @@ export function PlacementPage() {
     try {
       for (const test of question.tests) {
         const normalized = await requestRunApi({
-          language,
+          language: fromLegacyCodeLanguageId(language),
           code: current.code,
           stdin: test.stdin,
           timeoutMs: question.timeoutMs,

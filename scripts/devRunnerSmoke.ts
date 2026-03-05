@@ -11,7 +11,7 @@ type CaseDef = {
 
 const CASES: CaseDef[] = [
   {
-    language: 'python',
+    language: 'python3',
     name: 'hello-python',
     code: "print('Hello, Pebble!')\n",
     stdin: '',
@@ -25,14 +25,14 @@ const CASES: CaseDef[] = [
     expected: 'Hello, Pebble!',
   },
   {
-    language: 'cpp',
+    language: 'cpp17',
     name: 'hello-cpp',
     code: '#include <iostream>\nint main(){ std::cout << "Hello, Pebble!"; return 0; }\n',
     stdin: '',
     expected: 'Hello, Pebble!',
   },
   {
-    language: 'java',
+    language: 'java17',
     name: 'hello-java',
     code: 'class Main { public static void main(String[] args){ System.out.print("Hello, Pebble!"); }}\n',
     stdin: '',

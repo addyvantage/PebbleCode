@@ -1,55 +1,36 @@
-export type PebbleLanguageId = 'python' | 'javascript' | 'cpp' | 'java' | 'c' | 'sql'
+import {
+  LANGUAGE_REGISTRY,
+  type LegacyCodeLanguageId,
+} from '../../shared/languageRegistry'
+
+export type PebbleLanguageId = LegacyCodeLanguageId | 'sql'
 
 export type PebbleLanguage = {
   id: PebbleLanguageId
   label: string
   monacoLanguage?: string
   fileExt: string
-  runnerId: 'python' | 'javascript' | 'cpp' | 'java' | 'c' | 'sql'
+  runnerId: PebbleLanguageId
   defaultFunctionMode?: boolean
 }
 
+const FILE_EXT_BY_LANGUAGE: Record<LegacyCodeLanguageId, string> = {
+  python: '.py',
+  javascript: '.js',
+  cpp: '.cpp',
+  java: '.java',
+  c: '.c',
+}
+
 export const SUPPORTED_LANGUAGES: PebbleLanguage[] = [
-  {
-    id: 'python',
-    label: 'Python 3',
-    monacoLanguage: 'python',
-    fileExt: '.py',
-    runnerId: 'python',
+  ...LANGUAGE_REGISTRY.map((language) => ({
+    id: language.legacyId,
+    label: language.label,
+    monacoLanguage: language.monacoLanguage,
+    fileExt: FILE_EXT_BY_LANGUAGE[language.legacyId],
+    runnerId: language.legacyId,
     defaultFunctionMode: true,
-  },
-  {
-    id: 'javascript',
-    label: 'JavaScript',
-    monacoLanguage: 'javascript',
-    fileExt: '.js',
-    runnerId: 'javascript',
-    defaultFunctionMode: true,
-  },
-  {
-    id: 'cpp',
-    label: 'C++17',
-    monacoLanguage: 'cpp',
-    fileExt: '.cpp',
-    runnerId: 'cpp',
-    defaultFunctionMode: true,
-  },
-  {
-    id: 'java',
-    label: 'Java 17',
-    monacoLanguage: 'java',
-    fileExt: '.java',
-    runnerId: 'java',
-    defaultFunctionMode: true,
-  },
-  {
-    id: 'c',
-    label: 'C (GNU)',
-    monacoLanguage: 'c',
-    fileExt: '.c',
-    runnerId: 'c',
-    defaultFunctionMode: true,
-  },
+  })),
   {
     id: 'sql',
     label: 'SQL (Simulated)',
@@ -69,7 +50,11 @@ export function isPebbleLanguageId(value: string | null | undefined): value is P
 }
 
 export function getPebbleLanguageById(id: PebbleLanguageId) {
-  return BY_ID.get(id) ?? BY_ID.get(DEFAULT_LANGUAGE)!
+  const language = BY_ID.get(id)
+  if (!language) {
+    throw new Error(`Unknown language id: ${id}`)
+  }
+  return language
 }
 
 export function getMonacoLanguage(id: PebbleLanguageId) {
