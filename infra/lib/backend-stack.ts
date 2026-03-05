@@ -103,7 +103,7 @@ export class BackendStack extends cdk.Stack {
 
     // ── Profile Lambda (TypeScript / Node 20) ─────────────────────────────────
     //
-    // Handles GET /api/profile, PUT /api/profile, POST /api/avatar/presign.
+    // Handles profile/auth/avatar routes under /api/* for user profile flows.
     // Registering these routes in API Gateway is essential: without them, API GW
     // returns 404 → CloudFront remaps 404 → 200 + index.html, so the client gets
     // HTML instead of JSON ("Unexpected token '<'...").
@@ -241,6 +241,7 @@ export class BackendStack extends cdk.Stack {
     // Environment variables the Lambda needs at runtime
     profileFn.addEnvironment('PROFILES_TABLE_NAME', profilesTable.tableName)
     profileFn.addEnvironment('AVATARS_BUCKET_NAME', avatarsBucket.bucketName)
+    profileFn.addEnvironment('COGNITO_CLIENT_ID', userPoolClient.userPoolClientId)
     if (process.env.ADMIN_EMAILS) {
       profileFn.addEnvironment('ADMIN_EMAILS', process.env.ADMIN_EMAILS)
     }
@@ -254,6 +255,26 @@ export class BackendStack extends cdk.Stack {
     api.addRoutes({
       path: '/api/profile',
       methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.PUT, apigwv2.HttpMethod.OPTIONS],
+      integration: profileIntegration,
+    })
+    api.addRoutes({
+      path: '/api/profile/username',
+      methods: [apigwv2.HttpMethod.POST, apigwv2.HttpMethod.OPTIONS],
+      integration: profileIntegration,
+    })
+    api.addRoutes({
+      path: '/api/username/available',
+      methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.OPTIONS],
+      integration: profileIntegration,
+    })
+    api.addRoutes({
+      path: '/api/auth/login',
+      methods: [apigwv2.HttpMethod.POST, apigwv2.HttpMethod.OPTIONS],
+      integration: profileIntegration,
+    })
+    api.addRoutes({
+      path: '/api/auth/signup',
+      methods: [apigwv2.HttpMethod.POST, apigwv2.HttpMethod.OPTIONS],
       integration: profileIntegration,
     })
     api.addRoutes({

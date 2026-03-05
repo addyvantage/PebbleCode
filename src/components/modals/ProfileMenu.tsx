@@ -62,8 +62,7 @@ export function ProfileMenu({
     ? 'border border-pebble-border/42 shadow-[0_22px_54px_rgba(2,8,23,0.40)]'
     : 'border border-pebble-border/25 shadow-[0_12px_40px_rgba(55,72,110,0.18)]'
 
-  // Displayed name: prefer username, fall back to the part before @ in email
-  const displayName = userName || (userEmail ? userEmail.split('@')[0] : '')
+  const displayName = userName || 'Set username'
 
   return createPortal(
     <div

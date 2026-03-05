@@ -1,13 +1,12 @@
 /**
- * Cognito SRP authentication wrapper.
- * Uses amazon-cognito-identity-js directly (no Amplify).
- * Falls back to dev/guest mode when env vars are missing.
+ * Auth wrapper:
+ * - Login/signup go through backend (/api/auth/*), so username-or-email login
+ *   and username uniqueness rules are server-enforced.
+ * - Confirmation / resend / forgot-password still use Cognito browser SDK.
  */
 import {
     CognitoUserPool,
     CognitoUser,
-    AuthenticationDetails,
-    CognitoUserAttribute,
     CognitoUserSession,
 } from 'amazon-cognito-identity-js'
 
@@ -20,6 +19,7 @@ const RESOLVED_USER_POOL_ID = USER_POOL_ID ?? USER_POOL_ID_FALLBACK
 const RESOLVED_CLIENT_ID = CLIENT_ID ?? CLIENT_ID_FALLBACK
 
 const isConfigured = Boolean(RESOLVED_USER_POOL_ID && RESOLVED_CLIENT_ID)
+const TOKEN_STORAGE_KEY = 'pebble.auth.idToken'
 
 function maskEnvValue(value?: string) {
     if (!value) {
@@ -63,19 +63,70 @@ export type AuthUser = {
     email: string
 }
 
-function sessionToUser(session: CognitoUserSession): AuthUser {
-    const payload = session.getIdToken().decodePayload()
-    return {
-        userId: payload.sub as string,
-        email: (payload.email as string) ?? '',
+function parseJwtPayload(token: string): Record<string, unknown> | null {
+    try {
+        return JSON.parse(atob(token.split('.')[1])) as Record<string, unknown>
+    } catch {
+        return null
     }
 }
 
-export function getCurrentSession(): Promise<{ user: AuthUser; idToken: string } | null> {
-    if (!userPool) return Promise.resolve(null)
+function tokenToUser(idToken: string): AuthUser | null {
+    const payload = parseJwtPayload(idToken)
+    if (!payload) return null
+    const sub = payload.sub
+    const email = payload.email ?? payload['cognito:username']
+    if (typeof sub !== 'string') return null
+    return {
+        userId: sub,
+        email: typeof email === 'string' ? email : '',
+    }
+}
 
+function readStoredToken(): string | null {
+    try {
+        return localStorage.getItem(TOKEN_STORAGE_KEY)
+    } catch {
+        return null
+    }
+}
+
+function storeToken(token: string) {
+    try {
+        localStorage.setItem(TOKEN_STORAGE_KEY, token)
+    } catch {
+        // no-op
+    }
+}
+
+function clearStoredToken() {
+    try {
+        localStorage.removeItem(TOKEN_STORAGE_KEY)
+    } catch {
+        // no-op
+    }
+}
+
+function isTokenExpired(idToken: string): boolean {
+    const payload = parseJwtPayload(idToken)
+    const exp = payload?.exp
+    if (typeof exp !== 'number') return false
+    return Date.now() >= exp * 1000
+}
+
+export async function getCurrentSession(): Promise<{ user: AuthUser; idToken: string } | null> {
+    const stored = readStoredToken()
+    if (stored && !isTokenExpired(stored)) {
+        const user = tokenToUser(stored)
+        if (user) {
+            return { user, idToken: stored }
+        }
+    }
+
+    // Fallback for legacy direct-Cognito sessions.
+    if (!userPool) return null
     const cognitoUser = userPool.getCurrentUser()
-    if (!cognitoUser) return Promise.resolve(null)
+    if (!cognitoUser) return null
 
     return new Promise((resolve) => {
         cognitoUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
@@ -83,62 +134,57 @@ export function getCurrentSession(): Promise<{ user: AuthUser; idToken: string }
                 resolve(null)
                 return
             }
-            resolve({
-                user: sessionToUser(session),
-                idToken: session.getIdToken().getJwtToken(),
-            })
-        })
-    })
-}
-
-export function signIn(email: string, password: string): Promise<{ user: AuthUser; idToken: string }> {
-    if (!userPool) return Promise.reject(new Error('Cognito not configured'))
-
-    const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
-    const authDetails = new AuthenticationDetails({ Username: email, Password: password })
-
-    return new Promise((resolve, reject) => {
-        cognitoUser.authenticateUser(authDetails, {
-            onSuccess(session) {
-                resolve({
-                    user: sessionToUser(session),
-                    idToken: session.getIdToken().getJwtToken(),
-                })
-            },
-            onFailure(err) {
-                reject(err)
-            },
-        })
-    })
-}
-
-export function signUp(email: string, password: string, username: string): Promise<void> {
-    if (!userPool) return Promise.reject(new Error('Cognito not configured'))
-
-    const attributes = [
-        new CognitoUserAttribute({ Name: 'email', Value: email }),
-        new CognitoUserAttribute({ Name: 'preferred_username', Value: username }),
-    ]
-
-    return new Promise((resolve, reject) => {
-        userPool!.signUp(email, password, attributes, [], (err) => {
-            if (err) {
-                reject(err)
+            const idToken = session.getIdToken().getJwtToken()
+            const user = tokenToUser(idToken)
+            if (!user) {
+                resolve(null)
                 return
             }
-            resolve()
+            storeToken(idToken)
+            resolve({ user, idToken })
         })
     })
+}
+
+export async function signIn(identifier: string, password: string): Promise<{ user: AuthUser; idToken: string }> {
+    const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password }),
+    })
+    const data = await res.json().catch(() => ({})) as { idToken?: string; error?: string }
+    if (!res.ok || !data.idToken) {
+        throw new Error(data.error ?? 'Invalid username/email or password')
+    }
+    const user = tokenToUser(data.idToken)
+    if (!user) {
+        throw new Error('Invalid authentication token')
+    }
+    storeToken(data.idToken)
+    return { user, idToken: data.idToken }
+}
+
+export async function signUp(email: string, password: string, username: string): Promise<void> {
+    const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, username }),
+    })
+    const data = await res.json().catch(() => ({})) as { error?: string }
+    if (!res.ok) {
+        throw new Error(data.error ?? 'Account creation failed. Please try again.')
+    }
 }
 
 export function signOut(): void {
+    clearStoredToken()
     if (!userPool) return
     const cognitoUser = userPool.getCurrentUser()
     cognitoUser?.signOut()
 }
 
 export function confirmSignUp(email: string, code: string): Promise<void> {
-    if (!userPool) return new Promise((resolve) => setTimeout(resolve, 800))
+    if (!userPool) return Promise.reject(new Error('Cognito not configured'))
     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
     return new Promise((resolve, reject) => {
         cognitoUser.confirmRegistration(code, true, (err) => {
@@ -149,7 +195,7 @@ export function confirmSignUp(email: string, code: string): Promise<void> {
 }
 
 export function resendSignUpCode(email: string): Promise<void> {
-    if (!userPool) return new Promise((resolve) => setTimeout(resolve, 800))
+    if (!userPool) return Promise.reject(new Error('Cognito not configured'))
     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
     return new Promise((resolve, reject) => {
         cognitoUser.resendConfirmationCode((err) => {
@@ -161,7 +207,6 @@ export function resendSignUpCode(email: string): Promise<void> {
 
 export function forgotPassword(email: string): Promise<void> {
     if (!userPool) {
-        // Dev fallback — simulate network delay
         return new Promise((resolve) => setTimeout(resolve, 800))
     }
     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
@@ -169,7 +214,6 @@ export function forgotPassword(email: string): Promise<void> {
         cognitoUser.forgotPassword({
             onSuccess: () => resolve(),
             onFailure: (err) => reject(err),
-            // inputVerificationCode is called when the code is delivered (still a success)
             inputVerificationCode: () => resolve(),
         })
     })

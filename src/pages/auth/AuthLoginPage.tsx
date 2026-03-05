@@ -18,16 +18,21 @@ export function AuthLoginPage() {
     const emailFromParam = searchParams.get('email') ?? ''
     const justVerified = searchParams.get('verified') === '1'
 
-    const [email, setEmail] = useState(emailFromParam)
+    const [identifier, setIdentifier] = useState(emailFromParam)
     const [password, setPassword] = useState('')
-    const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({})
+    const [errors, setErrors] = useState<{ identifier?: string; password?: string; form?: string }>({})
     const [submitting, setSubmitting] = useState(false)
     const errorRef = useRef<HTMLDivElement>(null)
 
     function validate() {
         const e: typeof errors = {}
-        if (!email.trim()) e.email = 'Email is required'
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Enter a valid email address'
+        if (!identifier.trim()) {
+            e.identifier = 'Email or username is required'
+        } else if (!identifier.includes('@') && !/^[a-zA-Z0-9_]{3,20}$/.test(identifier.trim())) {
+            e.identifier = 'Username must be 3–20 characters (letters, numbers, underscores)'
+        } else if (identifier.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim())) {
+            e.identifier = 'Enter a valid email address'
+        }
         if (!password) e.password = 'Password is required'
         return e
     }
@@ -43,16 +48,16 @@ export function AuthLoginPage() {
         setErrors({})
         setSubmitting(true)
         try {
-            await signIn(email.trim(), password)
+            await signIn(identifier.trim(), password)
             navigate('/')
         } catch (err: any) {
             const code = err?.code ?? err?.name ?? ''
             if (code === 'UserNotConfirmedException') {
-                localStorage.setItem('pebble.auth.verifyEmail', email.trim())
-                navigate(`/auth/verify?email=${encodeURIComponent(email.trim())}`)
+                localStorage.setItem('pebble.auth.verifyEmail', identifier.trim())
+                navigate(`/auth/verify?email=${encodeURIComponent(identifier.trim())}`)
                 return
             }
-            setErrors({ form: err?.message ?? 'Sign in failed. Please try again.' })
+            setErrors({ form: err?.message ?? 'Invalid username/email or password' })
             setTimeout(() => errorRef.current?.focus(), 0)
         } finally {
             setSubmitting(false)
@@ -91,29 +96,29 @@ export function AuthLoginPage() {
                         className="rounded-xl border border-red-500/25 bg-red-500/[0.08] px-4 py-3 text-[12.5px] text-red-400 outline-none space-y-0.5"
                     >
                         {errors.form    && <p>{errors.form}</p>}
-                        {errors.email   && <p>{errors.email}</p>}
+                        {errors.identifier   && <p>{errors.identifier}</p>}
                         {errors.password && <p>{errors.password}</p>}
                     </div>
                 )}
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} noValidate className="space-y-4">
-                    {/* Email */}
+                    {/* Email or Username */}
                     <div>
                         <label
                             htmlFor="login-email"
                             className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-pebble-text-muted"
                         >
-                            Email
+                            Email or Username
                         </label>
                         <input
                             id="login-email"
-                            type="email"
-                            autoComplete="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="you@example.com"
-                            aria-invalid={errors.email ? true : undefined}
+                            type="text"
+                            autoComplete="username"
+                            value={identifier}
+                            onChange={(e) => setIdentifier(e.target.value)}
+                            placeholder="email@example.com or username"
+                            aria-invalid={errors.identifier ? true : undefined}
                             className="auth-input"
                         />
                     </div>

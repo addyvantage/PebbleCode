@@ -13,9 +13,13 @@ import {
 export type UserProfile = {
     userId: string
     username: string
+    usernameLower?: string
+    usernameSetAt?: string | null
+    lastUsernameChangeAt?: string | null
     email: string
     bio: string
     avatarKey?: string | null
+    avatarUpdatedAt?: string | null
     avatarUrl: string | null
     updatedAt?: string
     role: 'user' | 'admin'
@@ -29,7 +33,7 @@ export type AuthContextValue = {
     isLoading: boolean
     isConfigured: boolean
     idToken: string | null
-    signIn: (email: string, password: string) => Promise<void>
+    signIn: (identifier: string, password: string) => Promise<void>
     signUp: (email: string, password: string, username: string) => Promise<void>
     confirmSignUp: (email: string, code: string) => Promise<void>
     resendSignUpCode: (email: string) => Promise<void>
@@ -44,9 +48,13 @@ const DEV_GUEST_USER: AuthUser = { userId: 'dev-guest', email: 'guest@pebble.dev
 const DEV_GUEST_PROFILE: UserProfile = {
     userId: 'dev-guest',
     username: 'Guest',
+    usernameLower: 'guest',
+    usernameSetAt: null,
+    lastUsernameChangeAt: null,
     email: 'guest@pebble.dev',
     bio: 'Dev mode guest',
     avatarUrl: null,
+    avatarUpdatedAt: null,
     role: 'user',
 }
 
@@ -66,6 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return typeof data.url === 'string' ? data.url : null
     }, [])
 
+    const appendAvatarVersion = useCallback((url: string, avatarUpdatedAt?: string | null) => {
+        const version = avatarUpdatedAt ? new Date(avatarUpdatedAt).getTime() : Date.now()
+        return `${url}${url.includes('?') ? '&' : '?'}v=${version}`
+    }, [])
+
     const fetchProfile = useCallback(async (token: string) => {
         try {
             const res = await fetch('/api/profile', {
@@ -73,16 +86,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             })
             if (res.ok) {
                 const data = await res.json() as UserProfile
-                let avatarUrl: string | null = data.avatarUrl ?? null
+                let avatarUrl: string | null = null
                 if (data.avatarKey) {
-                    avatarUrl = await fetchAvatarUrl(token, data.avatarKey)
+                    const freshUrl = await fetchAvatarUrl(token, data.avatarKey)
+                    avatarUrl = freshUrl ? appendAvatarVersion(freshUrl, data.avatarUpdatedAt) : null
                 }
                 setProfile({ ...data, avatarUrl })
             }
         } catch {
             // Profile fetch failed — user is authed but profile not yet created
         }
-    }, [fetchAvatarUrl])
+    }, [appendAvatarVersion, fetchAvatarUrl])
 
     const refreshProfile = useCallback(async () => {
         if (idToken) await fetchProfile(idToken)
@@ -110,8 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => { cancelled = true }
     }, [fetchProfile])
 
-    const handleSignIn = useCallback(async (email: string, password: string) => {
-        const result = await cognitoSignIn(email, password)
+    const handleSignIn = useCallback(async (identifier: string, password: string) => {
+        const result = await cognitoSignIn(identifier, password)
         setUser(result.user)
         setIdToken(result.idToken)
         await fetchProfile(result.idToken)

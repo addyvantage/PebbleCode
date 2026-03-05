@@ -1,9 +1,10 @@
-import { Bot, Compass, Gauge, Sparkles, Play } from 'lucide-react'
+import { Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Component as EtheralShadow } from '../components/ui/etheral-shadow'
 import { buttonClass } from '../components/ui/buttonStyles'
+import { InteractiveGradientButton } from '../components/ui/interactive-gradient-button'
 import { useI18n } from '../i18n/useI18n'
 import { useTheme } from '../hooks/useTheme'
 import { getRecentActivity } from '../lib/recentStore'
@@ -11,6 +12,7 @@ import { getProblemById } from '../data/problemsBank'
 import { getLocalizedProblem } from '../i18n/problemContent'
 import { TodayPlanCard } from '../components/home/TodayPlanCard'
 import { RecommendedNextCard } from '../components/home/RecommendedNextCard'
+import { FeatureGrid } from '../components/home/FeatureGrid'
 
 function classNames(...values: Array<string | undefined>) {
   return values.filter(Boolean).join(' ')
@@ -34,32 +36,8 @@ export function LandingPage() {
   const localizedRecent = recentProblem ? getLocalizedProblem(recentProblem, lang) : null
 
   const trustChips = [t('landing.trust1'), t('landing.trust2'), t('landing.trust3')]
-  const bentoCards = [
-    {
-      icon: Compass,
-      title: t('landing.how1Title'),
-      detail: t('landing.how1Detail'),
-    },
-    {
-      icon: Gauge,
-      title: t('landing.how2Title'),
-      detail: t('landing.how2Detail'),
-    },
-    {
-      icon: Bot,
-      title: t('landing.how3Title'),
-      detail: t('landing.how3Detail'),
-    },
-    {
-      icon: Sparkles,
-      title: t('landing.why2Title'),
-      detail: t('landing.why2Copy'),
-    },
-  ]
-
-  const bentoCardClass =
-    'group relative overflow-hidden transition-all duration-500 ease-[cubic-bezier(.2,.8,.2,1)] hover:-translate-y-[4px] border border-pebble-border/15 hover:border-pebble-border/30 bg-pebble-overlay/[0.03] hover:bg-pebble-overlay/[0.05] backdrop-blur-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/50'
-
+  const ctaBaseClass = 'inline-flex h-[44px] items-center justify-center gap-2 rounded-full px-6 text-[15px] font-medium tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out'
+  const openSessionCtaClass = `${ctaBaseClass} font-semibold border border-[#B9C8E8] bg-[#F5F8FF] text-[#1B2A4A] shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_10px_24px_rgba(15,23,42,0.08)] hover:-translate-y-[1px] hover:bg-[#F9FBFF] hover:border-[#9FB6E6] hover:text-[#13223F] hover:shadow-[0_1px_0_rgba(255,255,255,0.96)_inset,0_12px_26px_rgba(15,23,42,0.10)] dark:bg-[#0B1220] dark:border-[#2E4A7A] dark:text-[#EAF0FF] dark:shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_10px_28px_rgba(0,0,0,0.45)] dark:hover:-translate-y-[1px] dark:hover:bg-[#0F182B] dark:hover:border-[#4167A4] dark:hover:text-[#F3F7FF] dark:hover:shadow-[0_1px_0_rgba(255,255,255,0.08)_inset,0_12px_30px_rgba(0,0,0,0.52)] transition-[background-color,border-color,box-shadow,color,transform] duration-150 ease-out focus-visible:ring-[#4F8BFF]/45 dark:focus-visible:ring-[#8DB6FF]/55 focus-visible:ring-offset-[#F5F8FF] dark:focus-visible:ring-offset-[#0B1220]`
 
   return (
     <section className="page-enter min-h-0">
@@ -105,10 +83,12 @@ export function LandingPage() {
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2.5 pt-1.5">
-                  <Link to="/onboarding" className={buttonClass('primary')}>
-                    {t('landing.tryPebble')}
-                  </Link>
-                  <Link to="/session/1" className={buttonClass('secondary')}>
+                  <InteractiveGradientButton asChild className={ctaBaseClass}>
+                    <Link to="/onboarding">
+                      {t('landing.tryPebble')}
+                    </Link>
+                  </InteractiveGradientButton>
+                  <Link to="/session/1" className={openSessionCtaClass}>
                     {t('landing.openSession')}
                   </Link>
                 </div>
@@ -215,34 +195,7 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="-mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {bentoCards.map((card) => {
-            const Icon = card.icon
-            return (
-              <Card key={card.title} padding="sm" className={`h-full p-5 lg:p-6 ${bentoCardClass} min-h-[108px] flex items-center`} interactive>
-                {/* Premium floating glass interior elements */}
-                <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-500 opacity-0 group-hover:opacity-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1px_1px_rgba(0,0,0,0.05)] [background-image:linear-gradient(135deg,rgba(255,255,255,0.08)_0%,transparent_40%,transparent_70%,rgba(0,0,0,0.04)_100%)]">
-                  {/* Subtle corner glow */}
-                  <span className="absolute -right-12 -top-12 block h-32 w-32 rounded-full bg-pebble-accent/10 blur-[40px] transition-opacity duration-500 opacity-0 group-hover:opacity-100" />
-                </span>
-
-                {/* Diagonal floating sheen */}
-                <span aria-hidden="true" className="pointer-events-none absolute inset-0 transition-transform duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] translate-x-[-150%] opacity-0 group-hover:opacity-100 group-hover:translate-x-[150%] bg-gradient-to-tr from-transparent via-white/[0.06] to-transparent" />
-
-                <div className="relative z-10 flex items-center gap-3.5">
-                  <span className="shrink-0 flex h-12 w-12 relative items-center justify-center rounded-[12px] border border-pebble-border/20 bg-pebble-overlay/[0.04] text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-500 group-hover:bg-pebble-overlay/[0.08] group-hover:border-pebble-border/40 group-hover:text-pebble-accent group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_20px_rgba(0,0,0,0.12)]">
-                    <span className="absolute inset-0 rounded-[14px] bg-pebble-accent/20 blur-[10px] transition-opacity duration-500 opacity-0 group-hover:opacity-100" />
-                    <Icon className="relative z-10 h-6 w-6 transition-transform duration-500 group-hover:scale-[1.12]" aria-hidden="true" />
-                  </span>
-                  <div className="space-y-1.5 min-w-0">
-                    <h3 className={`text-[17px] font-semibold tracking-tight text-pebble-text-primary transition-colors duration-500 group-hover:text-pebble-accent ${isUrdu ? 'rtlText' : ''}`}>{card.title}</h3>
-                    <p className={`text-[14px] leading-relaxed text-pebble-text-secondary transition-colors duration-500 group-hover:text-pebble-text-primary/95 ${isUrdu ? 'rtlText' : ''}`}>{card.detail}</p>
-                  </div>
-                </div>
-              </Card>
-            )
-          })}
-        </div>
+        <FeatureGrid />
       </div>
     </section>
   )

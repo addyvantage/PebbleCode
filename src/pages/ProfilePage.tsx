@@ -4,6 +4,7 @@ import { Card } from '../components/ui/Card'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import { Camera } from 'lucide-react'
+import { ConfirmDialog } from '../components/modals/ConfirmDialog'
 
 export function ProfilePage() {
     const { isAuthenticated, isLoading, profile, idToken, refreshProfile } = useAuth()
@@ -11,11 +12,19 @@ export function ProfilePage() {
     const dark = theme === 'dark'
 
     const [username, setUsername] = useState('')
+    const [newUsername, setNewUsername] = useState('')
     const [bio, setBio] = useState('')
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
     const [avatarVersion, setAvatarVersion] = useState<number | null>(null)
     const [saving, setSaving] = useState(false)
+    const [savingUsername, setSavingUsername] = useState(false)
     const [uploading, setUploading] = useState(false)
+    const [isChangingUsername, setIsChangingUsername] = useState(false)
+    const [showUsernameConfirm, setShowUsernameConfirm] = useState(false)
+    const [usernameAvailability, setUsernameAvailability] = useState<{
+        status: 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+        message: string
+    }>({ status: 'idle', message: '' })
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -30,18 +39,33 @@ export function ProfilePage() {
     }, [idToken])
 
     useEffect(() => {
-        if (profile) {
+        let cancelled = false
+        async function hydrateAvatar() {
+            if (!profile) {
+                return
+            }
             setUsername(profile.username ?? '')
+            setNewUsername(profile.username ?? '')
             setBio(profile.bio ?? '')
-            const baseUrl = profile.avatarUrl ?? null
-            if (!baseUrl) {
+            if (!profile.avatarKey) {
                 setAvatarPreview(null)
                 return
             }
-            const version = avatarVersion ?? Date.now()
-            setAvatarPreview(`${baseUrl}${baseUrl.includes('?') ? '&' : '?'}v=${version}`)
+            const freshUrl = await fetchAvatarUrl(profile.avatarKey)
+            if (cancelled) {
+                return
+            }
+            if (!freshUrl) {
+                setAvatarPreview(null)
+                return
+            }
+            const version = avatarVersion
+                ?? (profile.avatarUpdatedAt ? new Date(profile.avatarUpdatedAt).getTime() : Date.now())
+            setAvatarPreview(`${freshUrl}${freshUrl.includes('?') ? '&' : '?'}v=${version}`)
         }
-    }, [profile, avatarVersion])
+        void hydrateAvatar()
+        return () => { cancelled = true }
+    }, [avatarVersion, fetchAvatarUrl, profile])
 
     const handleAvatarUpload = useCallback(async (file: File) => {
         if (!idToken) return
@@ -62,7 +86,15 @@ export function ProfilePage() {
                 }),
             })
             if (!presignRes.ok) throw new Error(`Failed to get upload URL (HTTP ${presignRes.status})`)
-            const { uploadUrl, key } = await presignRes.json()
+            const { uploadUrl, key, avatarKey } = await presignRes.json() as {
+                uploadUrl: string
+                key?: string
+                avatarKey?: string
+            }
+            const resolvedAvatarKey = avatarKey ?? key
+            if (!resolvedAvatarKey) {
+                throw new Error('Avatar key missing from upload response')
+            }
 
             // 2. Upload to S3 (or dev stub)
             // Wrap separately so CORS/network errors get a clear message distinct from HTTP errors.
@@ -89,12 +121,12 @@ export function ProfilePage() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${idToken}`,
                 },
-                body: JSON.stringify({ username, bio, avatarKey: key }),
+                body: JSON.stringify({ bio, avatarKey: resolvedAvatarKey }),
             })
             if (!profileRes.ok) throw new Error(`Failed to save avatar key (HTTP ${profileRes.status})`)
 
             // 4. Instant preview
-            const resolvedUrl = await fetchAvatarUrl(key)
+            const resolvedUrl = await fetchAvatarUrl(resolvedAvatarKey)
             const version = Date.now()
             const cacheBustedUrl = resolvedUrl
                 ? `${resolvedUrl}${resolvedUrl.includes('?') ? '&' : '?'}v=${version}`
@@ -110,18 +142,13 @@ export function ProfilePage() {
         } finally {
             setUploading(false)
         }
-    }, [idToken, username, bio, fetchAvatarUrl, refreshProfile])
+    }, [idToken, bio, fetchAvatarUrl, refreshProfile])
 
     async function handleSave() {
         if (!idToken) return
         setSaving(true)
         setMessage(null)
 
-        if (username.length < 3 || username.length > 20 || !/^[a-zA-Z0-9_]+$/.test(username)) {
-            setMessage({ type: 'error', text: 'Username must be 3–20 characters (letters, numbers, underscores)' })
-            setSaving(false)
-            return
-        }
         if (bio.length > 160) {
             setMessage({ type: 'error', text: 'Bio must be 160 characters or less' })
             setSaving(false)
@@ -135,7 +162,7 @@ export function ProfilePage() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${idToken}`,
                 },
-                body: JSON.stringify({ username, bio }),
+                body: JSON.stringify({ bio }),
             })
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}))
@@ -147,6 +174,103 @@ export function ProfilePage() {
             setMessage({ type: 'error', text: err.message ?? 'Save failed' })
         } finally {
             setSaving(false)
+        }
+    }
+
+    const usernameCooldownRemainingDays = (() => {
+        const base = profile?.lastUsernameChangeAt ?? profile?.usernameSetAt
+        if (!base) return 0
+        const baseMs = Date.parse(base)
+        if (Number.isNaN(baseMs)) return 0
+        const next = baseMs + 30 * 24 * 60 * 60 * 1000
+        if (next <= Date.now()) return 0
+        return Math.ceil((next - Date.now()) / (24 * 60 * 60 * 1000))
+    })()
+    const canChangeUsername = usernameCooldownRemainingDays === 0
+    const usernameChanged = newUsername.trim() !== username.trim()
+
+    useEffect(() => {
+        if (!isChangingUsername) {
+            setUsernameAvailability({ status: 'idle', message: '' })
+            return
+        }
+        const candidate = newUsername.trim()
+        if (!candidate || candidate === username) {
+            setUsernameAvailability({ status: 'idle', message: '' })
+            return
+        }
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(candidate)) {
+            setUsernameAvailability({ status: 'invalid', message: '3–20 chars · letters, numbers, underscores' })
+            return
+        }
+        setUsernameAvailability({ status: 'checking', message: 'Checking…' })
+        const controller = new AbortController()
+        const timer = window.setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/username/available?username=${encodeURIComponent(candidate)}`, { signal: controller.signal })
+                const data = await res.json() as { available?: boolean; reason?: string }
+                if (!res.ok) {
+                    setUsernameAvailability({ status: 'idle', message: '' })
+                    return
+                }
+                if (data.available) {
+                    setUsernameAvailability({ status: 'available', message: 'Username is available' })
+                    return
+                }
+                if (data.reason === 'taken') {
+                    setUsernameAvailability({ status: 'taken', message: 'Username is already taken' })
+                    return
+                }
+                setUsernameAvailability({ status: 'invalid', message: 'Username is invalid' })
+            } catch (err) {
+                if ((err as Error).name !== 'AbortError') {
+                    setUsernameAvailability({ status: 'idle', message: '' })
+                }
+            }
+        }, 400)
+        return () => {
+            controller.abort()
+            window.clearTimeout(timer)
+        }
+    }, [isChangingUsername, newUsername, username])
+
+    async function handleConfirmUsernameChange() {
+        if (!idToken) return
+        const candidate = newUsername.trim()
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(candidate)) {
+            setMessage({ type: 'error', text: 'Username must be 3–20 characters (letters, numbers, underscores)' })
+            return
+        }
+        setSavingUsername(true)
+        setShowUsernameConfirm(false)
+        try {
+            const res = await fetch('/api/profile/username', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ username: candidate }),
+            })
+            const data = await res.json().catch(() => ({})) as { error?: string; daysRemaining?: number }
+            if (!res.ok) {
+                if (res.status === 409) {
+                    setUsernameAvailability({ status: 'taken', message: 'Username is already taken' })
+                }
+                if (res.status === 429 && typeof data.daysRemaining === 'number') {
+                    setMessage({ type: 'error', text: `You can change again in ${data.daysRemaining} day${data.daysRemaining === 1 ? '' : 's'}` })
+                } else {
+                    setMessage({ type: 'error', text: data.error ?? 'Username change failed' })
+                }
+                return
+            }
+            await refreshProfile()
+            setIsChangingUsername(false)
+            setMessage({ type: 'success', text: 'Username updated' })
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err?.message ?? 'Username change failed' })
+        } finally {
+            setSavingUsername(false)
         }
     }
 
@@ -174,6 +298,7 @@ export function ProfilePage() {
             : ''
 
     return (
+        <>
         <div className="page-enter mx-auto max-w-lg px-4 pb-8 pt-4">
             <Card className="relative overflow-hidden p-6" interactive>
                 <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-pebble-accent/12 blur-3xl" />
@@ -242,15 +367,91 @@ export function ProfilePage() {
                         <label className="mb-1 block text-xs font-medium uppercase tracking-[0.06em] text-pebble-text-muted">
                             Username
                         </label>
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Choose a username"
-                            maxLength={20}
-                            className={inputClass}
-                        />
-                        <p className="mt-1 text-[11px] text-pebble-text-muted">3–20 characters, letters, numbers, underscores</p>
+                        {!isChangingUsername ? (
+                            <>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    disabled
+                                    placeholder="Set username"
+                                    className={`${inputClass} opacity-80`}
+                                />
+                                <div className="mt-2 flex items-center justify-between gap-2">
+                                    <p className="text-[11px] text-pebble-text-muted">
+                                        3–20 characters, letters, numbers, underscores
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsChangingUsername(true)
+                                            setNewUsername(username)
+                                            setMessage(null)
+                                        }}
+                                        disabled={!canChangeUsername}
+                                        className="rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.06] px-2.5 py-1 text-[11px] font-medium text-pebble-text-secondary transition hover:bg-pebble-overlay/[0.12] hover:text-pebble-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Change username
+                                    </button>
+                                </div>
+                                {!canChangeUsername && (
+                                    <p className="mt-1 text-[11px] text-pebble-text-muted">
+                                        You can change again in {usernameCooldownRemainingDays} day{usernameCooldownRemainingDays === 1 ? '' : 's'}.
+                                    </p>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <input
+                                    type="text"
+                                    value={newUsername}
+                                    onChange={(e) => setNewUsername(e.target.value)}
+                                    placeholder="Enter new username"
+                                    maxLength={20}
+                                    className={inputClass}
+                                />
+                                <div className="mt-2 flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowUsernameConfirm(true)}
+                                        disabled={
+                                            savingUsername ||
+                                            !usernameChanged ||
+                                            usernameAvailability.status === 'checking' ||
+                                            usernameAvailability.status === 'taken' ||
+                                            usernameAvailability.status === 'invalid'
+                                        }
+                                        className="rounded-lg border border-pebble-accent/45 bg-pebble-accent/16 px-3 py-1.5 text-[12px] font-semibold text-pebble-text-primary transition hover:bg-pebble-accent/24 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {savingUsername ? 'Saving…' : 'Save new username'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsChangingUsername(false)
+                                            setNewUsername(username)
+                                            setUsernameAvailability({ status: 'idle', message: '' })
+                                        }}
+                                        disabled={savingUsername}
+                                        className="rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.06] px-3 py-1.5 text-[12px] font-medium text-pebble-text-secondary transition hover:bg-pebble-overlay/[0.12] hover:text-pebble-text-primary"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                                {usernameAvailability.status !== 'idle' && (
+                                    <p
+                                        className={`mt-1 text-[11px] ${
+                                            usernameAvailability.status === 'available'
+                                                ? 'text-emerald-400'
+                                                : usernameAvailability.status === 'checking'
+                                                    ? 'text-pebble-text-muted'
+                                                    : 'text-red-400'
+                                        }`}
+                                    >
+                                        {usernameAvailability.message}
+                                    </p>
+                                )}
+                            </>
+                        )}
                     </div>
 
                     {/* Bio */}
@@ -300,5 +501,15 @@ export function ProfilePage() {
                 </div>
             </Card>
         </div>
+        <ConfirmDialog
+            open={showUsernameConfirm}
+            title="Change username?"
+            description="You won’t be able to change your username for 30 days. Continue?"
+            confirmText="Confirm"
+            cancelText="Cancel"
+            onConfirm={handleConfirmUsernameChange}
+            onClose={() => setShowUsernameConfirm(false)}
+        />
+    </>
     )
 }

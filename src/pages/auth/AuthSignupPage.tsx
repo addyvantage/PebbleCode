@@ -27,6 +27,10 @@ export function AuthSignupPage() {
         form?: string
     }>({})
     const [submitting, setSubmitting] = useState(false)
+    const [usernameAvailability, setUsernameAvailability] = useState<{
+        status: 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+        message: string
+    }>({ status: 'idle', message: '' })
     const errorRef = useRef<HTMLDivElement>(null)
 
     function validate() {
@@ -36,11 +40,12 @@ export function AuthSignupPage() {
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
             e.email = 'Enter a valid email address'
 
-        if (!username.trim())
+        const usernameTrimmed = username.trim()
+        if (!usernameTrimmed)
             e.username = 'Username is required'
-        else if (username.length < 3 || username.length > 20)
+        else if (usernameTrimmed.length < 3 || usernameTrimmed.length > 20)
             e.username = 'Username must be 3–20 characters'
-        else if (!/^[a-zA-Z0-9_]+$/.test(username))
+        else if (!/^[a-zA-Z0-9_]+$/.test(usernameTrimmed))
             e.username = 'Only letters, numbers, and underscores allowed'
 
         if (!password)
@@ -55,6 +60,54 @@ export function AuthSignupPage() {
 
         return e
     }
+
+    useEffect(() => {
+        const candidate = username.trim()
+        if (!candidate) {
+            setUsernameAvailability({ status: 'idle', message: '' })
+            return
+        }
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(candidate)) {
+            setUsernameAvailability({
+                status: 'invalid',
+                message: '3–20 characters · letters, numbers, underscores',
+            })
+            return
+        }
+
+        setUsernameAvailability({ status: 'checking', message: 'Checking…' })
+        const controller = new AbortController()
+        const timer = window.setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/username/available?username=${encodeURIComponent(candidate)}`, {
+                    signal: controller.signal,
+                })
+                const data = await res.json() as { available?: boolean; reason?: string }
+                if (!res.ok) {
+                    setUsernameAvailability({ status: 'idle', message: '' })
+                    return
+                }
+                if (data.available) {
+                    setUsernameAvailability({ status: 'available', message: 'Username is available' })
+                    return
+                }
+                if (data.reason === 'taken') {
+                    setUsernameAvailability({ status: 'taken', message: 'Username is already taken' })
+                    return
+                }
+                setUsernameAvailability({ status: 'invalid', message: 'Username is invalid' })
+            } catch (err) {
+                if ((err as Error).name !== 'AbortError') {
+                    setUsernameAvailability({ status: 'idle', message: '' })
+                }
+            }
+        }, 400)
+
+        return () => {
+            controller.abort()
+            window.clearTimeout(timer)
+        }
+    }, [username])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -74,7 +127,13 @@ export function AuthSignupPage() {
             localStorage.setItem('pebble.auth.resendAt', String(Date.now() + 120_000))
             navigate(`/auth/verify?email=${encodeURIComponent(email.trim())}`)
         } catch (err: any) {
-            setErrors({ form: err?.message ?? 'Account creation failed. Please try again.' })
+            const message = err?.message ?? 'Account creation failed. Please try again.'
+            if (String(message).toLowerCase().includes('username is already taken')) {
+                setErrors({ username: 'Username is already taken' })
+                setUsernameAvailability({ status: 'taken', message: 'Username is already taken' })
+            } else {
+                setErrors({ form: message })
+            }
             setTimeout(() => errorRef.current?.focus(), 0)
         } finally {
             setSubmitting(false)
@@ -82,6 +141,13 @@ export function AuthSignupPage() {
     }
 
     const hasErrors = Object.values(errors).some(Boolean)
+    const canSubmit =
+        !submitting &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+        password.length >= 8 &&
+        confirm.length > 0 &&
+        password === confirm &&
+        usernameAvailability.status === 'available'
 
     return (
         <AuthShell>
@@ -159,6 +225,19 @@ export function AuthSignupPage() {
                         <p id="signup-username-hint" className="mt-1 text-[11px] text-pebble-text-muted">
                             3–20 characters · letters, numbers, underscores
                         </p>
+                        {usernameAvailability.status !== 'idle' && (
+                            <p
+                                className={`mt-1 text-[11px] ${
+                                    usernameAvailability.status === 'available'
+                                        ? 'text-emerald-400'
+                                        : usernameAvailability.status === 'checking'
+                                            ? 'text-pebble-text-muted'
+                                            : 'text-red-400'
+                                }`}
+                            >
+                                {usernameAvailability.message}
+                            </p>
+                        )}
                     </div>
 
                     {/* Password */}
@@ -191,7 +270,7 @@ export function AuthSignupPage() {
 
                     <button
                         type="submit"
-                        disabled={submitting}
+                        disabled={!canSubmit}
                         className="auth-button w-full mt-2"
                     >
                         {submitting ? 'Creating account…' : 'Create account'}

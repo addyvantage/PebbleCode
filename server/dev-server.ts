@@ -2,6 +2,9 @@ import dotenv from 'dotenv'
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import { EventEmitter } from 'events'
+import fs from 'node:fs'
+import path from 'node:path'
+import { promises as fsp } from 'node:fs'
 import pebbleHandler from '../api/pebble.ts'
 import {
   decodeLambdaPayload,
@@ -381,6 +384,143 @@ const PROFILES_TABLE = process.env.PROFILES_TABLE_NAME || 'pebble-profiles'
 // When unset, the presign endpoint falls back to the offline dev stub so the UI still works locally.
 const AVATARS_BUCKET = process.env.AVATARS_BUCKET_NAME ?? ''
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
+const DEV_UPLOADS_ROOT = path.resolve(process.cwd(), 'server/uploads')
+const DEV_AVATARS_ROOT = path.join(DEV_UPLOADS_ROOT, 'avatars')
+const DEV_PROFILES_PATH = path.join(DEV_UPLOADS_ROOT, 'profiles.json')
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
+const USERNAME_COOLDOWN_DAYS = 30
+const USERNAME_CLAIM_PREFIX = 'UNAME#'
+const COGNITO_CLIENT_ID =
+  process.env.COGNITO_CLIENT_ID ??
+  process.env.VITE_COGNITO_CLIENT_ID ??
+  ''
+
+fs.mkdirSync(DEV_AVATARS_ROOT, { recursive: true })
+
+type DevProfileRecord = Record<string, unknown>
+
+function loadDevProfiles(): Map<string, DevProfileRecord> {
+  try {
+    if (!fs.existsSync(DEV_PROFILES_PATH)) {
+      return new Map()
+    }
+    const raw = fs.readFileSync(DEV_PROFILES_PATH, 'utf8')
+    const parsed = JSON.parse(raw) as Record<string, DevProfileRecord>
+    return new Map(Object.entries(parsed))
+  } catch (err) {
+    console.warn('[dev-api] Failed to load persisted dev profiles, starting empty store.', err)
+    return new Map()
+  }
+}
+
+async function persistDevProfiles(store: Map<string, DevProfileRecord>) {
+  const payload = JSON.stringify(Object.fromEntries(store.entries()), null, 2)
+  await fsp.mkdir(path.dirname(DEV_PROFILES_PATH), { recursive: true })
+  await fsp.writeFile(DEV_PROFILES_PATH, payload, 'utf8')
+}
+
+function getDefaultProfile(identity: { userId: string; email: string }, nowIso: string): DevProfileRecord {
+  return {
+    userId: identity.userId,
+    username: '',
+    usernameLower: '',
+    usernameSetAt: null,
+    lastUsernameChangeAt: null,
+    email: identity.email,
+    bio: '',
+    avatarKey: null,
+    avatarUpdatedAt: null,
+    role: ADMIN_EMAILS.includes(identity.email) ? 'admin' : 'user',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  }
+}
+
+function usernameClaimKey(usernameLower: string) {
+  return `${USERNAME_CLAIM_PREFIX}${usernameLower}`
+}
+
+function normalizeUsername(username: unknown) {
+  if (typeof username !== 'string') return null
+  const trimmed = username.trim()
+  if (!USERNAME_REGEX.test(trimmed)) return null
+  return trimmed
+}
+
+function getNextUsernameChangeAt(profile: DevProfileRecord) {
+  const base = (profile.lastUsernameChangeAt ?? profile.usernameSetAt) as string | null | undefined
+  if (!base) return null
+  const changedAt = Date.parse(base)
+  if (Number.isNaN(changedAt)) return null
+  return changedAt + USERNAME_COOLDOWN_DAYS * 24 * 60 * 60 * 1000
+}
+
+function getRemainingCooldownDays(profile: DevProfileRecord, nowMs = Date.now()) {
+  const next = getNextUsernameChangeAt(profile)
+  if (!next || next <= nowMs) return 0
+  return Math.ceil((next - nowMs) / (24 * 60 * 60 * 1000))
+}
+
+function findDevProfileByUsernameLower(usernameLower: string) {
+  const claim = devProfiles.get(usernameClaimKey(usernameLower))
+  if (claim && typeof claim.ownerUserId === 'string') {
+    const ownerProfile = devProfiles.get(claim.ownerUserId)
+    if (ownerProfile) return { ownerUserId: claim.ownerUserId, profile: ownerProfile }
+  }
+  for (const [key, value] of devProfiles.entries()) {
+    if (key.startsWith(USERNAME_CLAIM_PREFIX)) continue
+    const lower = typeof value.usernameLower === 'string'
+      ? value.usernameLower
+      : typeof value.username === 'string'
+        ? value.username.toLowerCase()
+        : ''
+    if (lower === usernameLower) {
+      return { ownerUserId: key, profile: value }
+    }
+  }
+  return null
+}
+
+async function claimDevUsername(
+  username: string,
+  ownerUserId: string,
+  ownerEmail: string,
+  nowIso: string,
+  previousUsernameLower?: string,
+) {
+  const usernameLower = username.toLowerCase()
+  const existing = findDevProfileByUsernameLower(usernameLower)
+  if (existing && existing.ownerUserId !== ownerUserId) {
+    return { ok: false as const, error: 'Username is already taken' }
+  }
+  devProfiles.set(usernameClaimKey(usernameLower), {
+    userId: usernameClaimKey(usernameLower),
+    entityType: 'username_claim',
+    usernameLower,
+    username,
+    ownerUserId,
+    ownerEmail,
+    updatedAt: nowIso,
+  })
+  if (previousUsernameLower && previousUsernameLower !== usernameLower) {
+    devProfiles.delete(usernameClaimKey(previousUsernameLower))
+  }
+  await persistDevProfiles(devProfiles)
+  return { ok: true as const }
+}
+
+function toUploadRelativeKey(key: string) {
+  const cleaned = key.replace(/^\/+/, '')
+  if (!cleaned.startsWith('avatars/')) {
+    return null
+  }
+  const root = path.resolve(DEV_UPLOADS_ROOT)
+  const resolved = path.resolve(DEV_UPLOADS_ROOT, cleaned)
+  if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
+    return null
+  }
+  return cleaned
+}
 
 function extractUserId(req: Request): { userId: string; email: string } | null {
   // In production, we'd validate the JWT against Cognito JWKS.
@@ -407,9 +547,43 @@ function extractUserId(req: Request): { userId: string; email: string } | null {
 }
 
 // ── Profile routes ──────────────────────────────────────────────────────────
-// In-memory store for dev mode (no real DynamoDB)
-const devProfiles = new Map<string, Record<string, unknown>>()
-const devAvatarBlobs = new Map<string, { contentType: string; body: Buffer }>()
+// Local store for dev mode (no DynamoDB/S3): profiles persisted to JSON + avatars persisted on disk.
+const devProfiles = loadDevProfiles()
+
+app.use('/uploads', express.static(DEV_UPLOADS_ROOT, { fallthrough: true }))
+
+app.get('/api/username/available', async (req: Request, res: Response) => {
+  const normalized = normalizeUsername(req.query.username)
+  if (!normalized) {
+    res.status(200).json({ available: false, reason: 'invalid' })
+    return
+  }
+  const usernameLower = normalized.toLowerCase()
+  const awsRegion = process.env.AWS_REGION
+
+  if (!awsRegion) {
+    const exists = Boolean(findDevProfileByUsernameLower(usernameLower))
+    res.status(200).json({ available: !exists, ...(exists ? { reason: 'taken' } : {}) })
+    return
+  }
+
+  try {
+    const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb')
+    const { DynamoDBDocumentClient, GetCommand } = await import('@aws-sdk/lib-dynamodb')
+    const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: awsRegion }))
+    const claim = await client.send(
+      new GetCommand({
+        TableName: PROFILES_TABLE,
+        Key: { userId: usernameClaimKey(usernameLower) },
+      }),
+    )
+    const available = !claim.Item
+    res.status(200).json({ available, ...(available ? {} : { reason: 'taken' }) })
+  } catch (err) {
+    console.error('[dev-api] username availability lookup failed:', err)
+    res.status(500).json({ error: 'Failed to check username availability' })
+  }
+})
 
 app.get('/api/profile', async (req: Request, res: Response) => {
   const identity = extractUserId(req)
@@ -419,79 +593,34 @@ app.get('/api/profile', async (req: Request, res: Response) => {
   }
 
   const awsRegion = process.env.AWS_REGION
+  const nowIso = new Date().toISOString()
 
   if (!awsRegion) {
-    // Dev mode: return from memory or defaults
-    const stored = devProfiles.get(identity.userId)
-    res.status(200).json(stored ?? {
-      userId: identity.userId,
-      username: identity.email.split('@')[0],
-      email: identity.email,
-      bio: '',
-      avatarUrl: null,
-      avatarKey: null,
-      role: ADMIN_EMAILS.includes(identity.email) ? 'admin' : 'user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
+    const stored = devProfiles.get(identity.userId) ?? getDefaultProfile(identity, nowIso)
+    res.status(200).json(stored)
     return
   }
 
-  // AWS mode: read from DynamoDB
   try {
     const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb')
-    const { DynamoDBDocumentClient, GetCommand } = await import('@aws-sdk/lib-dynamodb')
+    const { DynamoDBDocumentClient, GetCommand, PutCommand } = await import('@aws-sdk/lib-dynamodb')
     const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: awsRegion }))
-    const result = await client.send(new GetCommand({
-      TableName: PROFILES_TABLE,
-      Key: { userId: identity.userId },
-    }))
+    const result = await client.send(
+      new GetCommand({
+        TableName: PROFILES_TABLE,
+        Key: { userId: identity.userId },
+      }),
+    )
     let item = result.Item
     if (!item) {
-      // Auto-create on first access
-      item = {
-        userId: identity.userId,
-        username: identity.email.split('@')[0],
-        email: identity.email,
-        bio: '',
-        avatarUrl: null,
-        avatarKey: null,
-        role: ADMIN_EMAILS.includes(identity.email) ? 'admin' : 'user',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      const { PutCommand } = await import('@aws-sdk/lib-dynamodb')
+      item = getDefaultProfile(identity, nowIso)
       await client.send(new PutCommand({ TableName: PROFILES_TABLE, Item: item }))
-    }
-    // Generate a short-lived presigned GET URL if an avatar key is stored
-    if (item.avatarKey) {
-      try {
-        const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3')
-        const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
-        const s3 = new S3Client({ region: awsRegion })
-        item = {
-          ...item,
-          avatarUrl: await getSignedUrl(s3, new GetObjectCommand({ Bucket: AVATARS_BUCKET, Key: item.avatarKey as string }), { expiresIn: 3600 }),
-        }
-      } catch {
-        // Non-fatal: avatar URL generation failed, return without it
-      }
     }
     res.status(200).json(item)
   } catch (err) {
     console.error('[dev-api] Failed to fetch profile from DynamoDB, using in-memory fallback:', err)
-    const stored = devProfiles.get(identity.userId)
-    res.status(200).json(stored ?? {
-      userId: identity.userId,
-      username: identity.email.split('@')[0],
-      email: identity.email,
-      bio: '',
-      avatarUrl: null,
-      avatarKey: null,
-      role: ADMIN_EMAILS.includes(identity.email) ? 'admin' : 'user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
+    const stored = devProfiles.get(identity.userId) ?? getDefaultProfile(identity, nowIso)
+    res.status(200).json(stored)
   }
 })
 
@@ -502,17 +631,22 @@ app.put('/api/profile', async (req: Request, res: Response) => {
     return
   }
 
-  const { username, bio, avatarKey } = req.body
+  const { username, bio, avatarKey } = req.body as {
+    username?: unknown
+    bio?: unknown
+    avatarKey?: unknown
+  }
 
-  // Validate
   if (username !== undefined) {
-    if (typeof username !== 'string' || username.length < 3 || username.length > 20 || !/^[a-zA-Z0-9_]+$/.test(username)) {
-      res.status(400).json({ error: 'Username must be 3–20 chars, alphanumeric + underscore' })
-      return
-    }
+    res.status(400).json({ error: 'Username updates require POST /api/profile/username' })
+    return
   }
   if (bio !== undefined && (typeof bio !== 'string' || bio.length > 160)) {
     res.status(400).json({ error: 'Bio must be 160 chars or less' })
+    return
+  }
+  if (avatarKey !== undefined && avatarKey !== null && typeof avatarKey !== 'string') {
+    res.status(400).json({ error: 'Invalid avatar key' })
     return
   }
 
@@ -520,26 +654,20 @@ app.put('/api/profile', async (req: Request, res: Response) => {
   const now = new Date().toISOString()
 
   if (!awsRegion) {
-    // Dev mode: store in memory
-    const existing = devProfiles.get(identity.userId) ?? {
-      userId: identity.userId,
-      email: identity.email,
-      role: ADMIN_EMAILS.includes(identity.email) ? 'admin' : 'user',
-      createdAt: now,
-    }
+    const existing = devProfiles.get(identity.userId) ?? getDefaultProfile(identity, now)
     const updated = {
       ...existing,
-      ...(username !== undefined && { username }),
-      ...(bio !== undefined && { bio }),
-      ...(avatarKey !== undefined && { avatarKey }),
+      ...(bio !== undefined ? { bio } : {}),
+      ...(avatarKey !== undefined ? { avatarKey } : {}),
+      ...(avatarKey !== undefined ? { avatarUpdatedAt: now } : {}),
       updatedAt: now,
     }
     devProfiles.set(identity.userId, updated)
+    await persistDevProfiles(devProfiles)
     res.status(200).json(updated)
     return
   }
 
-  // AWS mode
   try {
     const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb')
     const { DynamoDBDocumentClient, UpdateCommand } = await import('@aws-sdk/lib-dynamodb')
@@ -549,11 +677,6 @@ app.put('/api/profile', async (req: Request, res: Response) => {
     const names: Record<string, string> = { '#updatedAt': 'updatedAt' }
     const values: Record<string, unknown> = { ':updatedAt': now }
 
-    if (username !== undefined) {
-      expressionParts.push('#username = :username')
-      names['#username'] = 'username'
-      values[':username'] = username
-    }
     if (bio !== undefined) {
       expressionParts.push('#bio = :bio')
       names['#bio'] = 'bio'
@@ -563,34 +686,328 @@ app.put('/api/profile', async (req: Request, res: Response) => {
       expressionParts.push('#avatarKey = :avatarKey')
       names['#avatarKey'] = 'avatarKey'
       values[':avatarKey'] = avatarKey
+      expressionParts.push('#avatarUpdatedAt = :avatarUpdatedAt')
+      names['#avatarUpdatedAt'] = 'avatarUpdatedAt'
+      values[':avatarUpdatedAt'] = now
     }
 
-    await client.send(new UpdateCommand({
-      TableName: PROFILES_TABLE,
-      Key: { userId: identity.userId },
-      UpdateExpression: `SET ${expressionParts.join(', ')}`,
-      ExpressionAttributeNames: names,
-      ExpressionAttributeValues: values,
-    }))
+    await client.send(
+      new UpdateCommand({
+        TableName: PROFILES_TABLE,
+        Key: { userId: identity.userId },
+        UpdateExpression: `SET ${expressionParts.join(', ')}`,
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+      }),
+    )
 
     res.status(200).json({ ok: true })
   } catch (err) {
     console.error('[dev-api] Failed to update profile in DynamoDB, using in-memory fallback:', err)
-    const existing = devProfiles.get(identity.userId) ?? {
-      userId: identity.userId,
-      email: identity.email,
-      role: ADMIN_EMAILS.includes(identity.email) ? 'admin' : 'user',
-      createdAt: now,
-    }
+    const existing = devProfiles.get(identity.userId) ?? getDefaultProfile(identity, now)
     const updated = {
       ...existing,
-      ...(username !== undefined && { username }),
-      ...(bio !== undefined && { bio }),
-      ...(avatarKey !== undefined && { avatarKey }),
+      ...(bio !== undefined ? { bio } : {}),
+      ...(avatarKey !== undefined ? { avatarKey } : {}),
+      ...(avatarKey !== undefined ? { avatarUpdatedAt: now } : {}),
       updatedAt: now,
     }
     devProfiles.set(identity.userId, updated)
-    res.status(200).json({ ok: true })
+    await persistDevProfiles(devProfiles)
+    res.status(200).json(updated)
+  }
+})
+
+app.post('/api/profile/username', async (req: Request, res: Response) => {
+  const identity = extractUserId(req)
+  if (!identity) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+
+  const normalized = normalizeUsername((req.body as { username?: unknown }).username)
+  if (!normalized) {
+    res.status(400).json({ error: 'Username must be 3–20 chars, letters/numbers/underscore only' })
+    return
+  }
+
+  const usernameLower = normalized.toLowerCase()
+  const awsRegion = process.env.AWS_REGION
+  const nowIso = new Date().toISOString()
+
+  if (!awsRegion) {
+    const existing = (devProfiles.get(identity.userId) ?? getDefaultProfile(identity, nowIso)) as DevProfileRecord
+    const currentUsernameLower = typeof existing.usernameLower === 'string'
+      ? existing.usernameLower
+      : typeof existing.username === 'string'
+        ? existing.username.toLowerCase()
+        : ''
+    if (currentUsernameLower !== usernameLower) {
+      const remaining = getRemainingCooldownDays(existing)
+      if ((existing.lastUsernameChangeAt || existing.usernameSetAt) && remaining > 0) {
+        res.status(429).json({ error: `You can change again in ${remaining} day${remaining === 1 ? '' : 's'}`, reason: 'cooldown', daysRemaining: remaining })
+        return
+      }
+      const claimResult = await claimDevUsername(normalized, identity.userId, identity.email, nowIso, currentUsernameLower || undefined)
+      if (!claimResult.ok) {
+        res.status(409).json({ error: 'Username is already taken', reason: 'taken' })
+        return
+      }
+    }
+    const updated = {
+      ...existing,
+      username: normalized,
+      usernameLower,
+      usernameSetAt: existing.usernameSetAt ?? nowIso,
+      lastUsernameChangeAt: nowIso,
+      updatedAt: nowIso,
+    }
+    devProfiles.set(identity.userId, updated)
+    await persistDevProfiles(devProfiles)
+    res.status(200).json(updated)
+    return
+  }
+
+  try {
+    const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb')
+    const {
+      DynamoDBDocumentClient,
+      GetCommand,
+      PutCommand,
+      UpdateCommand,
+      DeleteCommand,
+    } = await import('@aws-sdk/lib-dynamodb')
+    const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: awsRegion }))
+
+    const existingRes = await client.send(new GetCommand({ TableName: PROFILES_TABLE, Key: { userId: identity.userId } }))
+    const existing = (existingRes.Item ?? getDefaultProfile(identity, nowIso)) as DevProfileRecord
+    const currentUsernameLower = typeof existing.usernameLower === 'string'
+      ? existing.usernameLower
+      : typeof existing.username === 'string'
+        ? existing.username.toLowerCase()
+        : ''
+
+    if (currentUsernameLower !== usernameLower) {
+      const remaining = getRemainingCooldownDays(existing)
+      if ((existing.lastUsernameChangeAt || existing.usernameSetAt) && remaining > 0) {
+        res.status(429).json({ error: `You can change again in ${remaining} day${remaining === 1 ? '' : 's'}`, reason: 'cooldown', daysRemaining: remaining })
+        return
+      }
+
+      await client.send(
+        new PutCommand({
+          TableName: PROFILES_TABLE,
+          Item: {
+            userId: usernameClaimKey(usernameLower),
+            entityType: 'username_claim',
+            ownerUserId: identity.userId,
+            ownerEmail: identity.email,
+            username: normalized,
+            usernameLower,
+            updatedAt: nowIso,
+          },
+          ConditionExpression: 'attribute_not_exists(userId)',
+        }),
+      )
+      if (currentUsernameLower) {
+        await client.send(
+          new DeleteCommand({
+            TableName: PROFILES_TABLE,
+            Key: { userId: usernameClaimKey(currentUsernameLower) },
+          }),
+        )
+      }
+    }
+
+    await client.send(
+      new UpdateCommand({
+        TableName: PROFILES_TABLE,
+        Key: { userId: identity.userId },
+        UpdateExpression: 'SET #username = :username, #usernameLower = :usernameLower, #usernameSetAt = if_not_exists(#usernameSetAt, :now), #lastUsernameChangeAt = :now, #updatedAt = :now',
+        ExpressionAttributeNames: {
+          '#username': 'username',
+          '#usernameLower': 'usernameLower',
+          '#usernameSetAt': 'usernameSetAt',
+          '#lastUsernameChangeAt': 'lastUsernameChangeAt',
+          '#updatedAt': 'updatedAt',
+        },
+        ExpressionAttributeValues: {
+          ':username': normalized,
+          ':usernameLower': usernameLower,
+          ':now': nowIso,
+        },
+      }),
+    )
+    const refreshed = await client.send(new GetCommand({ TableName: PROFILES_TABLE, Key: { userId: identity.userId } }))
+    res.status(200).json(refreshed.Item ?? {})
+  } catch (err: any) {
+    if (err?.name === 'ConditionalCheckFailedException') {
+      res.status(409).json({ error: 'Username is already taken', reason: 'taken' })
+      return
+    }
+    console.error('[dev-api] Failed username update:', err)
+    res.status(500).json({ error: 'Failed to update username' })
+  }
+})
+
+app.post('/api/auth/signup', async (req: Request, res: Response) => {
+  const { email, password, username } = req.body as { email?: unknown; password?: unknown; username?: unknown }
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+  const normalizedUsername = normalizeUsername(username)
+  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || typeof password !== 'string' || password.length < 8 || !normalizedUsername) {
+    res.status(400).json({ error: 'Invalid signup payload' })
+    return
+  }
+  const usernameLower = normalizedUsername.toLowerCase()
+  const awsRegion = process.env.AWS_REGION
+  if (!awsRegion || !COGNITO_CLIENT_ID) {
+    res.status(500).json({ error: 'Signup is not configured' })
+    return
+  }
+
+  try {
+    const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb')
+    const { DynamoDBDocumentClient, GetCommand, PutCommand } = await import('@aws-sdk/lib-dynamodb')
+    const { CognitoIdentityProviderClient, SignUpCommand } = await import('@aws-sdk/client-cognito-identity-provider')
+    const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({ region: awsRegion }))
+
+    const existingClaim = await ddb.send(new GetCommand({ TableName: PROFILES_TABLE, Key: { userId: usernameClaimKey(usernameLower) } }))
+    if (existingClaim.Item) {
+      res.status(409).json({ error: 'Username is already taken', reason: 'taken' })
+      return
+    }
+
+    const cognito = new CognitoIdentityProviderClient({ region: awsRegion })
+    const signUpResp = await cognito.send(
+      new SignUpCommand({
+        ClientId: COGNITO_CLIENT_ID,
+        Username: normalizedEmail,
+        Password: password,
+        UserAttributes: [
+          { Name: 'email', Value: normalizedEmail },
+          { Name: 'preferred_username', Value: normalizedUsername },
+        ],
+      }),
+    )
+    const userId = signUpResp.UserSub
+    if (!userId) {
+      res.status(500).json({ error: 'Signup failed' })
+      return
+    }
+    const nowIso = new Date().toISOString()
+    await ddb.send(
+      new PutCommand({
+        TableName: PROFILES_TABLE,
+        Item: {
+          userId: usernameClaimKey(usernameLower),
+          entityType: 'username_claim',
+          ownerUserId: userId,
+          ownerEmail: normalizedEmail,
+          username: normalizedUsername,
+          usernameLower,
+          updatedAt: nowIso,
+        },
+        ConditionExpression: 'attribute_not_exists(userId)',
+      }),
+    )
+    await ddb.send(
+      new PutCommand({
+        TableName: PROFILES_TABLE,
+        Item: {
+          userId,
+          username: normalizedUsername,
+          usernameLower,
+          usernameSetAt: nowIso,
+          lastUsernameChangeAt: nowIso,
+          email: normalizedEmail,
+          bio: '',
+          avatarKey: null,
+          avatarUpdatedAt: null,
+          role: ADMIN_EMAILS.includes(normalizedEmail) ? 'admin' : 'user',
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        },
+        ConditionExpression: 'attribute_not_exists(userId)',
+      }),
+    )
+    res.status(200).json({ ok: true, userSub: userId })
+  } catch (err: any) {
+    if (err?.name === 'ConditionalCheckFailedException') {
+      res.status(409).json({ error: 'Username is already taken', reason: 'taken' })
+      return
+    }
+    if (err?.name === 'UsernameExistsException') {
+      res.status(409).json({ error: 'Account already exists' })
+      return
+    }
+    console.error('[dev-api] Signup failed:', err)
+    res.status(500).json({ error: 'Signup failed' })
+  }
+})
+
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  const { identifier, password } = req.body as { identifier?: unknown; password?: unknown }
+  const normalizedIdentifier = typeof identifier === 'string' ? identifier.trim() : ''
+  if (!normalizedIdentifier || typeof password !== 'string' || !password) {
+    res.status(400).json({ error: 'Invalid login payload' })
+    return
+  }
+
+  const awsRegion = process.env.AWS_REGION
+  if (!awsRegion || !COGNITO_CLIENT_ID) {
+    res.status(500).json({ error: 'Login is not configured' })
+    return
+  }
+
+  try {
+    let loginEmail = normalizedIdentifier
+    if (!normalizedIdentifier.includes('@')) {
+      const lower = normalizedIdentifier.toLowerCase()
+      const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb')
+      const { DynamoDBDocumentClient, GetCommand } = await import('@aws-sdk/lib-dynamodb')
+      const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({ region: awsRegion }))
+      const claim = await ddb.send(new GetCommand({ TableName: PROFILES_TABLE, Key: { userId: usernameClaimKey(lower) } }))
+      const ownerUserId = claim.Item?.ownerUserId
+      if (typeof ownerUserId !== 'string') {
+        res.status(401).json({ error: 'Invalid username/email or password' })
+        return
+      }
+      const profile = await ddb.send(new GetCommand({ TableName: PROFILES_TABLE, Key: { userId: ownerUserId } }))
+      const email = profile.Item?.email
+      if (typeof email !== 'string' || !email) {
+        res.status(401).json({ error: 'Invalid username/email or password' })
+        return
+      }
+      loginEmail = email
+    }
+
+    const { CognitoIdentityProviderClient, InitiateAuthCommand } = await import('@aws-sdk/client-cognito-identity-provider')
+    const cognito = new CognitoIdentityProviderClient({ region: awsRegion })
+    const authResult = await cognito.send(
+      new InitiateAuthCommand({
+        AuthFlow: 'USER_PASSWORD_AUTH',
+        ClientId: COGNITO_CLIENT_ID,
+        AuthParameters: {
+          USERNAME: loginEmail,
+          PASSWORD: password,
+        },
+      }),
+    )
+
+    if (!authResult.AuthenticationResult?.IdToken) {
+      res.status(401).json({ error: 'Invalid username/email or password' })
+      return
+    }
+
+    res.status(200).json({
+      idToken: authResult.AuthenticationResult.IdToken,
+      accessToken: authResult.AuthenticationResult.AccessToken,
+      refreshToken: authResult.AuthenticationResult.RefreshToken,
+      expiresIn: authResult.AuthenticationResult.ExpiresIn,
+      tokenType: authResult.AuthenticationResult.TokenType,
+    })
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid username/email or password' })
   }
 })
 
@@ -621,7 +1038,7 @@ app.post('/api/avatar/presign', async (req: Request, res: Response) => {
       console.log(`[dev-api] AWS not configured — using offline avatar stub for key: ${key}`)
     }
     const uploadUrl = `/api/dev-upload-stub?key=${encodeURIComponent(key)}`
-    res.status(200).json({ uploadUrl, key })
+    res.status(200).json({ uploadUrl, key, avatarKey: key })
     return
   }
 
@@ -640,7 +1057,7 @@ app.post('/api/avatar/presign', async (req: Request, res: Response) => {
       Key: key,
     })
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 })
-    res.status(200).json({ uploadUrl, key })
+    res.status(200).json({ uploadUrl, key, avatarKey: key })
   } catch (err) {
     console.error('[dev-api] Failed to generate presigned URL:', err)
     res.status(500).json({ error: 'Failed to generate upload URL' })
@@ -666,8 +1083,19 @@ app.get('/api/avatar/url', async (req: Request, res: Response) => {
 
   const awsRegion = process.env.AWS_REGION
   if (!awsRegion || !AVATARS_BUCKET) {
-    // Offline/dev fallback: serve from in-memory upload stub path.
-    res.status(200).json({ url: `/api/dev-upload-stub?key=${encodeURIComponent(key)}` })
+    const localKey = toUploadRelativeKey(key)
+    if (!localKey) {
+      res.status(400).json({ error: 'Invalid avatar key' })
+      return
+    }
+    const localPath = path.join(DEV_UPLOADS_ROOT, localKey)
+    try {
+      await fsp.access(localPath, fs.constants.R_OK)
+    } catch {
+      res.status(404).json({ error: 'Avatar not found' })
+      return
+    }
+    res.status(200).json({ url: `/uploads/${localKey}` })
     return
   }
 
@@ -688,36 +1116,24 @@ app.get('/api/avatar/url', async (req: Request, res: Response) => {
 })
 
 // ── Dev avatar upload stub (offline / no-S3 mode) ────────────────────────────
-// Accepts PUT uploads and serves the image bytes back on GET.
+// Accepts PUT uploads and persists image bytes to disk under server/uploads.
 // Must stay under /api/ so Vite proxy forwards requests from localhost:5173.
-app.put('/api/dev-upload-stub', express.raw({ type: '*/*', limit: '10mb' }), (req: Request, res: Response) => {
+app.put('/api/dev-upload-stub', express.raw({ type: '*/*', limit: '10mb' }), async (req: Request, res: Response) => {
   const key = String(req.query.key ?? '')
   if (!key) {
     res.status(400).json({ error: 'Missing avatar key' })
     return
   }
-
+  const relativeKey = toUploadRelativeKey(key)
+  if (!relativeKey) {
+    res.status(400).json({ error: 'Invalid avatar key' })
+    return
+  }
   const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0)
-  const contentType = String(req.headers['content-type'] ?? 'application/octet-stream')
-  devAvatarBlobs.set(key, { contentType, body })
+  const absolutePath = path.join(DEV_UPLOADS_ROOT, relativeKey)
+  await fsp.mkdir(path.dirname(absolutePath), { recursive: true })
+  await fsp.writeFile(absolutePath, body)
   res.status(200).send()
-})
-
-app.get('/api/dev-upload-stub', (req: Request, res: Response) => {
-  const key = String(req.query.key ?? '')
-  if (!key) {
-    res.status(400).json({ error: 'Missing avatar key' })
-    return
-  }
-  const blob = devAvatarBlobs.get(key)
-  if (!blob) {
-    res.status(404).json({ error: 'Avatar not found' })
-    return
-  }
-
-  res.setHeader('Content-Type', blob.contentType)
-  res.setHeader('Cache-Control', 'no-store')
-  res.status(200).send(blob.body)
 })
 
 // ── Phase 5: Cohort Analytics (Athena + S3 + Glue) ─────────────────────────
