@@ -10,7 +10,7 @@ type StatusPillProps = HTMLAttributes<HTMLSpanElement> & {
 
 const variantClasses: Record<StatusPillVariant, string> = {
   fail:
-    'border-amber-400/55 bg-amber-500/12 text-amber-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-[rgba(255,183,77,0.38)] dark:bg-[rgba(255,183,77,0.16)] dark:text-[rgba(255,245,235,0.96)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_0_0_1px_rgba(255,183,77,0.12),0_10px_30px_rgba(0,0,0,0.35)]',
+    'border-amber-400/55 bg-amber-500/12 text-amber-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-[#FF7A1A] dark:bg-[#FF7A1A] dark:text-[#0B0F1A] dark:font-medium dark:shadow-[0_8px_18px_rgba(0,0,0,0.28)]',
   warn:
     'border-amber-400/52 bg-amber-500/12 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-amber-300/50 dark:bg-amber-400/18 dark:text-amber-100 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]',
   success:

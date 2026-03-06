@@ -297,7 +297,7 @@ export function AppLayout() {
                                   setIsProfileOpen(false)
                                   setIsNotificationsOpen((current) => !current)
                                 }}
-                                className={`relative ${iconButtonClass} ${
+                                className={`group relative ${iconButtonClass} ${
                                   isNotificationsOpen ? 'border-pebble-accent/45 bg-pebble-accent/16 text-pebble-text-primary' : ''
                                 }`}
                                 type="button"
@@ -307,7 +307,9 @@ export function AppLayout() {
                                   <path d="M8.1 14.8a2.1 2.1 0 0 0 3.8 0" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
                                 </svg>
                                 {unreadNotificationCount > 0 ? (
-                                  <span className="absolute right-[6px] top-[6px] inline-flex h-2 w-2 rounded-full bg-pebble-accent shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
+                                  <span
+                                    className="pointer-events-none absolute -right-[3px] -top-[3px] z-[5] inline-flex h-2.5 w-2.5 rounded-full border-2 border-[var(--pebble-header-bg)] bg-pebble-accent shadow-[0_0_10px_rgba(59,130,246,0.55)] transition-transform duration-150 ease-out group-hover:scale-105"
+                                  />
                                 ) : null}
                               </button>
                             </TooltipTrigger>

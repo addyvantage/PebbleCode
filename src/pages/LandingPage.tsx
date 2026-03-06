@@ -30,16 +30,16 @@ export function LandingPage() {
     ? 'rgba(120, 170, 255, 0.22)'
     : 'rgba(59, 130, 246, 0.30)'
   const previewInnerOutlineClass = theme === 'dark'
-    ? 'border-[rgba(167,179,208,0.52)]'
+    ? 'border-[rgba(255,255,255,0.12)]'
     : 'border-[rgba(129,144,174,0.56)]'
   const previewOuterCardClass = theme === 'dark'
     ? 'border-[rgba(193,209,236,0.38)] bg-[linear-gradient(155deg,rgba(34,45,71,0.97)_0%,rgba(24,33,56,0.985)_56%,rgba(17,25,44,0.99)_100%)] shadow-[0_28px_68px_rgba(1,6,18,0.58),inset_0_1px_0_rgba(228,238,255,0.08)]'
     : 'border-[rgba(144,164,200,0.66)] bg-[linear-gradient(152deg,rgba(236,243,255,0.985)_0%,rgba(228,238,252,0.992)_58%,rgba(219,231,248,0.995)_100%)] shadow-[0_24px_56px_rgba(66,90,134,0.22),inset_0_1px_0_rgba(255,255,255,0.92)]'
   const previewCodePanelClass = theme === 'dark'
-    ? 'bg-[linear-gradient(160deg,rgba(47,58,88,0.95)_0%,rgba(39,49,77,0.98)_100%)] shadow-[inset_0_1px_0_rgba(228,239,255,0.06)]'
+    ? 'bg-[hsl(222_28%_20%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
     : 'bg-[linear-gradient(160deg,rgba(223,233,248,0.95)_0%,rgba(213,226,245,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]'
   const previewCoachPanelClass = theme === 'dark'
-    ? 'bg-[linear-gradient(165deg,rgba(62,74,104,0.86)_0%,rgba(48,59,88,0.94)_100%)] shadow-[inset_0_1px_0_rgba(225,236,255,0.08)]'
+    ? 'bg-[hsl(222_27%_21%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
     : 'bg-[linear-gradient(165deg,rgba(227,236,250,0.92)_0%,rgba(218,230,247,0.96)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]'
   const sideCardSurfaceClass = theme === 'dark'
     ? 'bg-pebble-overlay/[0.04]'
@@ -70,33 +70,29 @@ export function LandingPage() {
             />
           </div>
 
-          <div className="relative z-10 mx-auto w-full max-w-[1280px] px-1 sm:px-2 lg:px-3">
-            <div className="grid h-full min-h-0 grid-cols-1 gap-y-7 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-0 xl:gap-x-12">
-              <div className="col-span-1 flex min-h-0 min-w-0 flex-col justify-start gap-5 lg:col-span-8 lg:pr-4 xl:col-span-7 xl:gap-6">
+          <div className="relative z-10 mx-auto w-full max-w-[1280px] px-1 sm:px-2 lg:px-2">
+            <div className="grid h-full min-h-0 grid-cols-1 gap-y-7 lg:grid-cols-12 lg:gap-x-9 lg:gap-y-0 xl:gap-x-12">
+              <div className="col-span-1 flex min-h-0 min-w-0 flex-col items-start justify-start gap-4 sm:gap-5 lg:-ml-3 lg:col-span-8 lg:justify-center lg:pr-2 xl:-ml-4 xl:col-span-8 xl:pr-3">
                 <Badge className="w-fit">{t('landing.badge')}</Badge>
 
-                <div>
+                <div className="max-w-[52rem]">
                   <h1
-                    className={`max-w-none text-balance text-3xl font-semibold tracking-tight leading-[1.16] md:text-4xl lg:text-[2.75rem] xl:text-[3.05rem] ${isUrdu ? 'rtlText' : ''}`}
+                    className={`max-w-[31ch] text-balance text-3xl font-semibold tracking-tight leading-[1.12] md:text-[2.35rem] lg:text-[2.5rem] xl:text-[2.74rem] ${isUrdu ? 'rtlText' : ''}`}
                   >
                     <span className={`font-bold ${theme === 'dark' ? 'text-pebble-text-primary' : 'text-pebble-accent'}`}>
                       {lang === 'en' ? (
-                        <>
-                          Elite coding practice with real runtime feedback
-                          <span className="hidden lg:inline"><br /></span>
-                          <span className="lg:ml-1">and mentor-level guidance.</span>
-                        </>
+                        'Elite coding practice with real runtime feedback and mentor-level guidance.'
                       ) : (
                         t('landing.headline')
                       )}
                     </span>
                   </h1>
                 </div>
-                <p className={`max-w-[70ch] text-[13.5px] leading-relaxed text-pebble-text-secondary sm:text-[14.5px] ${isUrdu ? 'rtlText' : ''}`}>
+                <p className={`max-w-[66ch] text-[13.5px] leading-relaxed text-pebble-text-secondary sm:text-[14.5px] ${isUrdu ? 'rtlText' : ''}`}>
                   {t('landing.subheadline')}
                 </p>
 
-                <div className="flex flex-wrap items-center gap-2.5 pt-1.5">
+                <div className="flex flex-wrap items-center gap-3 pt-1">
                   <InteractiveGradientButton asChild className={ctaBaseClass}>
                     <Link to="/onboarding">
                       {t('landing.tryPebble')}
@@ -107,7 +103,7 @@ export function LandingPage() {
                   </Link>
                 </div>
 
-                <div className="flex flex-wrap justify-start gap-2 pt-2">
+                <div className="flex flex-wrap justify-start gap-2.5 pt-1.5">
                   {trustChips.map((chip) => (
                     <span
                       key={chip}
@@ -119,7 +115,7 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div className="col-span-1 flex min-h-0 min-w-0 items-center lg:col-span-4 lg:justify-end lg:translate-x-14 xl:col-span-5 xl:translate-x-16">
+              <div className="col-span-1 flex min-h-0 min-w-0 items-center lg:col-span-4 lg:justify-end lg:translate-x-12 xl:col-span-4 xl:translate-x-14">
                 <div className={`w-full max-w-[620px] rounded-[14px] border p-2.5 lg:p-3 ${previewOuterCardClass}`}>
                   <div className="flex items-center justify-between gap-2">
                     <p className={`text-[13px] font-semibold uppercase tracking-[0.08em] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
@@ -131,27 +127,34 @@ export function LandingPage() {
                   </div>
 
                   <div className="mt-1.5 space-y-1.5">
-                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} p-2 ${previewCodePanelClass}`}>
+                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} p-2.5 ${previewCodePanelClass}`}>
                       <div className="mb-1.5 flex items-center justify-between text-[13px] text-pebble-text-primary">
                         <span>{t('landing.previewUnit')}</span>
                         <span>{t('landing.previewTests')}</span>
                       </div>
-                      <pre dir="ltr" className={`ltrSafe overflow-hidden rounded-[6px] border ${previewInnerOutlineClass} bg-pebble-canvas/95 p-1.5 font-mono text-[13px] leading-snug text-pebble-text-primary`}>{`def two_sum(nums, target):\n    seen = {}\n    # TODO\n    return -1, -1`}</pre>
+                      <pre dir="ltr" className={`ltrSafe overflow-hidden rounded-[6px] border ${previewInnerOutlineClass} bg-[hsl(222_22%_26%)] p-1.5 font-mono text-[13px] leading-snug text-[hsl(220_20%_92%)]`}>
+                        <code>
+                          <span className="block">def two_sum(nums, target):</span>
+                          <span className="block">    seen = &#123;&#125;</span>
+                          <span className="block dark:text-[hsl(220_12%_65%)] text-pebble-text-muted">    # TODO</span>
+                          <span className="block">    return -1, -1</span>
+                        </code>
+                      </pre>
                       <StatusPill variant="fail" showIcon className="mt-1.5 max-w-full whitespace-normal break-words leading-tight">
                         {t('landing.previewFail')}
                       </StatusPill>
                     </div>
 
-                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} p-2 ${previewCoachPanelClass}`}>
+                    <div className={`rounded-[10px] border ${previewInnerOutlineClass} p-2.5 ${previewCoachPanelClass}`}>
                       <div className="flex items-center gap-1.5">
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-pebble-accent/28 text-[11px] font-semibold text-pebble-text-primary">
                           P
                         </span>
-                        <p className={`text-[13px] font-semibold text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>
+                        <p className={`text-[13px] font-semibold text-pebble-text-primary dark:text-[hsl(220_20%_94%)] ${isUrdu ? 'rtlText' : ''}`}>
                           {t('landing.previewCoach')}
                         </p>
                       </div>
-                      <p className={`mt-1 text-[13.5px] leading-relaxed text-pebble-text-secondary line-clamp-2 ${isUrdu ? 'rtlText' : ''}`}>
+                      <p className={`mt-1 text-[13.5px] leading-[1.6] text-pebble-text-secondary dark:text-[hsl(220_15%_78%)] line-clamp-2 ${isUrdu ? 'rtlText' : ''}`}>
                         {t('landing.previewCoachHint')}
                       </p>
                     </div>

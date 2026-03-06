@@ -70,8 +70,8 @@ function NotificationRow({
       onClick={() => onSelect(item)}
       className={`group flex w-full items-start gap-3 rounded-2xl border px-3.5 py-3 text-left transition duration-200 ${
         item.read
-          ? 'border-pebble-border/25 bg-pebble-overlay/[0.03] hover:border-pebble-border/40 hover:bg-pebble-overlay/[0.08]'
-          : 'border-pebble-accent/35 bg-pebble-accent/10 shadow-[0_8px_24px_rgba(37,99,235,0.14)] hover:border-pebble-accent/45 hover:bg-pebble-accent/14'
+          ? 'border-pebble-border/25 bg-pebble-overlay/[0.03] dark:border-white/[0.08] dark:bg-[hsl(222_26%_20%)] hover:border-pebble-border/40 hover:bg-pebble-overlay/[0.08] dark:hover:border-white/[0.12] dark:hover:bg-[hsl(222_26%_22%)]'
+          : 'border-pebble-accent/35 bg-pebble-accent/10 dark:border-[#6E95FF]/45 dark:bg-[rgba(90,140,255,0.15)] shadow-[0_8px_24px_rgba(37,99,235,0.14)] hover:border-pebble-accent/45 hover:bg-pebble-accent/14 dark:hover:border-[#8EAEFF]/55 dark:hover:bg-[rgba(90,140,255,0.2)]'
       }`}
     >
       <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-pebble-border/35 bg-pebble-overlay/[0.08] text-pebble-text-secondary">
@@ -91,9 +91,9 @@ function NotificationRow({
 
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-pebble-border/25 bg-pebble-overlay/[0.05] px-4 py-8 text-center">
-      <p className="text-sm font-medium text-pebble-text-primary">You&apos;re all caught up.</p>
-      <p className="mt-1 text-xs text-pebble-text-secondary">Run a solution or start a unit to see updates.</p>
+    <div className="rounded-2xl border border-pebble-border/25 bg-pebble-overlay/[0.05] dark:border-white/[0.08] dark:bg-[hsl(222_24%_20%)] px-4 py-8 text-center">
+      <p className="text-sm font-medium text-pebble-text-primary dark:text-[hsl(220_20%_92%)]">You&apos;re all caught up.</p>
+      <p className="mt-1 text-xs text-pebble-text-secondary dark:text-[hsl(220_12%_70%)]">Run a solution or start a unit to see updates.</p>
     </div>
   )
 }
@@ -142,7 +142,7 @@ function PanelContent({
     <div
       className={`relative flex max-h-[min(78vh,560px)] min-h-[420px] w-full flex-col rounded-[20px] border px-3 py-3 shadow-[0_24px_70px_rgba(2,8,23,0.34)] backdrop-blur-xl ${
         theme === 'dark'
-          ? 'isolate overflow-hidden border-pebble-border/45 bg-[rgba(10,16,30,0.975)]'
+          ? 'isolate overflow-hidden border-white/[0.08] bg-[hsl(222_28%_14%)]'
           : 'isolate overflow-hidden border-pebble-border/40 bg-[rgba(246,249,255,0.975)]'
       }`}
     >
@@ -161,7 +161,7 @@ function PanelContent({
           <button
             type="button"
             onClick={() => markAllNotificationsRead()}
-            className={`${actionButtonBaseClass} border-pebble-border/38 bg-pebble-overlay/[0.09] text-pebble-text-secondary hover:border-pebble-border/60 hover:bg-pebble-overlay/[0.16] hover:text-pebble-text-primary`}
+            className={`${actionButtonBaseClass} border-pebble-border/38 bg-pebble-overlay/[0.09] text-pebble-text-secondary dark:border-white/[0.14] dark:bg-white/[0.06] dark:text-[hsl(220_20%_90%)] hover:border-pebble-border/60 hover:bg-pebble-overlay/[0.16] hover:text-pebble-text-primary dark:hover:border-white/[0.2] dark:hover:bg-white/[0.1] dark:hover:text-[hsl(220_20%_95%)]`}
           >
             <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />
             Mark all
@@ -169,7 +169,7 @@ function PanelContent({
           <button
             type="button"
             onClick={() => clearNotifications()}
-            className={`${actionButtonBaseClass} border-rose-400/32 bg-rose-500/[0.08] text-rose-700 dark:text-rose-200 hover:border-rose-400/48 hover:bg-rose-500/[0.13]`}
+            className={`${actionButtonBaseClass} border-rose-400/32 bg-rose-500/[0.08] text-rose-700 hover:border-rose-400/48 hover:bg-rose-500/[0.13] dark:border-[rgba(255,80,80,0.4)] dark:bg-[rgba(255,80,80,0.08)] dark:text-[#FF5B5B] dark:hover:bg-[rgba(255,80,80,0.15)]`}
           >
             Clear
           </button>
@@ -196,8 +196,8 @@ function PanelContent({
               onClick={() => onFilterChange(entry.id)}
               className={`inline-flex h-8 flex-1 items-center justify-center rounded-lg px-2 text-[12px] font-medium transition ${
                 active
-                  ? 'border border-pebble-accent/40 bg-pebble-accent/15 text-pebble-text-primary shadow-[0_8px_20px_rgba(37,99,235,0.16)]'
-                  : 'text-pebble-text-secondary hover:bg-pebble-overlay/[0.12] hover:text-pebble-text-primary'
+                  ? 'border border-pebble-accent/40 bg-pebble-accent/15 dark:bg-[rgba(90,140,255,0.15)] text-pebble-text-primary dark:text-[hsl(220_20%_95%)] shadow-[0_8px_20px_rgba(37,99,235,0.16)]'
+                  : 'text-pebble-text-secondary dark:text-[hsl(220_10%_70%)] hover:bg-pebble-overlay/[0.12] hover:text-pebble-text-primary dark:hover:bg-white/[0.08] dark:hover:text-[hsl(220_20%_92%)]'
               }`}
             >
               {entry.label}
