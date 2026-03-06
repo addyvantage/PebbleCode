@@ -5,15 +5,36 @@ export const COGNITO_CLIENT_ID =
   process.env.COGNITO_CLIENT_ID ??
   process.env.VITE_COGNITO_CLIENT_ID ??
   ''
+export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? '')
+  .split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean)
 const COGNITO_USER_POOL_ID =
   process.env.COGNITO_USER_POOL_ID ??
   process.env.VITE_COGNITO_USER_POOL_ID ??
   ''
 const COGNITO_CLIENT_SECRET = process.env.COGNITO_CLIENT_SECRET ?? ''
 const USERNAME_CLAIM_PREFIX = 'UNAME#'
+export const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
 
 export function usernameClaimKey(usernameLower: string) {
   return `${USERNAME_CLAIM_PREFIX}${usernameLower}`
+}
+
+export function normalizeUsername(username: unknown) {
+  if (typeof username !== 'string') return null
+  const trimmed = username.trim()
+  if (!USERNAME_REGEX.test(trimmed)) return null
+  return trimmed
+}
+
+export function normalizeEmail(email: unknown) {
+  if (typeof email !== 'string') return ''
+  return email.trim().toLowerCase()
+}
+
+export function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
 export function createSecretHash(username: string) {
