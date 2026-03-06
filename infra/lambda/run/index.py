@@ -54,7 +54,7 @@ def handler(event, context):
     except json.JSONDecodeError:
         return respond(400, {'error': 'Invalid JSON body.'})
 
-    language = body.get('language', '')
+    language = body.get('languageId') or body.get('language', '')
     code = body.get('code', '')
     stdin_data = body.get('stdin', '')
     timeout_ms = body.get('timeoutMs', 5000)
@@ -68,13 +68,17 @@ def handler(event, context):
     if not isinstance(timeout_ms, (int, float)) or not (TIMEOUT_MIN_MS <= timeout_ms <= TIMEOUT_MAX_MS):
         timeout_ms = 5000
 
-    if language.lower() != 'python':
+    normalized_language = str(language).strip().lower()
+    if normalized_language in ('python3', 'py'):
+        normalized_language = 'python'
+
+    if normalized_language != 'python':
         return respond(200, {
             'ok': False,
             'status': 'toolchain_unavailable',
             'exitCode': None,
             'stdout': '',
-            'stderr': 'Only Python is supported in this environment.',
+            'stderr': 'This Lambda runner currently supports Python only. Configure RUNNER_URL or local runner for JavaScript/C++/Java/C.',
             'timedOut': False,
             'durationMs': 0,
         })
@@ -102,7 +106,7 @@ def handler(event, context):
             ok = result.returncode == 0
             return respond(200, {
                 'ok': ok,
-                'status': 'success' if ok else 'runtime_error',
+                'status': 'ok' if ok else 'runtime_error',
                 'exitCode': result.returncode,
                 'stdout': stdout,
                 'stderr': stderr,

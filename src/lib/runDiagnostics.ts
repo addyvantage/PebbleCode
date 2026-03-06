@@ -48,6 +48,32 @@ function parseCompilerLocation(stderr: string) {
 }
 
 function inferStatus(result: RunApiResponse): Exclude<RunStatus, 'ok'> {
+  const stderr = result.stderr.toLowerCase()
+  const infrastructureSignals = [
+    'runner not configured',
+    'failed to reach /api/run',
+    'returned html instead of json',
+    'remote runner failed',
+    'missing required env vars',
+    'remote runner requires',
+    'runner lambda',
+    'toolchain unavailable',
+    'language runtime not available',
+    'unsupported language',
+    'python-only',
+    'timed out after',
+  ]
+
+  if (
+    result.status === 'toolchain_unavailable'
+    || (
+      result.status === 'internal_error'
+      && infrastructureSignals.some((signal) => stderr.includes(signal))
+    )
+  ) {
+    return 'toolchain_unavailable'
+  }
+
   if (result.status !== 'ok') {
     return result.status
   }
@@ -56,7 +82,6 @@ function inferStatus(result: RunApiResponse): Exclude<RunStatus, 'ok'> {
     return 'timeout'
   }
 
-  const stderr = result.stderr.toLowerCase()
   if (stderr.includes('language runtime not available')) {
     return 'toolchain_unavailable'
   }

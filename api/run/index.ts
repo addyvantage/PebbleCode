@@ -5,7 +5,9 @@ import {
   normalizeRunnerResponse,
   type RunLanguage,
   type RunRequestBody,
+  type RunnerResponse,
 } from './runnerShared.js'
+import { toLegacyCodeLanguageId } from '../../shared/languageRegistry'
 
 export const config = {
   runtime: 'nodejs',
@@ -60,8 +62,26 @@ async function readBody(req: { body?: unknown; on?: (event: string, cb: (chunk: 
   })
 }
 
-function getRunnerMode() {
-  return process.env.PEBBLE_RUNNER_MODE === 'local' ? 'local' : 'remote'
+type RunnerMode = 'auto' | 'local' | 'remote'
+
+function getRunnerMode(): RunnerMode {
+  const raw = (process.env.PEBBLE_RUNNER_MODE ?? 'auto').trim().toLowerCase()
+  if (raw === 'local' || raw === 'remote') {
+    return raw
+  }
+  return 'auto'
+}
+
+function hasRemoteRunnerConfig() {
+  return Boolean(process.env.RUNNER_URL || (process.env.AWS_REGION && process.env.RUNNER_LAMBDA_NAME))
+}
+
+function shouldFallbackToLocal(result: RunnerResponse) {
+  return (
+    result.status === 'toolchain_unavailable'
+    || result.status === 'internal_error'
+    || result.status === 'validation_error'
+  )
 }
 
 async function runViaLambda(body: {
@@ -93,11 +113,18 @@ async function runViaLambda(body: {
     : new LambdaClient({ region: awsRegion })
 
   try {
+    const legacyLanguage = toLegacyCodeLanguageId(body.language)
+    const invokePayload = {
+      ...body,
+      language: legacyLanguage,
+      languageId: body.language,
+    }
+
     const invokeResult = await client.send(
       new InvokeCommand({
         FunctionName: runnerLambdaName,
         InvocationType: 'RequestResponse',
-        Payload: new TextEncoder().encode(JSON.stringify(body)),
+        Payload: new TextEncoder().encode(JSON.stringify(invokePayload)),
       }),
     )
     console.info(
@@ -186,17 +213,44 @@ async function runViaRunnerUrl(body: {
 
 function buildErrorResponse(
   stderr: string,
-  status: 'internal_error' | 'validation_error' = 'internal_error',
+  status: 'internal_error' | 'validation_error' | 'toolchain_unavailable' = 'internal_error',
 ) {
+  const normalizedStatus = inferErrorStatus(stderr, status)
   return {
     ok: false,
-    status,
+    status: normalizedStatus,
     exitCode: null,
     stdout: '',
     stderr,
     timedOut: false,
     durationMs: 0,
   }
+}
+
+function inferErrorStatus(
+  message: string,
+  status: 'internal_error' | 'validation_error' | 'toolchain_unavailable',
+) {
+  if (status !== 'internal_error') {
+    return status
+  }
+  const text = message.toLowerCase()
+  const toolchainSignals = [
+    'runner not configured',
+    'missing required env vars',
+    'remote runner requires',
+    'remote runner failed',
+    'remote runner timed out',
+    'runner lambda',
+    'unsupported language',
+    'python-only',
+    'returned html instead of json',
+    'failed to reach /api/run',
+    'toolchain unavailable',
+  ]
+  return toolchainSignals.some((signal) => text.includes(signal))
+    ? 'toolchain_unavailable'
+    : 'internal_error'
 }
 
 function getCodeLength(body: unknown) {
@@ -252,23 +306,46 @@ export default async function handler(
     const mode = getRunnerMode()
     const hasRunnerUrl = Boolean(process.env.RUNNER_URL)
     const hasLambdaConfig = Boolean(process.env.AWS_REGION && process.env.RUNNER_LAMBDA_NAME)
+    const hasRemote = hasRemoteRunnerConfig()
     console.info(
       `[api/run] request method=${req.method ?? 'unknown'} mode=${mode} lang=${normalized.value.language} codeChars=${getCodeLength(body)} bodyBytes=${getBodyLength(rawBody)} timeoutMs=${normalized.value.timeoutMs} runnerUrl=${hasRunnerUrl ? 'set' : 'unset'} lambda=${hasLambdaConfig ? 'set' : 'unset'}`,
     )
 
-    let result
+    let result: RunnerResponse
     if (mode === 'local') {
       const { runCodeLocally } = await import('./runnerLocal.js')
       result = await runCodeLocally(normalized.value)
-    } else if (hasRunnerUrl) {
-      result = await runViaRunnerUrl(normalized.value)
-    } else if (hasLambdaConfig) {
-      result = await runViaLambda(normalized.value)
     } else {
-      const message = 'Runner not configured. Set RUNNER_URL or AWS_REGION + RUNNER_LAMBDA_NAME.'
-      console.error('[api/run] misconfigured remote runner', message)
-      sendJson(res, 200, buildErrorResponse(message))
-      return
+      const useRemoteFirst = mode === 'remote' || (mode === 'auto' && hasRemote)
+      const { runCodeLocally } = await import('./runnerLocal.js')
+
+      if (!useRemoteFirst) {
+        result = await runCodeLocally(normalized.value)
+      } else {
+        try {
+          if (hasRunnerUrl) {
+            result = await runViaRunnerUrl(normalized.value)
+          } else if (hasLambdaConfig) {
+            result = await runViaLambda(normalized.value)
+          } else {
+            throw new Error('Runner not configured. Set RUNNER_URL or AWS_REGION + RUNNER_LAMBDA_NAME.')
+          }
+        } catch (error) {
+          if (mode === 'remote') {
+            throw error
+          }
+          const message = error instanceof Error ? error.message : 'Remote runner failed.'
+          console.warn(`[api/run] remote runner failed; falling back to local. reason=${message}`)
+          result = await runCodeLocally(normalized.value)
+        }
+
+        if (mode === 'auto' && shouldFallbackToLocal(result)) {
+          console.warn(
+            `[api/run] remote runner returned ${result.status}; retrying locally for lang=${normalized.value.language}`,
+          )
+          result = await runCodeLocally(normalized.value)
+        }
+      }
     }
 
     console.info(

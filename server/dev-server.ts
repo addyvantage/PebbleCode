@@ -1971,9 +1971,12 @@ app.get('/api/session/snapshot/:id', async (req: Request, res: Response) => {
 
 import { computeRisk } from './phase9/sagemakerClient.ts'
 import type { RiskFeatures, RiskResult } from './phase9/riskFeatures.ts'
-import { buildRecapScript, isScriptSafe } from './phase9/recapBuilder.ts'
-import type { RecapSummary } from './phase9/recapBuilder.ts'
+import { buildRecapNarrative, isScriptSafe } from './phase9/recapBuilder.ts'
+import type { RecapSummary, RecapTone } from './phase9/recapBuilder.ts'
+import { buildRecapSsml } from './phase9/recapSsml.ts'
 import { generateRecapAudio } from './phase9/pollyClient.ts'
+import type { RecapAudioDecision } from './phase9/pollyClient.ts'
+import { normalizeAppLanguageCode, type AppLanguageCode, type RecapVoiceMode } from '../shared/recapVoice.ts'
 import { mkdirSync as _mkdirSync9, writeFileSync as _writeFileSync9 } from 'fs'
 import { join as _join9 } from 'path'
 
@@ -1983,7 +1986,32 @@ const RECAP_AUDIO_BUCKET = process.env.RECAP_AUDIO_BUCKET_NAME || ''
 
 // In-memory stores for offline dev
 const devRiskStore = new Map<string, RiskResult & { weekStart: string; userId: string }>()
-const devRecapStore = new Map<string, { script: string; audioUrl?: string; generatedAt: string; weekStart: string; userId: string }>()
+type StoredRecapData = {
+  script: string
+  audioUrl?: string
+  generatedAt: string
+  weekStart: string
+  tone: RecapTone
+  usedHumor: boolean
+  playback: RecapAudioDecision
+  userId: string
+}
+
+type RecapVoiceInput = {
+  mode: RecapVoiceMode
+  preferredPollyVoiceId?: string | null
+  preferredBrowserVoiceURI?: string | null
+}
+
+const DEFAULT_RECAP_PLAYBACK: RecapAudioDecision = {
+  mode: 'auto',
+  provider: 'device',
+  appLanguage: 'en',
+  locale: 'en-US',
+  reason: 'no_audio_generated',
+}
+
+const devRecapStore = new Map<string, StoredRecapData>()
 
 function currentWeekStart(): string {
   const now = new Date()
@@ -2106,18 +2134,115 @@ app.post('/api/risk/recompute', async (req: Request, res: Response) => {
 function validateRecapSummary(body: unknown): RecapSummary | null {
   if (!body || typeof body !== 'object') return null
   const b = body as Record<string, unknown>
-  const num = (k: string, fallback = 0) =>
-    typeof b[k] === 'number' ? (b[k] as number) : fallback
+  const num = (k: string, fallback?: number) => {
+    const value = b[k]
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value
+    }
+    return fallback
+  }
+  const text = (k: string, maxLength: number) => {
+    const value = b[k]
+    if (typeof value !== 'string') return undefined
+    const cleaned = value.trim().slice(0, maxLength)
+    return cleaned.length > 0 ? cleaned : undefined
+  }
   const trend = b.trendDirection
   if (trend !== 'improving' && trend !== 'stable' && trend !== 'worsening') return null
-  const struggle = typeof b.biggestStruggle === 'string' ? b.biggestStruggle : null
+  const solvesLast7 = num('solvesLast7')
+  const daysActiveLast7 = num('daysActiveLast7')
+  const streakDays = num('streakDays')
+  if (
+    typeof solvesLast7 !== 'number'
+    || typeof daysActiveLast7 !== 'number'
+    || typeof streakDays !== 'number'
+  ) {
+    return null
+  }
+  const struggle = text('biggestStruggle', 80) ?? null
+  const hardestSolvedDifficultyRaw = text('hardestSolvedDifficulty', 16)
+  const hardestSolvedDifficulty = (
+    hardestSolvedDifficultyRaw === 'easy'
+    || hardestSolvedDifficultyRaw === 'medium'
+    || hardestSolvedDifficultyRaw === 'hard'
+  )
+    ? hardestSolvedDifficultyRaw
+    : null
   return {
-    solvesLast7: num('solvesLast7'),
-    daysActiveLast7: num('daysActiveLast7'),
-    streakDays: num('streakDays'),
+    appLanguage: normalizeAppLanguageCode(text('appLanguage', 8)),
+    trackLanguage: text('trackLanguage', 24),
+    userName: text('userName', 64) ?? null,
+    solvesLast7,
+    solvesDelta: num('solvesDelta'),
+    daysActiveLast7,
+    streakDays,
+    streakDelta: num('streakDelta'),
     biggestStruggle: struggle,
     trendDirection: trend,
-    language: typeof b.language === 'string' ? b.language.slice(0, 20) : 'python',
+    attemptsLast7: num('attemptsLast7'),
+    passRateLast7: num('passRateLast7'),
+    passRateDelta: num('passRateDelta'),
+    guidanceReliancePct: num('guidanceReliancePct'),
+    guidanceRelianceDeltaPct: num('guidanceRelianceDeltaPct'),
+    avgRecoveryTimeSec: num('avgRecoveryTimeSec'),
+    avgRecoveryTimeDeltaSec: num('avgRecoveryTimeDeltaSec'),
+    hardestSolvedDifficulty,
+  }
+}
+
+function validateRecapVoiceInput(body: unknown): RecapVoiceInput {
+  if (!body || typeof body !== 'object') {
+    return { mode: 'auto' }
+  }
+  const value = body as Record<string, unknown>
+  const rawMode = value.mode
+  const mode: RecapVoiceMode =
+    rawMode === 'auto' || rawMode === 'polly' || rawMode === 'device'
+      ? rawMode
+      : 'auto'
+
+  const preferredPollyVoiceId = typeof value.preferredPollyVoiceId === 'string'
+    ? value.preferredPollyVoiceId.trim().slice(0, 64) || null
+    : null
+  const preferredBrowserVoiceURI = typeof value.preferredBrowserVoiceURI === 'string'
+    ? value.preferredBrowserVoiceURI.trim().slice(0, 200) || null
+    : null
+
+  return {
+    mode,
+    preferredPollyVoiceId,
+    preferredBrowserVoiceURI,
+  }
+}
+
+function resolveRecapPlayback(item: Record<string, unknown>): RecapAudioDecision {
+  const playbackRaw = item.playback
+  if (!playbackRaw || typeof playbackRaw !== 'object') {
+    return DEFAULT_RECAP_PLAYBACK
+  }
+  const playback = playbackRaw as Record<string, unknown>
+  const modeRaw = playback.mode
+  const providerRaw = playback.provider
+  const appLanguageRaw = playback.appLanguage
+  const localeRaw = playback.locale
+  const mode: RecapVoiceMode = modeRaw === 'auto' || modeRaw === 'polly' || modeRaw === 'device'
+    ? modeRaw
+    : 'auto'
+  const provider: 'polly' | 'device' = providerRaw === 'polly' ? 'polly' : 'device'
+  const appLanguage: AppLanguageCode = normalizeAppLanguageCode(appLanguageRaw)
+  const locale = typeof localeRaw === 'string' && localeRaw.trim()
+    ? localeRaw
+    : 'en-US'
+  return {
+    mode,
+    provider,
+    appLanguage,
+    locale,
+    pollyVoiceId: typeof playback.pollyVoiceId === 'string' ? playback.pollyVoiceId : undefined,
+    pollyLanguageCode: typeof playback.pollyLanguageCode === 'string' ? playback.pollyLanguageCode : undefined,
+    preferredBrowserVoiceURI:
+      typeof playback.preferredBrowserVoiceURI === 'string' ? playback.preferredBrowserVoiceURI : undefined,
+    reason: typeof playback.reason === 'string' ? playback.reason : undefined,
   }
 }
 
@@ -2125,26 +2250,43 @@ function validateRecapSummary(body: unknown): RecapSummary | null {
 app.post('/api/growth/weekly-recap', async (req: Request, res: Response) => {
   const userId = (req.headers['x-user-id'] as string) || 'anonymous'
 
-  const rawSummary = (req.body as Record<string, unknown>)?.summary
+  const body = (req.body as Record<string, unknown>) ?? {}
+  const rawSummary = body.summary
   const summary = validateRecapSummary(rawSummary)
   if (!summary) {
     return res.status(400).json({ error: 'Invalid or missing summary payload' })
   }
+  const voice = validateRecapVoiceInput(body.voice)
 
   console.log(`[recap] Generating for userId="${userId}" mode=${process.env.RECAP_MODE ?? 'auto'}`)
 
-  const script = buildRecapScript(summary)
+  const narrative = buildRecapNarrative(summary)
+  const script = narrative.script
   if (!isScriptSafe(script)) {
     console.error('[recap] Script failed safety check — blocked')
     return res.status(400).json({ error: 'Recap script failed safety check' })
   }
+  const ssml = buildRecapSsml({
+    script,
+    tone: narrative.tone,
+  })
 
   const weekStart = currentWeekStart()
   const generatedAt = new Date().toISOString()
   let audioUrl: string | undefined
+  let s3AudioKey: string | undefined
 
-  // Try Polly
-  const { audioBuffer } = await generateRecapAudio(script)
+  // Try Polly when requested/supported; otherwise frontend uses browser speech.
+  const audioOutput = await generateRecapAudio({
+    script,
+    ssml,
+    appLanguage: normalizeAppLanguageCode(summary.appLanguage),
+    mode: voice.mode,
+    preferredPollyVoiceId: voice.preferredPollyVoiceId,
+    preferredBrowserVoiceURI: voice.preferredBrowserVoiceURI,
+  })
+  const { audioBuffer } = audioOutput
+  let playback: RecapAudioDecision = audioOutput.decision
 
   if (audioBuffer) {
     const awsRegion = process.env.AWS_REGION
@@ -2163,6 +2305,7 @@ app.post('/api/growth/weekly-recap', async (req: Request, res: Response) => {
         }))
         const { GetObjectCommand } = await import('@aws-sdk/client-s3')
         audioUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: RECAP_AUDIO_BUCKET, Key: audioKey }), { expiresIn: 3600 })
+        s3AudioKey = audioKey
         s3.destroy()
       } catch (s3Err) {
         console.error('[recap] S3 upload failed, saving locally:', s3Err instanceof Error ? s3Err.message : '')
@@ -2185,7 +2328,23 @@ app.post('/api/growth/weekly-recap', async (req: Request, res: Response) => {
     }
   }
 
-  const recapData = { script, audioUrl, generatedAt, weekStart }
+  if (audioBuffer && !audioUrl) {
+    playback = {
+      ...playback,
+      provider: 'device',
+      reason: 'polly_audio_storage_unavailable',
+    }
+  }
+
+  const recapData = {
+    script,
+    audioUrl,
+    generatedAt,
+    weekStart,
+    tone: narrative.tone,
+    usedHumor: narrative.usedHumor,
+    playback,
+  }
   const awsRegion = process.env.AWS_REGION
 
   if (!awsRegion) {
@@ -2203,7 +2362,10 @@ app.post('/api/growth/weekly-recap', async (req: Request, res: Response) => {
         userId,
         weekStart,
         script,
-        s3Key: audioUrl ? `recaps/${userId}/${weekStart}.mp3` : undefined,
+        s3Key: s3AudioKey,
+        playback,
+        tone: narrative.tone,
+        usedHumor: narrative.usedHumor,
         generatedAt,
         ttl: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
       },
@@ -2240,7 +2402,63 @@ app.get('/api/growth/weekly-recap/latest', async (req: Request, res: Response) =
       Limit: 1,
     }))
     const item = result.Items?.[0]
-    return res.status(200).json({ ok: true, offline: false, data: item ?? null })
+    if (!item || typeof item !== 'object') {
+      return res.status(200).json({ ok: true, offline: false, data: null })
+    }
+
+    const record = item as Record<string, unknown>
+    const weekStart = typeof record.weekStart === 'string' ? record.weekStart : currentWeekStart()
+    const script = typeof record.script === 'string' ? record.script : ''
+    const generatedAt = typeof record.generatedAt === 'string' ? record.generatedAt : new Date().toISOString()
+    const tone = (record.tone === 'celebratory'
+      || record.tone === 'encouraging'
+      || record.tone === 'reflective'
+      || record.tone === 'empathetic'
+      || record.tone === 'determined')
+      ? record.tone
+      : 'encouraging'
+    const usedHumor = typeof record.usedHumor === 'boolean' ? record.usedHumor : false
+
+    let audioUrl: string | undefined
+    const s3Key = typeof record.s3Key === 'string' ? record.s3Key : undefined
+    if (s3Key && RECAP_AUDIO_BUCKET) {
+      try {
+        const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3')
+        const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
+        const s3 = new S3Client({ region: awsRegion })
+        audioUrl = await getSignedUrl(
+          s3,
+          new GetObjectCommand({ Bucket: RECAP_AUDIO_BUCKET, Key: s3Key }),
+          { expiresIn: 3600 },
+        )
+        s3.destroy()
+      } catch (s3Err) {
+        console.error('[recap] Failed to sign audio URL:', s3Err instanceof Error ? s3Err.message : '')
+      }
+    }
+
+    let playback = resolveRecapPlayback(record)
+    if (playback.provider === 'polly' && !audioUrl) {
+      playback = {
+        ...playback,
+        provider: 'device',
+        reason: 'polly_audio_unavailable',
+      }
+    }
+
+    return res.status(200).json({
+      ok: true,
+      offline: false,
+      data: {
+        script,
+        audioUrl,
+        generatedAt,
+        weekStart,
+        tone,
+        usedHumor,
+        playback,
+      },
+    })
   } catch (err) {
     console.error('[recap] DDB read failed:', err instanceof Error ? err.message : '')
     const stored = devRecapStore.get(userId)

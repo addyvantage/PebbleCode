@@ -395,7 +395,7 @@ export function DashboardPage() {
       {/* Phase 9: Premium AWS Demo — SageMaker Risk + Polly Recap */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <StreakRiskWidget />
-        <WeeklyRecapWidget language={selectedLanguage} />
+        <WeeklyRecapWidget trackLanguage={selectedLanguage} />
       </div>
 
       {!hasLiveData && !unitsLoading ? (

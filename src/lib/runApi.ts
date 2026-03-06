@@ -47,23 +47,48 @@ function normalizeRunResponse(payload: unknown): RunApiResponse {
   }
 
   const statusValue = payload.status
-  const status: RunStatus = typeof statusValue === 'string' && isRunStatus(statusValue)
+  const rawStatus: RunStatus = typeof statusValue === 'string' && isRunStatus(statusValue)
     ? statusValue
     : payload.timedOut === true
       ? 'timeout'
       : payload.ok === true
         ? 'ok'
         : 'runtime_error'
+  const stderrRaw = typeof payload.stderr === 'string' ? payload.stderr : ''
+  const status = inferToolchainStatus(rawStatus, stderrRaw)
 
   return {
     ok: payload.ok === true,
     status,
     exitCode: typeof payload.exitCode === 'number' || payload.exitCode === null ? payload.exitCode : null,
     stdout: typeof payload.stdout === 'string' ? payload.stdout : '',
-    stderr: typeof payload.stderr === 'string' ? payload.stderr : '',
+    stderr: stderrRaw,
     timedOut: payload.timedOut === true,
     durationMs: typeof payload.durationMs === 'number' ? payload.durationMs : 0,
   }
+}
+
+function inferToolchainStatus(status: RunStatus, stderr: string): RunStatus {
+  if (status !== 'internal_error') {
+    return status
+  }
+  const text = stderr.toLowerCase()
+  const signals = [
+    'runner not configured',
+    'missing required env vars',
+    'remote runner requires',
+    'remote runner failed',
+    'remote runner timed out',
+    'runner lambda',
+    'unsupported language',
+    'python-only',
+    'returned html instead of json',
+    'failed to reach /api/run',
+    'toolchain unavailable',
+  ]
+  return signals.some((signal) => text.includes(signal))
+    ? 'toolchain_unavailable'
+    : status
 }
 
 function isRunStatus(value: string): value is RunStatus {
@@ -112,6 +137,19 @@ function compactTextSnippet(rawText: string) {
   return snippet.slice(0, 280)
 }
 
+function looksLikeHtmlDocument(rawText: string) {
+  const sample = rawText.trim().toLowerCase().slice(0, 260)
+  if (!sample) {
+    return false
+  }
+  return (
+    sample.startsWith('<!doctype html')
+    || sample.startsWith('<html')
+    || sample.includes('<head')
+    || sample.includes('<body')
+  )
+}
+
 export async function requestRunApi(
   payload: RunRequestPayload,
   options?: { requestTimeoutMs?: number },
@@ -133,6 +171,19 @@ export async function requestRunApi(
     })
 
     const parsed = await parseResponseSafely(response)
+    if (response.ok && parsed.json === null && looksLikeHtmlDocument(parsed.rawText)) {
+      return {
+        ok: false,
+        status: 'internal_error',
+        exitCode: null,
+        stdout: '',
+        stderr:
+          'Runner endpoint returned HTML instead of JSON. Verify /api/run routing and runner configuration.',
+        timedOut: false,
+        durationMs: 0,
+      }
+    }
+
     const normalized = normalizeRunResponse(parsed.json)
     if (!response.ok) {
       const textSnippet = compactTextSnippet(parsed.rawText)
