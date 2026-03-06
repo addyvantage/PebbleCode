@@ -27,6 +27,9 @@ type PebbleChatPanelProps = {
   unitTitle: string
   unitConcept: string
   language: string
+  executionMode?: 'function' | 'stdio'
+  requiredSignature?: string | null
+  detectedSignature?: string | null
   liveCode: string
   getLiveCode?: () => string
   runStatus: string
@@ -77,8 +80,33 @@ function formatAgentResponse(response: AgentResponse): string {
   return parts.join('\n\n') || 'No response.'
 }
 
-function AgentResponseView({ response }: { response: AgentResponse }) {
+const INTERNAL_AGENT_FLAGS = new Set([
+  'legacy_fallback',
+  'agent_endpoint_unavailable',
+  'agent_non_json_html',
+  'agent_html_payload',
+  'agent_unexpected_shape',
+  'agent_fetch_failed',
+  'local_fallback',
+  'json_parse_fallback',
+  'timeout_fallback',
+])
+
+function formatDebugFlag(flag: string) {
+  return flag.replace(/_/g, ' ')
+}
+
+function AgentResponseView({
+  response,
+  showDebugFlags,
+}: {
+  response: AgentResponse
+  showDebugFlags: boolean
+}) {
   const hintCards = buildHintCards(response.hints)
+  const visibleDebugFlags = showDebugFlags
+    ? response.safety_flags.filter((flag) => flag.trim().length > 0)
+    : response.safety_flags.filter((flag) => !INTERNAL_AGENT_FLAGS.has(flag))
   return (
     <div className="space-y-2">
       {/* Tier badge */}
@@ -134,12 +162,12 @@ function AgentResponseView({ response }: { response: AgentResponse }) {
         </div>
       )}
 
-      {/* Safety flags */}
-      {response.safety_flags.length > 0 && response.safety_flags.some(f => f !== 'local_fallback') && (
+      {/* Safety flags (debug-only for infra internals) */}
+      {visibleDebugFlags.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {response.safety_flags.filter(f => f !== 'local_fallback').map((flag, i) => (
+          {visibleDebugFlags.map((flag, i) => (
             <span key={i} className="rounded-full border border-pebble-warning/40 bg-pebble-warning/12 px-1.5 py-0.5 text-[9px] font-medium text-pebble-warning">
-              {flag}
+              {formatDebugFlag(flag)}
             </span>
           ))}
         </div>
@@ -169,6 +197,9 @@ function buildPrompt(input: {
   unitTitle: string
   unitConcept: string
   language: string
+  executionMode: 'function' | 'stdio'
+  requiredSignature: string
+  detectedSignature: string
   runStatus: string
   runMessage: string
   failingSummary: string
@@ -189,6 +220,9 @@ function buildPrompt(input: {
     `Unit: ${input.unitTitle}`,
     `Concept: ${input.unitConcept}`,
     `Language: ${input.language}`,
+    `Execution mode: ${input.executionMode}`,
+    input.requiredSignature ? `Required signature: ${input.requiredSignature}` : '',
+    input.detectedSignature ? `Detected signature: ${input.detectedSignature}` : '',
     `Run status: ${input.runStatus}`,
     input.runMessage ? `Run output summary: ${input.runMessage}` : '',
     input.failingSummary ? `Failing tests: ${input.failingSummary}` : '',
@@ -197,6 +231,11 @@ function buildPrompt(input: {
     input.recentSummary ? `Recent chat summary: ${input.recentSummary}` : '',
     `SYSTEM_LANGUAGE: ${input.chatLanguage} (${input.chatLanguageLabel}) [direction: ${input.chatLanguage === 'ur' ? 'rtl' : 'ltr'
     }]. Respond in this language unless user asks otherwise.`,
+    input.requiredSignature
+      ? 'CONTRACT: Required signature is mandatory. Keep it unchanged. For function mode, return the expected value and do not suggest printing unless explicitly requested.'
+      : input.executionMode === 'stdio'
+        ? 'CONTRACT: This unit is stdio-mode. Reading input and printing output is expected.'
+        : '',
     `Question: ${input.question}`,
   ]
 
@@ -209,6 +248,9 @@ export function PebbleChatPanel({
   unitTitle,
   unitConcept,
   language,
+  executionMode = 'stdio',
+  requiredSignature = null,
+  detectedSignature = null,
   liveCode,
   getLiveCode,
   runStatus,
@@ -244,6 +286,7 @@ export function PebbleChatPanel({
   const [selectedTier, setSelectedTier] = useState<HelpTier>(1)
   const [useAgentMode, _setUseAgentMode] = useState(true)
   const [agentError, setAgentError] = useState<string | null>(null)
+  const [showDebugFlags, setShowDebugFlags] = useState(false)
 
   const abortRef = useRef<AbortController | null>(null)
   const typingTimerRef = useRef<number | null>(null)
@@ -254,6 +297,20 @@ export function PebbleChatPanel({
   const hasRunContext = runStatus !== 'idle' && runMessage.trim().length > 0
   const selectedLanguageOption = LANGUAGES.find((language) => language.code === lang) ?? LANGUAGES[0]
   const nudgeLevel = showStruggleNudge && struggleLevel > 0 ? (struggleLevel as Exclude<StruggleLevel, 0>) : null
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return
+    }
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const enabledFromQuery = params.get('debugAgentFlags') === '1'
+      const enabledFromStorage = window.localStorage.getItem('pebble.debug.agentFlags') === '1'
+      setShowDebugFlags(enabledFromQuery || enabledFromStorage)
+    } catch {
+      setShowDebugFlags(false)
+    }
+  }, [])
 
   const runStatusLabel = useMemo(() => {
     if (runStatus === 'success') {
@@ -410,6 +467,9 @@ export function PebbleChatPanel({
             question,
             codeExcerpt: codeNow.length > 3000 ? `${codeNow.slice(0, 3000)}\n...[trimmed]` : codeNow,
             language,
+            executionMode,
+            requiredSignature: requiredSignature ?? undefined,
+            detectedSignature: detectedSignature ?? undefined,
             runStatus,
             runMessage,
             failingSummary,
@@ -443,6 +503,9 @@ export function PebbleChatPanel({
             unitTitle,
             unitConcept,
             language,
+            executionMode,
+            requiredSignature: requiredSignature ?? '',
+            detectedSignature: detectedSignature ?? '',
             runStatus,
             runMessage,
             failingSummary,
@@ -462,6 +525,9 @@ export function PebbleChatPanel({
               runStatus,
               runMessage,
               language,
+              executionMode,
+              requiredSignature: requiredSignature ?? '',
+              detectedSignature: detectedSignature ?? '',
               unitId,
               problemId: problemId ?? undefined,
               helpTier,
@@ -501,6 +567,7 @@ export function PebbleChatPanel({
     },
     [
       failingSummary,
+      executionMode,
       getLiveCode,
       getStruggleContext,
       hasRunContext,
@@ -511,6 +578,8 @@ export function PebbleChatPanel({
       problemId,
       pushAssistantWithTypewriter,
       clearTyping,
+      requiredSignature,
+      detectedSignature,
       recentSummary,
       runMessage,
       runStatus,
@@ -736,7 +805,7 @@ export function PebbleChatPanel({
               </p>
             )}
             {message.agentResponse ? (
-              <AgentResponseView response={message.agentResponse} />
+              <AgentResponseView response={message.agentResponse} showDebugFlags={showDebugFlags} />
             ) : (
               <p className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(message.text)}</p>
             )}

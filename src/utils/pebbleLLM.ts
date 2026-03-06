@@ -3,6 +3,9 @@ import { PEBBLE_SYSTEM_PROMPT } from '../shared/pebblePromptRules'
 type PebbleLLMContext = {
   taskTitle: string
   codeText: string
+  executionMode?: 'function' | 'stdio'
+  requiredSignature?: string
+  detectedSignature?: string
   runStatus: string
   runMessage: string
   language?: string

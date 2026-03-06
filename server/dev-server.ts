@@ -11,6 +11,8 @@ import {
   decodeLambdaPayload,
   normalizeRunRequest,
   normalizeRunnerResponse,
+  type RunLanguage,
+  type RunnerResponse,
   type RunRequestBody,
 } from './runnerShared.ts'
 import { runCodeLocally } from './runnerLocal.ts'
@@ -19,6 +21,7 @@ import { getSafetyMode } from './safety/guardrails.ts'
 import { redactForLog } from './safety/redact.ts'
 import { tracerMiddleware } from './observability/tracer.ts'
 import { metricsStore } from './observability/metricsStore.ts'
+import { toLegacyCodeLanguageId } from '../shared/languageRegistry.ts'
 
 dotenv.config({ path: '.env.local' })
 
@@ -30,17 +33,55 @@ type PebbleRes = Parameters<typeof pebbleHandler>[1]
 
 const app = express()
 app.use(express.json())
+const UPSTREAM_TIMEOUT_MS = 20_000
 
 // ── Phase 8: Observability middleware ──────────────────────────────────
 app.use(tracerMiddleware)
 
-function getRunnerMode() {
+type RunnerMode = 'auto' | 'local' | 'remote'
+
+function getRunnerMode(): RunnerMode {
   const mode = process.env.PEBBLE_RUNNER_MODE
-  return mode === 'remote' ? 'remote' : 'local'
+  if (mode === 'local' || mode === 'remote') {
+    return mode
+  }
+  return 'auto'
+}
+
+function hasRemoteRunnerConfig() {
+  return Boolean(process.env.RUNNER_URL || (process.env.AWS_REGION && process.env.RUNNER_LAMBDA_NAME))
+}
+
+function shouldFallbackToLocal(result: RunnerResponse) {
+  return (
+    result.status === 'toolchain_unavailable'
+    || result.status === 'internal_error'
+    || result.status === 'validation_error'
+  )
+}
+
+function inferRunnerErrorStatus(message: string): RunnerResponse['status'] {
+  const text = message.toLowerCase()
+  const toolchainSignals = [
+    'runner not configured',
+    'missing required env vars',
+    'remote runner requires',
+    'remote runner failed',
+    'remote runner timed out',
+    'runner lambda',
+    'unsupported language',
+    'python-only',
+    'returned html instead of json',
+    'failed to reach /api/run',
+    'toolchain unavailable',
+  ]
+  return toolchainSignals.some((signal) => text.includes(signal))
+    ? 'toolchain_unavailable'
+    : 'internal_error'
 }
 
 async function runViaLambda(body: {
-  language: 'python' | 'javascript' | 'cpp' | 'java' | 'c'
+  language: RunLanguage
   code: string
   stdin: string
   timeoutMs: number
@@ -68,11 +109,18 @@ async function runViaLambda(body: {
     : new LambdaClient({ region: awsRegion })
 
   try {
+    const legacyLanguage = toLegacyCodeLanguageId(body.language)
+    const invokePayload = {
+      ...body,
+      language: legacyLanguage,
+      languageId: body.language,
+    }
+
     const invokeResult = await client.send(
       new InvokeCommand({
         FunctionName: runnerLambdaName,
         InvocationType: 'RequestResponse',
-        Payload: new TextEncoder().encode(JSON.stringify(body)),
+        Payload: new TextEncoder().encode(JSON.stringify(invokePayload)),
       }),
     )
 
@@ -89,6 +137,68 @@ async function runViaLambda(body: {
     return normalized
   } finally {
     client.destroy()
+  }
+}
+
+async function runViaRunnerUrl(body: {
+  language: RunLanguage
+  code: string
+  stdin: string
+  timeoutMs: number
+}) {
+  const runnerUrlRaw = process.env.RUNNER_URL
+  if (!runnerUrlRaw) {
+    throw new Error('RUNNER_URL is not configured.')
+  }
+
+  let runnerUrl: URL
+  try {
+    runnerUrl = new URL(runnerUrlRaw)
+  } catch {
+    throw new Error('RUNNER_URL is invalid. It must be a full URL (https://...).')
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS)
+  try {
+    const upstreamResponse = await fetch(runnerUrl, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+
+    const upstreamText = await upstreamResponse.text().catch(() => '')
+    let upstreamJson: unknown = null
+    if (upstreamText) {
+      try {
+        upstreamJson = JSON.parse(upstreamText) as unknown
+      } catch {
+        upstreamJson = null
+      }
+    }
+
+    const normalized = normalizeRunnerResponse(upstreamJson)
+    if (!upstreamResponse.ok) {
+      const snippet = upstreamText.trim().replace(/\s+/g, ' ').slice(0, 220)
+      throw new Error(
+        `Remote runner failed with status ${upstreamResponse.status}.${snippet ? ` Body: ${snippet}` : ''}`,
+      )
+    }
+    if (!normalized) {
+      const snippet = upstreamText.trim().replace(/\s+/g, ' ').slice(0, 220)
+      throw new Error(`Remote runner returned invalid JSON shape.${snippet ? ` Body: ${snippet}` : ''}`)
+    }
+    return normalized
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Remote runner timed out after ${UPSTREAM_TIMEOUT_MS}ms.`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
@@ -184,18 +294,40 @@ app.post('/api/run', async (req: Request, res: Response) => {
   }
 
   const mode = getRunnerMode()
+  const hasRemote = hasRemoteRunnerConfig()
 
   try {
-    const result = mode === 'remote'
-      ? await runViaLambda(normalized.value)
-      : await runCodeLocally(normalized.value)
+    let result: RunnerResponse
+    const useRemoteFirst = mode === 'remote' || (mode === 'auto' && hasRemote)
+
+    if (!useRemoteFirst) {
+      result = await runCodeLocally(normalized.value)
+    } else {
+      try {
+        result = process.env.RUNNER_URL
+          ? await runViaRunnerUrl(normalized.value)
+          : await runViaLambda(normalized.value)
+      } catch (error) {
+        if (mode === 'remote') {
+          throw error
+        }
+        const message = error instanceof Error ? error.message : 'Remote runner failed.'
+        console.warn(`[dev-api] remote runner failed; falling back to local. reason=${message}`)
+        result = await runCodeLocally(normalized.value)
+      }
+
+      if (mode === 'auto' && shouldFallbackToLocal(result)) {
+        console.warn(`[dev-api] remote runner returned ${result.status}; retrying locally.`)
+        result = await runCodeLocally(normalized.value)
+      }
+    }
 
     res.status(200).json(result)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Runner invoke failed.'
     res.status(502).json({
       ok: false,
-      status: 'internal_error',
+      status: inferRunnerErrorStatus(message),
       exitCode: null,
       stdout: '',
       stderr: message,
@@ -324,6 +456,15 @@ app.post('/api/pebble-agent', async (req: Request, res: Response) => {
       question: body.question.trim(),
       codeExcerpt: typeof body.codeExcerpt === 'string' ? body.codeExcerpt.slice(0, 3000) : '',
       language: typeof body.language === 'string' ? body.language : 'python',
+      executionMode: body.executionMode === 'function' ? 'function' : 'stdio',
+      requiredSignature:
+        typeof body.requiredSignature === 'string' && body.requiredSignature.trim().length > 0
+          ? body.requiredSignature.trim().slice(0, 180)
+          : undefined,
+      detectedSignature:
+        typeof body.detectedSignature === 'string' && body.detectedSignature.trim().length > 0
+          ? body.detectedSignature.trim().slice(0, 180)
+          : undefined,
       runStatus: typeof body.runStatus === 'string' ? body.runStatus : '',
       runMessage: typeof body.runMessage === 'string' ? body.runMessage.slice(0, 500) : '',
       failingSummary: typeof body.failingSummary === 'string' ? body.failingSummary.slice(0, 500) : '',

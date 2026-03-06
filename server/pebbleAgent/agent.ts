@@ -39,7 +39,7 @@ function toolReadRunResults(req: AgentRequest): ToolResult {
 // ── Agent system prompt builder ────────────────────────────────────────────
 
 function buildAgentSystemPrompt(tier: number): string {
-    return `You are Pebble Agent, an agentic coding coach inside a live IDE.
+  return `You are Pebble Agent, an agentic coding coach inside a live IDE.
 You have access to tools to read the student's code and run results.
 You MUST respond with valid JSON matching this schema exactly:
 
@@ -60,6 +60,9 @@ CRITICAL RULES:
 - Keep reasoning_brief under 3 sentences.
 - Keep steps to 3-5 items max.
 - Keep hints to 2-3 items max.
+- If requiredSignature is provided, treat it as the ground-truth contract and keep it unchanged.
+- In function mode, prioritize return values. Do not default to printing/stdio advice unless explicitly requested.
+- In stdio mode, prioritize reading stdin and printing expected stdout.
 - Never include AWS keys, tokens, or credentials in your response.
 - Never include full file rewrites. Only small targeted fixes.`
 }
@@ -72,6 +75,14 @@ function buildAgentUserMessage(req: AgentRequest, toolResults: ToolResult[]): st
     return `Student question: ${req.question}
 
 Problem: ${req.unitTitle} — ${req.unitConcept}
+Execution mode: ${req.executionMode ?? 'stdio'}
+${req.requiredSignature ? `Required signature: ${req.requiredSignature}` : ''}
+${req.detectedSignature ? `Detected signature: ${req.detectedSignature}` : ''}
+${req.requiredSignature
+            ? 'Contract: Keep the required signature exactly as-is. Fix implementation around it.'
+            : req.executionMode === 'function'
+                ? 'Contract: Function mode; focus on returned value contract.'
+                : 'Contract: Stdio mode; focus on stdin/stdout behavior.'}
 Struggle: failStreak=${req.struggleContext.runFailStreak}, stuckTime=${req.struggleContext.timeStuckSeconds}s, lastError=${req.struggleContext.lastErrorType ?? 'none'}, level=${req.struggleContext.level}
 
 ${toolSection}
@@ -82,28 +93,51 @@ Respond with the JSON object only.`
 // ── Local fallback (no Bedrock) ────────────────────────────────────────────
 
 function buildLocalFallback(req: AgentRequest): AgentResponse {
-    const base: AgentResponse = {
-        tier: req.tier,
-        intent: 'Helping with coding problem',
-        reasoning_brief: `Running in local fallback mode (no Bedrock). Tier ${req.tier} help for "${req.unitTitle}".`,
-        steps: [],
-        hints: [],
-        patch_suggestion: null,
+  const base: AgentResponse = {
+    tier: req.tier,
+    intent: 'Helping with coding problem',
+    reasoning_brief: `Let's focus on the contract for "${req.unitTitle}" and get this run passing.`,
+    steps: [],
+    hints: [],
+    patch_suggestion: null,
         safety_flags: ['local_fallback'],
     }
 
     if (req.tier === 1) {
-        base.hints = [
-            'Review the error message carefully — it often points to the exact line.',
-            `Think about what the "${req.unitConcept}" concept requires.`,
-        ]
-        base.steps = ['Read the error output', 'Check your logic against the concept', 'Try a small fix and re-run']
+        if (req.requiredSignature) {
+            base.hints = [
+                `Match the exact signature: ${req.requiredSignature}.`,
+                req.detectedSignature
+                    ? `Your detected signature is ${req.detectedSignature}; adjust only the function shape.`
+                    : 'Define the required function first, then return the expected value.',
+            ]
+        } else if ((req.executionMode ?? 'stdio') === 'function') {
+            base.hints = [
+                'This is function mode: return the expected value from the function.',
+                'Avoid switching to print-based output unless the unit explicitly asks for stdio.',
+            ]
+        } else {
+            base.hints = [
+                'This is stdio mode: read stdin and print exactly what the tests expect.',
+                `Think about what the "${req.unitConcept}" concept requires.`,
+            ]
+        }
+        base.steps = ['Read the latest run output', 'Apply one small contract-aligned fix', 'Run again']
     } else if (req.tier === 2) {
-        base.hints = [
-            req.failingSummary
-                ? `Your failing tests suggest: ${req.failingSummary.slice(0, 100)}`
-                : 'Check if your function returns the expected type.',
-        ]
+        base.hints = req.requiredSignature
+            ? [
+                `Keep ${req.requiredSignature} unchanged and fix only implementation details.`,
+                req.failingSummary
+                    ? `Use this failure clue: ${req.failingSummary.slice(0, 100)}`
+                    : 'Return the expected type/value contract from the required function.',
+            ]
+            : [
+                req.failingSummary
+                    ? `Your failing tests suggest: ${req.failingSummary.slice(0, 100)}`
+                    : (req.executionMode ?? 'stdio') === 'function'
+                        ? 'Check if your function returns the expected type and value.'
+                        : 'Check if stdout exactly matches expected output.',
+            ]
         base.steps = [
             'Identify which test case fails',
             'Compare your output to the expected output',

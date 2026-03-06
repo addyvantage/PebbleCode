@@ -347,6 +347,42 @@ function buildMissingTemplateMessage(unitId: string, language: SessionEditorLang
   return `[session] Missing boilerplate template for unit="${unitId}" language="${language}".`
 }
 
+function normalizeTemplateText(value: string) {
+  return value.replace(/\r\n/g, '\n').trim()
+}
+
+function repairLegacyCFunctionDraft(unitId: string, language: SessionEditorLanguage, code: string) {
+  if (language !== 'c') {
+    return code
+  }
+
+  const cTemplate = getUnitFunctionMode('c', unitId)?.starterStub
+  if (!cTemplate) {
+    return code
+  }
+
+  const normalizedCode = normalizeTemplateText(code)
+  if (!normalizedCode) {
+    return code
+  }
+
+  const cppTemplate = getUnitFunctionMode('cpp', unitId)?.starterStub
+  if (cppTemplate && normalizedCode === normalizeTemplateText(cppTemplate)) {
+    return cTemplate
+  }
+
+  if (
+    unitId === 'hello-world'
+    && /class\s+Solution/.test(normalizedCode)
+    && /string\s+solve\s*\(/.test(normalizedCode)
+    && !/char\s*\*\s*solve\s*\(/.test(normalizedCode)
+  ) {
+    return cTemplate
+  }
+
+  return code
+}
+
 function formatSqlPreviewTable(table: SqlPreviewTable) {
   const header = table.columns.join(' | ')
   const separator = table.columns.map(() => '---').join(' | ')
@@ -1137,7 +1173,8 @@ export function SessionPage() {
 
     const storedEntry = problemCodeByLang[currentSessionKey]
     const storedCode = storedEntry?.codeByLanguage[sessionLanguage]
-    const nextCode = storedCode ?? resolveSessionTemplate(currentUnit, sessionLanguage)
+    const resolvedCode = storedCode ?? resolveSessionTemplate(currentUnit, sessionLanguage)
+    const nextCode = repairLegacyCFunctionDraft(currentUnit.id, sessionLanguage, resolvedCode)
     setDraftByUnitId((prev) => {
       if (prev[currentUnit.id]?.[sessionLanguage] === nextCode) {
         return prev
@@ -2078,9 +2115,13 @@ export function SessionPage() {
     const savedCode = updatedEntry.codeByLanguage[newLang]
     let newCode: string
     if (savedCode !== undefined) {
-      newCode = savedCode
+      newCode = repairLegacyCFunctionDraft(currentUnit.id, newLang, savedCode)
     } else {
-      newCode = resolveSessionTemplate(currentUnit, newLang)
+      newCode = repairLegacyCFunctionDraft(
+        currentUnit.id,
+        newLang,
+        resolveSessionTemplate(currentUnit, newLang),
+      )
     }
 
     // Apply
@@ -2619,6 +2660,9 @@ export function SessionPage() {
             unitTitle={activeProblem?.title ?? currentUnitCopy?.title ?? currentUnit.title}
             unitConcept={activeProblem?.topics[0] ?? currentUnitCopy?.concept ?? currentUnit.concept}
             language={sessionLanguage}
+            executionMode={currentModeDescriptor.mode}
+            requiredSignature={signatureHelper?.required ?? currentFunctionConfig?.signatureLabel ?? null}
+            detectedSignature={signatureHelper?.found ?? null}
             liveCode={liveCodeSnapshot}
             getLiveCode={getLiveCodeSnapshot}
             runStatus={runStatus}

@@ -7,6 +7,9 @@ export interface AgentRequest {
     question: string
     codeExcerpt: string
     language: string
+    executionMode?: 'function' | 'stdio'
+    requiredSignature?: string
+    detectedSignature?: string
     runStatus: string
     runMessage: string
     failingSummary: string

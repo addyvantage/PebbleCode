@@ -13,6 +13,9 @@ export const config = {
 type PebbleContext = {
   taskTitle?: unknown
   codeText?: unknown
+  executionMode?: unknown
+  requiredSignature?: unknown
+  detectedSignature?: unknown
   runStatus?: unknown
   runMessage?: unknown
   currentErrorKey?: unknown
@@ -116,6 +119,9 @@ function trimCodeForModel(codeText: string, maxChars: number) {
 
 type CompactModelContext = {
   taskTitle: string
+  executionMode: string
+  requiredSignature: string
+  detectedSignature: string
   runStatus: string
   runMessage: string
   currentErrorKey: string
@@ -147,6 +153,9 @@ function compactContextForModel(context: PebbleContext): CompactModelContext {
 
   return {
     taskTitle: trimValue(asOptionalString(context.taskTitle), 120),
+    executionMode: trimValue(asOptionalString(context.executionMode), 40) || 'stdio',
+    requiredSignature: trimValue(asOptionalString(context.requiredSignature), 160),
+    detectedSignature: trimValue(asOptionalString(context.detectedSignature), 160),
     runStatus: trimValue(asOptionalString(context.runStatus), 40),
     runMessage: trimValue(asOptionalString(context.runMessage), RUN_MESSAGE_MAX_CHARS),
     currentErrorKey: trimValue(asOptionalString(context.currentErrorKey), 80) || 'none',
@@ -161,10 +170,19 @@ function compactContextForModel(context: PebbleContext): CompactModelContext {
 }
 
 function buildBedrockUserMessage(prompt: string, context: CompactModelContext) {
+  const contractLine = context.requiredSignature
+    ? `Contract: Required signature is "${context.requiredSignature}" and must stay unchanged. Detected signature: ${context.detectedSignature || 'unknown'}.`
+    : context.executionMode === 'function'
+      ? 'Contract: Function mode. Return values from the required function; do not default to print/stdio advice.'
+      : 'Contract: Stdio mode. Read stdin and print expected stdout.'
+
   return [
     prompt,
     `Model context: ${JSON.stringify({
       taskTitle: context.taskTitle,
+      executionMode: context.executionMode,
+      requiredSignature: context.requiredSignature,
+      detectedSignature: context.detectedSignature,
       runStatus: context.runStatus,
       runMessage: context.runMessage,
       currentErrorKey: context.currentErrorKey,
@@ -175,6 +193,7 @@ function buildBedrockUserMessage(prompt: string, context: CompactModelContext) {
       repeatErrorCount: context.repeatErrorCount,
       errorHistory: context.errorHistory,
     })}`,
+    contractLine,
     context.codeText ? `Code excerpt:\n${context.codeText}` : '',
     `Constraints: ${PEBBLE_CLARIFY_RULE} ${PEBBLE_OUTPUT_RULE}`,
   ]

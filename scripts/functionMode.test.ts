@@ -163,6 +163,17 @@ test('function-mode contract: C template exists for hello-world', () => {
   const config = getUnitFunctionMode('c', 'hello-world')
   assert.ok(config)
   assert.equal(config?.signatureLabel, 'char* solve()')
+  assert.match(config?.starterStub ?? '', /char\s*\*\s*solve\s*\(/)
+  assert.doesNotMatch(config?.starterStub ?? '', /\bclass\s+Solution\b/)
+  assert.doesNotMatch(config?.starterStub ?? '', /\bstd::string\b/)
+  assert.doesNotMatch(config?.starterStub ?? '', /\busing\s+namespace\s+std\b/)
+})
+
+test('function-mode contract: C template for non-hello units is top-level C function', () => {
+  const config = getUnitFunctionMode('c', 'variables-sum')
+  assert.ok(config)
+  assert.match(config?.starterStub ?? '', /char\s*\*\s*solve\s*\(\s*const\s+char\s*\*\s*input\s*\)/)
+  assert.doesNotMatch(config?.starterStub ?? '', /\bclass\s+Solution\b/)
 })
 
 test('javascript signature: accepts CRLF + comments + multiline params', () => {

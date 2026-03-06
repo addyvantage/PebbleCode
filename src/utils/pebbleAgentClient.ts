@@ -22,6 +22,9 @@ export interface AgentRequestInput {
     question: string
     codeExcerpt: string
     language: string
+    executionMode?: 'function' | 'stdio'
+    requiredSignature?: string
+    detectedSignature?: string
     runStatus: string
     runMessage: string
     failingSummary: string
@@ -107,11 +110,19 @@ function buildLegacyPrompt(input: AgentRequestInput): string {
         `Unit: ${input.unitTitle}`,
         `Concept: ${input.unitConcept}`,
         `Language: ${input.language}`,
+        `Execution mode: ${input.executionMode ?? 'stdio'}`,
+        input.requiredSignature ? `Required signature: ${input.requiredSignature}` : '',
+        input.detectedSignature ? `Detected signature: ${input.detectedSignature}` : '',
         `Run status: ${input.runStatus}`,
         input.runMessage ? `Run output summary: ${input.runMessage}` : '',
         input.failingSummary ? `Failing tests: ${input.failingSummary}` : '',
         `Struggle context: failStreak=${input.struggleContext.runFailStreak}, stuck=${input.struggleContext.timeStuckSeconds}s, lastError=${input.struggleContext.lastErrorType ?? 'none'}, level=${input.struggleContext.level}`,
         tierRule,
+        input.requiredSignature
+            ? 'CONTRACT: Required signature is mandatory. Keep it unchanged. For function mode, return values instead of printing unless explicitly requested.'
+            : input.executionMode === 'stdio'
+                ? 'CONTRACT: This unit is stdio-mode. Reading stdin and printing output is expected.'
+                : '',
         `Question: ${input.question}`,
     ]
         .filter(Boolean)
@@ -128,6 +139,9 @@ async function fallbackToLegacyPebble(input: AgentRequestInput, reason: string):
             runStatus: input.runStatus,
             runMessage: input.runMessage,
             language: input.language,
+            executionMode: input.executionMode ?? 'stdio',
+            requiredSignature: input.requiredSignature ?? '',
+            detectedSignature: input.detectedSignature ?? '',
             helpTier: input.tier,
             struggleContext: input.struggleContext,
             currentErrorKey: input.struggleContext.lastErrorType,
@@ -168,7 +182,21 @@ export async function askPebbleAgent(input: AgentRequestInput): Promise<AgentRes
     }
 
     try {
-        const { signal: _, ...body } = input
+        const body: Omit<AgentRequestInput, 'signal'> = {
+            tier: input.tier,
+            question: input.question,
+            codeExcerpt: input.codeExcerpt,
+            language: input.language,
+            executionMode: input.executionMode,
+            requiredSignature: input.requiredSignature,
+            detectedSignature: input.detectedSignature,
+            runStatus: input.runStatus,
+            runMessage: input.runMessage,
+            failingSummary: input.failingSummary,
+            unitTitle: input.unitTitle,
+            unitConcept: input.unitConcept,
+            struggleContext: input.struggleContext,
+        }
 
         const response = await fetch('/api/pebble-agent', {
             method: 'POST',
