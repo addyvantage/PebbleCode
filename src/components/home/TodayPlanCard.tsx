@@ -216,9 +216,7 @@ export function TodayPlanCard() {
     const taskRowClass = theme === 'dark'
         ? 'border border-pebble-border/18 bg-pebble-canvas/38 hover:bg-pebble-canvas/50'
         : 'border border-pebble-border/22 bg-[rgba(240,245,253,0.92)] hover:bg-[rgba(233,240,251,1)]'
-    const insetPanelClass = theme === 'dark'
-        ? 'border border-pebble-border/16 bg-pebble-overlay/[0.04]'
-        : 'border border-pebble-border/18 bg-white/58'
+    const insetPanelClass = 'landing-inset'
     const darkMetaChipClass = theme === 'dark'
         ? 'pebble-chip text-[hsl(220_16%_84%)]'
         : 'pebble-chip text-pebble-text-muted'
@@ -259,16 +257,14 @@ export function TodayPlanCard() {
     const outcomeBodyClass = theme === 'dark'
         ? 'text-[hsl(220_18%_88%)]'
         : 'text-[hsl(223_28%_24%)]'
-    const outcomeStripClass = theme === 'dark'
-        ? 'border border-pebble-border/20 bg-pebble-overlay/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
-        : 'border border-pebble-border/18 bg-white/62 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]'
+    const outcomeStripClass = 'landing-inset-strong shadow-none'
     const pacingBarClass = focusLoadState === 'balanced'
-        ? 'bg-emerald-500/80'
+        ? 'bg-emerald-500/82 shadow-[0_0_18px_rgba(16,185,129,0.22)]'
         : focusLoadState === 'stretch'
-            ? 'bg-amber-500/80'
+            ? 'bg-amber-500/82 shadow-[0_0_18px_rgba(245,158,11,0.24)]'
             : focusLoadState === 'heavy'
-                ? 'bg-orange-500/80'
-                : 'bg-pebble-accent/58'
+                ? 'bg-orange-500/84 shadow-[0_0_18px_rgba(249,115,22,0.22)]'
+                : 'bg-pebble-accent/70 shadow-[0_0_18px_rgba(59,130,246,0.18)]'
     const expectedOutcome = plan
         ? buildExpectedOutcome({
             tasks: plan.tasks.slice(0, 3),
@@ -287,7 +283,7 @@ export function TodayPlanCard() {
                             <span className="pebble-chip-strong rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-pebble-accent">
                                 Daily loop
                             </span>
-                            <span className={`rounded-full border px-2 py-0.5 text-[10px] ${darkMetaChipClass}`}>
+                            <span className={`landing-chip-muted rounded-full px-2 py-0.5 text-[10px] ${darkMetaChipClass}`}>
                                 25 min focus
                             </span>
                         </div>
@@ -300,12 +296,12 @@ export function TodayPlanCard() {
                     </div>
                     <div className="flex items-center gap-2">
                         {plan && streak > 0 && (
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium shadow-[0_8px_18px_rgba(55,72,110,0.08)] ${streakChipClass}`}>
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${streakChipClass}`}>
                                 <Flame className="h-3 w-3" />
                                 {t('home.plan.streak', { count: String(streak) })}
                             </span>
                         )}
-                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium shadow-[0_8px_18px_rgba(55,72,110,0.08)] ${loadChipClass}`}>
+                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${loadChipClass}`}>
                             <span className={`h-1.5 w-1.5 rounded-full ${loadStateDotClass}`} />
                             <span>{`Focus load ${plannedMinutes}/${FOCUS_TARGET_MINUTES}m`}</span>
                             {plan ? (
@@ -347,7 +343,7 @@ export function TodayPlanCard() {
                     </div>
                 ) : (
                     <div className="space-y-3.5">
-                        <div className={`flex items-center justify-between rounded-[14px] px-3 py-2.5 ${insetPanelClass}`}>
+                        <div className={`flex items-center justify-between rounded-[14px] px-3.5 py-3 ${insetPanelClass}`}>
                             <div className="min-w-0">
                                 <p className={`text-[11px] uppercase tracking-[0.08em] ${darkLabelClass} ${isRTL ? 'rtlText' : ''}`}>
                                     Session pacing
@@ -357,7 +353,7 @@ export function TodayPlanCard() {
                                 </p>
                             </div>
                             <div className="ml-3 hidden min-w-[110px] sm:block">
-                                <div className="h-2.5 overflow-hidden rounded-full border border-pebble-border/24 bg-pebble-overlay/[0.06]">
+                                <div className="h-3 overflow-hidden rounded-full border border-pebble-border/18 bg-pebble-overlay/[0.04]">
                                     <div
                                         className={`h-full rounded-full ${pacingBarClass}`}
                                         style={{ width: `${pacingBarWidth}%` }}
@@ -369,7 +365,7 @@ export function TodayPlanCard() {
                             {plan.tasks.slice(0, 3).map((task) => {
                                 const checked = state.completedTasks.includes(task.id)
                                 return (
-                                    <li key={task.id} className={`relative flex items-center justify-between rounded-[12px] px-4 py-3 transition-colors ${taskRowClass}`}>
+                                    <li key={task.id} className={`relative flex items-center justify-between rounded-[14px] px-4 py-3.5 transition-colors ${taskRowClass}`}>
 
                                         <div className="flex min-w-0 items-center gap-3">
                                             <button
@@ -412,7 +408,7 @@ export function TodayPlanCard() {
                                             </button>
                                         </div>
 
-                                        <span className="shrink-0 ml-3 text-[10.5px] font-medium text-pebble-text-muted bg-pebble-overlay/[0.06] px-1.5 py-0.5 rounded">
+                                        <span className="landing-chip-muted shrink-0 ml-3 rounded-full px-2 py-0.5 text-[10.5px] font-medium">
                                             {task.estimatedMinutes}m
                                         </span>
                                     </li>
@@ -430,7 +426,7 @@ export function TodayPlanCard() {
                             </button>
                         </div>
                         {expectedOutcome ? (
-                            <div className={`mx-1 flex items-start gap-2.5 rounded-[14px] px-3 py-2.5 ${outcomeStripClass}`}>
+                            <div className={`mx-1 flex items-start gap-2.5 rounded-[15px] px-3.5 py-3 ${outcomeStripClass}`}>
                                 <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pebble-accent/12 text-pebble-accent">
                                     <Gauge className="h-3.5 w-3.5" aria-hidden="true" />
                                 </span>

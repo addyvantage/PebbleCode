@@ -37,6 +37,7 @@ export function SiteFooter() {
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-[1280px] px-2 sm:px-3 lg:px-4">
+        <div className="rounded-[28px] border border-pebble-border/10 bg-pebble-overlay/[0.03] px-5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] dark:border-pebble-border/8 dark:bg-pebble-overlay/[0.02]">
         <div className="grid grid-cols-1 gap-y-10 pt-10 pb-12 sm:pt-11 sm:pb-14 md:pb-[4.25rem] lg:grid-cols-[minmax(250px,360px)_1fr] lg:items-start lg:gap-x-8">
           <div className="space-y-6.5 lg:pr-2">
             <div className="flex items-center gap-3">
@@ -89,6 +90,7 @@ export function SiteFooter() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </footer>

@@ -64,30 +64,30 @@ function tilePlacementClass(id: FeatureTile['id']) {
 function toneClass(tone: TileTone, isDark: boolean) {
   if (tone === 'blue') {
     return isDark
-      ? 'border-pebble-accent/42 bg-pebble-accent/18 text-pebble-text-primary shadow-[0_10px_20px_rgba(0,0,0,0.14)]'
-      : 'border-pebble-accent/46 bg-pebble-accent/12 text-pebble-accent shadow-[0_8px_16px_rgba(55,72,110,0.06)]'
+      ? 'border-pebble-accent/30 bg-pebble-accent/16 text-pebble-text-primary'
+      : 'border-pebble-accent/28 bg-pebble-accent/10 text-pebble-accent'
   }
   if (tone === 'indigo') {
     return isDark
-      ? 'border-pebble-border/30 bg-pebble-overlay/[0.10] text-pebble-text-primary shadow-[0_10px_20px_rgba(0,0,0,0.12)]'
-      : 'border-pebble-border/34 bg-pebble-overlay/[0.10] text-pebble-text-secondary shadow-[0_8px_16px_rgba(55,72,110,0.05)]'
+      ? 'border-pebble-border/18 bg-pebble-overlay/[0.08] text-pebble-text-primary'
+      : 'border-pebble-border/18 bg-pebble-overlay/[0.10] text-pebble-text-secondary'
   }
   return isDark
-    ? 'border-pebble-border/30 bg-pebble-overlay/[0.10] text-pebble-text-primary shadow-[0_10px_20px_rgba(0,0,0,0.12)]'
-    : 'border-pebble-border/34 bg-pebble-overlay/[0.10] text-pebble-text-secondary shadow-[0_8px_16px_rgba(55,72,110,0.05)]'
+    ? 'border-pebble-border/18 bg-pebble-overlay/[0.08] text-pebble-text-primary'
+    : 'border-pebble-border/18 bg-pebble-overlay/[0.10] text-pebble-text-secondary'
 }
 
 function previewSurfaceClass(tone: TileTone, isDark: boolean) {
   const base = isDark
-    ? 'border bg-pebble-canvas/40 shadow-[inset_0_1px_0_rgba(var(--pebble-overlay),0.08)]'
-    : 'border bg-white/72 shadow-[inset_0_1px_0_rgba(var(--pebble-overlay),0.20)]'
+    ? 'border bg-[#121a2c]/74 shadow-[inset_0_1px_0_rgba(var(--pebble-overlay),0.06)]'
+    : 'border bg-white/86 shadow-[0_10px_24px_rgba(55,72,110,0.05),inset_0_1px_0_rgba(var(--pebble-overlay),0.24)]'
   if (tone === 'blue') {
-    return `${base} ${isDark ? 'border-pebble-accent/36' : 'border-pebble-accent/44'}`
+    return `${base} ${isDark ? 'border-pebble-accent/22' : 'border-pebble-accent/20'}`
   }
   if (tone === 'indigo') {
-    return `${base} ${isDark ? 'border-pebble-border/38' : 'border-pebble-border/48'}`
+    return `${base} ${isDark ? 'border-pebble-border/18' : 'border-pebble-border/20'}`
   }
-  return `${base} ${isDark ? 'border-pebble-border/38' : 'border-pebble-border/48'}`
+  return `${base} ${isDark ? 'border-pebble-border/18' : 'border-pebble-border/20'}`
 }
 
 function onTileMouseMove(event: MouseEvent<HTMLElement>) {
@@ -530,7 +530,7 @@ export function FeatureGrid() {
       <div className="pointer-events-none absolute right-[-8%] top-[-10%] h-48 w-48 rounded-full bg-pebble-accent/10 blur-3xl" />
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.06fr_0.94fr] lg:items-end">
         <div className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-pebble-text-muted">
+          <p className="landing-chip-muted inline-flex w-fit rounded-full px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.12em]">
             Built for fast recovery loops
           </p>
           <h2 className="max-w-[17ch] text-balance text-[1.84rem] font-semibold leading-[1.05] tracking-[-0.03em] text-pebble-text-primary md:text-[2.18rem] lg:text-[2.42rem]">
@@ -543,7 +543,7 @@ export function FeatureGrid() {
           </p>
           <div className="flex flex-wrap gap-2 lg:justify-end">
             {['Real runtime checks', 'Coach in context', 'Multilingual mentoring'].map((chip) => (
-              <span key={chip} className={`rounded-full border px-2.5 py-0.5 text-[10.5px] font-medium ${isDark ? 'border-pebble-border/30 bg-pebble-overlay/[0.06] text-pebble-text-secondary' : 'border-pebble-border/32 bg-pebble-overlay/[0.05] text-pebble-text-secondary'}`}>
+              <span key={chip} className="landing-chip-muted rounded-full px-2.5 py-0.5 text-[10.5px] font-medium">
                 {chip}
               </span>
             ))}
@@ -561,11 +561,11 @@ export function FeatureGrid() {
               className={`group relative isolate overflow-hidden rounded-[28px] p-5 md:p-6 ${
                 isPrimaryStory
                   ? isDark
-                    ? 'border border-pebble-accent/24 bg-[linear-gradient(180deg,rgba(59,130,246,0.14)_0%,rgba(255,255,255,0.025)_100%)] shadow-[0_18px_44px_rgba(18,24,38,0.32),inset_0_1px_0_rgba(255,255,255,0.08)]'
-                    : 'border border-pebble-accent/22 bg-[linear-gradient(180deg,rgba(59,130,246,0.10)_0%,rgba(255,255,255,0.76)_100%)] shadow-[0_16px_36px_rgba(55,72,110,0.13),inset_0_1px_0_rgba(255,255,255,0.82)]'
+                    ? 'border border-pebble-accent/14 bg-[linear-gradient(180deg,rgba(59,130,246,0.12)_0%,rgba(255,255,255,0.02)_100%)] shadow-[0_20px_48px_rgba(18,24,38,0.30),inset_0_1px_0_rgba(255,255,255,0.07)]'
+                    : 'border border-pebble-accent/16 bg-[linear-gradient(180deg,rgba(59,130,246,0.08)_0%,rgba(255,255,255,0.88)_100%)] shadow-[0_16px_34px_rgba(55,72,110,0.10),inset_0_1px_0_rgba(255,255,255,0.86)]'
                   : isDark
-                    ? 'border border-pebble-border/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.045)_0%,rgba(255,255,255,0.01)_100%)] shadow-[0_18px_44px_rgba(18,24,38,0.24),inset_0_1px_0_rgba(255,255,255,0.06)]'
-                    : 'border border-pebble-border/26 bg-[linear-gradient(180deg,rgba(255,255,255,0.88)_0%,rgba(244,248,255,0.96)_100%)] shadow-[0_14px_30px_rgba(55,72,110,0.08),inset_0_1px_0_rgba(255,255,255,0.84)]'
+                    ? 'border border-pebble-border/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0.01)_100%)] shadow-[0_16px_36px_rgba(18,24,38,0.22),inset_0_1px_0_rgba(255,255,255,0.05)]'
+                    : 'border border-pebble-border/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(243,247,255,0.98)_100%)] shadow-[0_12px_28px_rgba(55,72,110,0.07),inset_0_1px_0_rgba(255,255,255,0.88)]'
               } ${tilePlacementClass(tile.id)}`}
               style={{ ['--mx' as string]: '50%', ['--my' as string]: '50%' }}
               onMouseMove={onTileMouseMove}
@@ -583,7 +583,7 @@ export function FeatureGrid() {
               <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-pebble-overlay/70 to-transparent" />
 
               <div className="relative z-10 flex items-start justify-between gap-3">
-                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-pebble-canvas/60 ${isDark ? 'border-pebble-border/38 text-pebble-text-primary' : 'border-pebble-border/46 text-pebble-text-secondary'}`}>
+                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${isPrimaryStory ? 'landing-inset-strong' : 'landing-inset'} ${isDark ? 'text-pebble-text-primary' : 'text-pebble-text-secondary'}`}>
                   <Icon className="h-[17px] w-[17px]" aria-hidden="true" />
                 </span>
                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${toneClass(tile.tone, isDark)}`}>

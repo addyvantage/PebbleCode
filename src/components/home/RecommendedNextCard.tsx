@@ -23,12 +23,8 @@ export function RecommendedNextCard({ className }: RecommendedNextCardProps) {
     const [problemId, setProblemId] = useState<string>('')
     const [isExpanded, setIsExpanded] = useState(false)
     const recent = getRecentActivity()
-    const primaryInsetClass = theme === 'dark'
-        ? 'border border-pebble-accent/18 bg-pebble-accent/10'
-        : 'border border-pebble-accent/18 bg-[rgba(233,241,255,0.92)]'
-    const quietInsetClass = theme === 'dark'
-        ? 'border border-pebble-border/16 bg-pebble-overlay/[0.05]'
-        : 'border border-pebble-border/18 bg-white/62'
+    const primaryInsetClass = 'landing-inset-strong'
+    const quietInsetClass = 'landing-inset'
     const darkMetaChipClass = theme === 'dark'
         ? 'pebble-chip text-[hsl(220_16%_84%)]'
         : 'pebble-chip text-pebble-text-secondary'
@@ -126,7 +122,7 @@ export function RecommendedNextCard({ className }: RecommendedNextCardProps) {
                         <span className="pebble-chip-strong rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-pebble-accent">
                             Best next move
                         </span>
-                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${darkMetaChipClass}`}>
+                        <span className={`landing-chip-muted rounded-full px-2 py-0.5 text-[10px] font-medium ${darkMetaChipClass}`}>
                             {baseProblem.estimatedMinutes} min
                         </span>
                     </div>
@@ -140,12 +136,12 @@ export function RecommendedNextCard({ className }: RecommendedNextCardProps) {
                         {localizedProblem.topics.slice(0, 1).map((topic) => (
                             <span
                                 key={topic}
-                                className={`rounded-full border px-2 py-[1px] text-[11px] font-medium whitespace-nowrap ${darkMetaChipClass}`}
+                                className={`landing-chip-muted rounded-full px-2 py-[1px] text-[11px] font-medium whitespace-nowrap ${darkMetaChipClass}`}
                             >
                                 {topic}
                             </span>
                         ))}
-                        <span className={`rounded-full border px-2 py-[1px] text-[11px] font-medium whitespace-nowrap ${darkMetaChipClass}`}>
+                        <span className={`landing-chip-muted rounded-full px-2 py-[1px] text-[11px] font-medium whitespace-nowrap ${darkMetaChipClass}`}>
                             {recoveryCue}
                         </span>
                     </div>

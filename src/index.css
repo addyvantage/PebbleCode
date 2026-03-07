@@ -397,55 +397,49 @@ html {
   }
 
   .landing-hero-shell {
-    border: 1px solid rgba(var(--pebble-border), 0.16);
+    border: 1px solid rgba(var(--pebble-border), 0.14);
     background:
-      radial-gradient(120% 120% at 50% 0%, rgba(var(--pebble-accent), 0.10), transparent 45%),
+      radial-gradient(130% 120% at 50% 0%, rgba(var(--pebble-accent), 0.13), transparent 42%),
       linear-gradient(180deg,
-        rgba(var(--pebble-overlay), 0.11) 0%,
-        rgba(var(--pebble-overlay), 0.01) 100%);
-    background-color: rgba(var(--pebble-panel), 0.88);
+        rgba(var(--pebble-overlay), 0.16) 0%,
+        rgba(var(--pebble-overlay), 0.03) 100%);
+    background-color: rgba(244, 248, 255, 0.90);
     box-shadow:
-      var(--pebble-shadow-3),
-      inset 0 1px 0 rgba(var(--pebble-overlay), 0.14),
+      0 28px 72px rgba(55, 72, 110, 0.16),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.28),
       inset 0 -1px 0 rgba(var(--pebble-border), 0.08);
-    backdrop-filter: blur(22px);
-    -webkit-backdrop-filter: blur(22px);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
   }
 
   .landing-subsection {
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(var(--pebble-border), 0.16);
+    border: 1px solid rgba(var(--pebble-border), 0.12);
     background:
-      radial-gradient(90% 90% at 0% 0%, rgba(var(--pebble-accent), 0.045), transparent 40%),
+      radial-gradient(95% 95% at 0% 0%, rgba(var(--pebble-accent), 0.05), transparent 38%),
       linear-gradient(180deg,
-        rgba(var(--pebble-overlay), 0.08) 0%,
+        rgba(var(--pebble-overlay), 0.07) 0%,
         rgba(var(--pebble-overlay), 0.015) 100%);
-    background-color: rgba(232, 239, 250, 0.78);
+    background-color: rgba(224, 233, 247, 0.70);
     box-shadow:
-      0 22px 58px rgba(55, 72, 110, 0.12),
-      inset 0 1px 0 rgba(var(--pebble-overlay), 0.1),
-      inset 0 -1px 0 rgba(var(--pebble-border), 0.08);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+      0 22px 54px rgba(55, 72, 110, 0.10),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.14);
   }
 
   .landing-showcase-shell {
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(var(--pebble-border), 0.18);
+    border: 1px solid rgba(var(--pebble-border), 0.13);
     background:
-      radial-gradient(120% 120% at 100% 0%, rgba(var(--pebble-accent), 0.055), transparent 42%),
+      radial-gradient(125% 120% at 100% 0%, rgba(var(--pebble-accent), 0.065), transparent 40%),
       linear-gradient(180deg,
-        rgba(var(--pebble-overlay), 0.10) 0%,
-        rgba(var(--pebble-overlay), 0.01) 100%);
-    background-color: rgba(244, 248, 255, 0.9);
+        rgba(var(--pebble-overlay), 0.14) 0%,
+        rgba(var(--pebble-overlay), 0.03) 100%);
+    background-color: rgba(241, 246, 255, 0.92);
     box-shadow:
-      0 26px 68px rgba(55, 72, 110, 0.12),
-      inset 0 1px 0 rgba(var(--pebble-overlay), 0.12),
-      inset 0 -1px 0 rgba(var(--pebble-border), 0.08);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+      0 28px 72px rgba(55, 72, 110, 0.12),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.20);
   }
 
   .problems-page-shell {
@@ -782,54 +776,120 @@ html {
   }
 
   .theme-dark .landing-hero-shell {
-    border-color: rgba(var(--pebble-border), 0.18);
-    background-color: rgba(38, 45, 70, 0.72);
+    border-color: rgba(var(--pebble-border), 0.16);
+    background-color: rgba(28, 36, 58, 0.84);
+    box-shadow:
+      0 34px 84px rgba(0, 0, 0, 0.42),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.08),
+      inset 0 -1px 0 rgba(var(--pebble-border), 0.08);
   }
 
   .theme-dark .landing-subsection {
-    border-color: rgba(var(--pebble-border), 0.18);
-    background-color: rgba(42, 48, 72, 0.56);
+    border-color: rgba(var(--pebble-border), 0.14);
+    background-color: rgba(24, 31, 48, 0.78);
+    box-shadow:
+      0 22px 54px rgba(0, 0, 0, 0.26),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.06);
   }
 
   .theme-dark .landing-showcase-shell {
-    border-color: rgba(var(--pebble-border), 0.2);
-    background-color: rgba(33, 39, 61, 0.62);
+    border-color: rgba(var(--pebble-border), 0.15);
+    background-color: rgba(30, 38, 60, 0.82);
+    box-shadow:
+      0 26px 62px rgba(0, 0, 0, 0.30),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.07);
   }
 
   .landing-primary-card {
-    border: 1px solid rgba(var(--pebble-border), 0.18);
+    border: 1px solid rgba(var(--pebble-border), 0.12);
     background:
-      linear-gradient(180deg, rgba(var(--pebble-overlay), 0.10) 0%, rgba(var(--pebble-overlay), 0.03) 100%);
-    background-color: rgba(var(--pebble-panel), 0.90);
+      linear-gradient(180deg, rgba(var(--pebble-overlay), 0.12) 0%, rgba(var(--pebble-overlay), 0.04) 100%);
+    background-color: rgba(247, 250, 255, 0.88);
     box-shadow:
-      0 18px 44px rgba(55, 72, 110, 0.13),
-      inset 0 1px 0 rgba(var(--pebble-overlay), 0.14);
+      0 18px 40px rgba(55, 72, 110, 0.12),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.22);
   }
 
   .landing-secondary-card {
-    border: 1px solid rgba(var(--pebble-border), 0.14);
+    border: 1px solid rgba(var(--pebble-border), 0.10);
     background:
-      linear-gradient(180deg, rgba(var(--pebble-overlay), 0.06) 0%, rgba(var(--pebble-overlay), 0.015) 100%);
-    background-color: rgba(var(--pebble-panel), 0.74);
+      linear-gradient(180deg, rgba(var(--pebble-overlay), 0.06) 0%, rgba(var(--pebble-overlay), 0.02) 100%);
+    background-color: rgba(237, 243, 253, 0.74);
     box-shadow:
       0 12px 28px rgba(55, 72, 110, 0.08),
-      inset 0 1px 0 rgba(var(--pebble-overlay), 0.12);
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.16);
   }
 
   .theme-dark .landing-primary-card {
-    border-color: rgba(var(--pebble-accent), 0.22);
-    background-color: rgba(47, 55, 84, 0.72);
+    border-color: rgba(var(--pebble-accent), 0.14);
+    background-color: rgba(34, 44, 70, 0.88);
     box-shadow:
-      0 20px 48px rgba(0, 0, 0, 0.30),
-      inset 0 1px 0 rgba(var(--pebble-overlay), 0.08);
+      0 22px 52px rgba(0, 0, 0, 0.34),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.07);
   }
 
   .theme-dark .landing-secondary-card {
-    border-color: rgba(var(--pebble-border), 0.18);
-    background-color: rgba(34, 40, 61, 0.60);
+    border-color: rgba(var(--pebble-border), 0.13);
+    background-color: rgba(26, 33, 52, 0.84);
     box-shadow:
-      0 16px 34px rgba(0, 0, 0, 0.24),
-      inset 0 1px 0 rgba(var(--pebble-overlay), 0.07);
+      0 16px 34px rgba(0, 0, 0, 0.26),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.06);
+  }
+
+  .landing-inset {
+    border: 1px solid rgba(var(--pebble-border), 0.1);
+    background:
+      linear-gradient(180deg, rgba(var(--pebble-overlay), 0.06) 0%, rgba(var(--pebble-overlay), 0.02) 100%);
+    background-color: rgba(250, 252, 255, 0.62);
+    box-shadow: inset 0 1px 0 rgba(var(--pebble-overlay), 0.20);
+  }
+
+  .landing-inset-strong {
+    border: 1px solid rgba(var(--pebble-accent), 0.12);
+    background:
+      linear-gradient(180deg, rgba(var(--pebble-accent), 0.08) 0%, rgba(var(--pebble-overlay), 0.03) 100%);
+    background-color: rgba(239, 246, 255, 0.78);
+    box-shadow:
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.22),
+      0 10px 24px rgba(55, 72, 110, 0.07);
+  }
+
+  .landing-chip-muted {
+    border: 1px solid rgba(var(--pebble-border), 0.14);
+    background-color: rgba(var(--pebble-overlay), 0.28);
+    color: rgb(var(--pebble-text-secondary));
+  }
+
+  .landing-chip-accent {
+    border: 1px solid rgba(var(--pebble-accent), 0.18);
+    background-color: rgba(var(--pebble-accent), 0.10);
+    color: rgb(var(--pebble-text-primary));
+  }
+
+  .theme-dark .landing-inset {
+    border-color: rgba(var(--pebble-border), 0.12);
+    background-color: rgba(19, 25, 40, 0.62);
+    box-shadow: inset 0 1px 0 rgba(var(--pebble-overlay), 0.05);
+  }
+
+  .theme-dark .landing-inset-strong {
+    border-color: rgba(var(--pebble-accent), 0.14);
+    background-color: rgba(24, 35, 57, 0.82);
+    box-shadow:
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.06),
+      0 12px 28px rgba(0, 0, 0, 0.18);
+  }
+
+  .theme-dark .landing-chip-muted {
+    border-color: rgba(var(--pebble-border), 0.18);
+    background-color: rgba(255, 255, 255, 0.05);
+    color: hsl(220 16% 82%);
+  }
+
+  .theme-dark .landing-chip-accent {
+    border-color: rgba(var(--pebble-accent), 0.22);
+    background-color: rgba(var(--pebble-accent), 0.14);
+    color: hsl(220 24% 94%);
   }
 
   /* ── Hero card surface ─────────────────────────────────────────────────────

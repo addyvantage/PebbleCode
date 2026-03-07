@@ -24,11 +24,11 @@ export function LandingPage() {
   const isUrdu = lang === 'ur'
 
   const continueSurfaceClass = theme === 'dark'
-    ? 'landing-secondary-card border-pebble-border/24'
-    : 'landing-secondary-card border-pebble-border/26'
+    ? 'landing-secondary-card'
+    : 'landing-secondary-card'
   const recommendedSurfaceClass = theme === 'dark'
-    ? 'landing-primary-card border-pebble-accent/22'
-    : 'landing-primary-card border-pebble-accent/22'
+    ? 'landing-primary-card'
+    : 'landing-primary-card'
 
   const recent = getRecentActivity()
   const recentProblem = recent ? getProblemById(recent.problemId) : null
@@ -80,9 +80,10 @@ export function LandingPage() {
             <TodayPlanCard />
             <div className="flex flex-col gap-5">
             <Card className={`relative flex flex-col overflow-hidden rounded-[24px] p-5 ${continueSurfaceClass}`} interactive>
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_38%)] opacity-80" />
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-3">
-                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-pebble-accent/22 bg-pebble-accent/12 text-pebble-accent">
+                  <div className="landing-inset-strong mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-pebble-accent">
                     <Play className="h-4 w-4" aria-hidden="true" />
                   </div>
                   {localizedRecent ? (
@@ -119,12 +120,12 @@ export function LandingPage() {
                     {recentProblem?.difficulty}
                   </span>
                   {localizedRecent.topics.slice(0, 1).map((topic) => (
-                    <span key={topic} className="rounded-full border border-pebble-border/24 bg-pebble-overlay/[0.05] px-2 py-0.5 text-[10.5px] font-medium text-pebble-text-secondary">
+                    <span key={topic} className="landing-chip-muted rounded-full px-2 py-0.5 text-[10.5px] font-medium">
                       {topic}
                     </span>
                   ))}
                   {recentTimeAgo ? (
-                    <span className="rounded-full border border-pebble-border/24 bg-pebble-overlay/[0.05] px-2 py-0.5 text-[10.5px] font-medium text-pebble-text-secondary">
+                    <span className="landing-chip-muted rounded-full px-2 py-0.5 text-[10.5px] font-medium">
                       {t('home.continue.lastOpened', { timeAgo: recentTimeAgo })}
                     </span>
                   ) : null}
@@ -132,14 +133,14 @@ export function LandingPage() {
               ) : (
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                   {['Guided warm-up', 'Real runtime checks', 'Coach in context'].map((label) => (
-                    <span key={label} className="rounded-full border border-pebble-border/24 bg-pebble-overlay/[0.05] px-2 py-0.5 text-[10.5px] font-medium text-pebble-text-secondary">
+                    <span key={label} className="landing-chip-muted rounded-full px-2 py-0.5 text-[10.5px] font-medium">
                       {label}
                     </span>
                   ))}
                 </div>
               )}
 
-              <div className="mt-auto flex items-center justify-between gap-3 rounded-[16px] border border-pebble-border/18 bg-pebble-overlay/[0.04] px-3 py-3">
+              <div className="landing-inset mt-auto flex items-center justify-between gap-3 rounded-[16px] px-3 py-3">
                 <p className={`text-[12px] leading-[1.6] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
                   {localizedRecent ? 'Jump straight back into the same unit and keep your recovery loop short.' : 'Start a first session and Pebble will build your continuation context automatically.'}
                 </p>
