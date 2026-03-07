@@ -257,43 +257,43 @@ export function ProblemsPage() {
     Hard: t('difficulty.hard'),
   } as const
   const eyebrowPillClass = isDark
-    ? 'inline-flex items-center gap-2 rounded-full border border-[rgba(132,168,255,0.28)] bg-[linear-gradient(180deg,rgba(20,31,62,0.88)_0%,rgba(14,24,49,0.92)_100%)] px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[hsl(218_85%_92%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_24px_rgba(8,15,35,0.24)] transition-colors duration-150 hover:border-[rgba(144,182,255,0.4)] hover:text-[hsl(220_100%_96%)]'
-    : 'inline-flex items-center gap-2 rounded-full border border-[rgba(88,122,196,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.98)_0%,rgba(240,246,255,0.94)_100%)] px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[hsl(222_34%_34%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_8px_22px_rgba(89,109,148,0.08)] transition-colors duration-150 hover:border-[rgba(88,122,196,0.28)] hover:text-[hsl(222_36%_28%)]'
+    ? 'inline-flex items-center gap-1.5 rounded-full border border-[rgba(132,168,255,0.24)] bg-[linear-gradient(180deg,rgba(20,31,62,0.78)_0%,rgba(14,24,49,0.84)_100%)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[hsl(218_85%_92%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_6px_16px_rgba(8,15,35,0.18)] transition-colors duration-150 hover:border-[rgba(144,182,255,0.34)] hover:text-[hsl(220_100%_96%)]'
+    : 'inline-flex items-center gap-1.5 rounded-full border border-[rgba(88,122,196,0.16)] bg-[linear-gradient(180deg,rgba(250,252,255,0.96)_0%,rgba(240,246,255,0.9)_100%)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[hsl(222_34%_34%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_6px_16px_rgba(89,109,148,0.06)] transition-colors duration-150 hover:border-[rgba(88,122,196,0.24)] hover:text-[hsl(222_36%_28%)]'
   const eyebrowIconClass = isDark ? 'h-3.5 w-3.5 text-[hsl(216_92%_74%)]' : 'h-3.5 w-3.5 text-[hsl(220_82%_56%)]'
 
   return (
-    <section className="page-enter space-y-3 pb-3">
-      <Card padding="sm" interactive className="problems-page-shell overflow-hidden rounded-[32px] px-4 py-4 md:px-6 md:py-5">
+    <section className="page-enter space-y-2 pb-2">
+      <Card padding="sm" interactive className="problems-page-shell overflow-hidden rounded-[28px] px-4 py-3 md:px-5 md:py-3.5">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pebble-overlay/72 to-transparent" />
         <div className="pointer-events-none absolute -right-10 top-0 h-40 w-40 rounded-full bg-pebble-accent/10 blur-3xl" />
-        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-[56rem] space-y-1.5">
+        <div className="relative flex flex-col gap-2.5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-[48rem] space-y-1">
             <div className={`pebble-section-label ${eyebrowPillClass}`}>
               <Sparkles className={eyebrowIconClass} aria-hidden="true" />
               Practice intelligence
             </div>
-            <div className="space-y-1">
-              <h1 className={`text-[2rem] font-semibold tracking-[-0.03em] text-pebble-text-primary md:text-[2.35rem] ${isUrdu ? 'rtlText' : ''}`}>
+            <div className="space-y-0.5">
+              <h1 className={`text-[1.52rem] font-semibold tracking-[-0.02em] text-pebble-text-primary md:text-[1.82rem] ${isUrdu ? 'rtlText' : ''}`}>
                 {t('problems.title')}
               </h1>
-              <p className={`max-w-[54rem] text-[14px] leading-[1.65] text-pebble-text-secondary md:text-[15px] ${isUrdu ? 'rtlText' : ''}`}>
+              <p className={`max-w-[46rem] text-[12.5px] leading-[1.55] text-pebble-text-secondary md:text-[13.5px] ${isUrdu ? 'rtlText' : ''}`}>
                 {t('problems.subtitle')}
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:min-w-[420px]">
-            <div className="problems-subsection-shell rounded-[20px] px-3 py-2.5">
-              <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">Library</p>
-              <p className="mt-1 text-[1.05rem] font-semibold tracking-[-0.02em] text-pebble-text-primary">{localizedProblems.length}</p>
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3 lg:min-w-[390px]">
+            <div className="problems-subsection-shell rounded-[16px] px-2.5 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.07em] text-pebble-text-muted">Library</p>
+              <p className="mt-0.5 text-[0.98rem] font-semibold tracking-[-0.01em] text-pebble-text-primary">{localizedProblems.length}</p>
             </div>
-            <div className="problems-subsection-shell rounded-[20px] px-3 py-2.5">
-              <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">Solved</p>
-              <p className="mt-1 text-[1.05rem] font-semibold tracking-[-0.02em] text-pebble-text-primary">{solvedCount}</p>
+            <div className="problems-subsection-shell rounded-[16px] px-2.5 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.07em] text-pebble-text-muted">Solved</p>
+              <p className="mt-0.5 text-[0.98rem] font-semibold tracking-[-0.01em] text-pebble-text-primary">{solvedCount}</p>
             </div>
-            <div className="problems-subsection-shell rounded-[20px] px-3 py-2.5">
-              <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">Filtered</p>
-              <p className="mt-1 text-[1.05rem] font-semibold tracking-[-0.02em] text-pebble-text-primary">{filteredProblems.length}</p>
+            <div className="problems-subsection-shell rounded-[16px] px-2.5 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.07em] text-pebble-text-muted">Filtered</p>
+              <p className="mt-0.5 text-[0.98rem] font-semibold tracking-[-0.01em] text-pebble-text-primary">{filteredProblems.length}</p>
             </div>
           </div>
         </div>
@@ -311,34 +311,34 @@ export function ProblemsPage() {
       <Card
         padding="sm"
         interactive
-        className="problems-focus-shell relative z-20 overflow-visible rounded-[30px] px-4 py-3.5 md:px-5 md:py-4"
+        className="problems-focus-shell relative z-20 overflow-visible rounded-[26px] px-4 py-2.5 md:px-4.5 md:py-3"
       >
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
             <div className="space-y-0.5">
               <div className={`pebble-section-label ${eyebrowPillClass}`}>
                 <SlidersHorizontal className={eyebrowIconClass} aria-hidden="true" />
                 Command rail
               </div>
-              <p className={`text-[13px] leading-[1.6] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
+              <p className={`text-[12.5px] leading-[1.5] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
                 Search first, then refine by difficulty, language, and topic without losing context.
               </p>
             </div>
-            <div className={`pebble-chip inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11.5px] font-medium ${isUrdu ? 'rtlText' : ''}`}>
+            <div className={`pebble-chip inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${isUrdu ? 'rtlText' : ''}`}>
               <Target className="h-3.5 w-3.5 text-pebble-accent" aria-hidden="true" />
               {t('problems.solvedCounter', { solved: solvedCount, total: localizedProblems.length })}
               <span className="ltrSafe text-pebble-text-muted">({filteredSolved}/{filteredProblems.length})</span>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="relative min-w-[320px] flex-[1.35]">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <label className="relative min-w-[280px] flex-[1.4]">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pebble-text-muted" aria-hidden="true" />
               <input
                 value={searchValue}
                 onChange={(event) => setSearchValue(event.target.value)}
                 placeholder={t('problems.searchPlaceholder')}
-                className={`pebble-control h-11 w-full rounded-2xl pl-10 pr-4 text-[14px] placeholder:text-pebble-text-muted ${isUrdu ? 'rtlText text-right' : ''
+                className={`pebble-control h-10 w-full rounded-2xl pl-10 pr-4 text-[13.5px] placeholder:text-pebble-text-muted ${isUrdu ? 'rtlText text-right' : ''
                   }`}
               />
             </label>
@@ -376,7 +376,7 @@ export function ProblemsPage() {
               }}
             />
 
-            <label className="relative inline-flex h-11 min-w-[170px] items-center">
+            <label className="relative inline-flex h-10 min-w-[152px] items-center">
               <select
                 value={filters.difficulty}
                 onChange={(event) =>
@@ -398,7 +398,7 @@ export function ProblemsPage() {
               </span>
             </label>
 
-            <label className="relative inline-flex h-11 min-w-[170px] items-center">
+            <label className="relative inline-flex h-10 min-w-[152px] items-center">
               <select
                 value={sortMode}
                 onChange={(event) => setSortMode(event.target.value as SortMode)}
@@ -422,7 +422,7 @@ export function ProblemsPage() {
                 variant="secondary"
                 onClick={pickRandomProblem}
                 disabled={filteredProblems.length === 0}
-                className="h-11 rounded-2xl gap-1.5 border-pebble-accent/22 bg-pebble-accent/10 text-pebble-text-primary hover:bg-pebble-accent/14"
+                className="h-10 rounded-2xl gap-1.5 border-pebble-accent/22 bg-pebble-accent/10 text-pebble-text-primary hover:bg-pebble-accent/14"
               >
                 <Shuffle className="h-3.5 w-3.5" aria-hidden="true" />
                 {t('problems.random')}
@@ -433,15 +433,15 @@ export function ProblemsPage() {
 
       </Card>
 
-      <Card padding="sm" interactive className="problems-page-shell relative z-0 rounded-[32px] px-4 py-3.5 md:px-5 md:py-4">
-        <div className="mb-3 flex flex-col gap-1.5 md:flex-row md:items-end md:justify-between">
+      <Card padding="sm" interactive className="problems-page-shell relative z-0 rounded-[30px] px-4 py-3 md:px-5 md:py-3">
+        <div className="mb-2 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">Results</p>
-            <h2 className={`mt-0.5 text-[1.1rem] font-semibold tracking-tight text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.09em] text-pebble-text-muted">Results</p>
+            <h2 className={`mt-0.5 text-[1.02rem] font-semibold tracking-tight text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>
               Curated problem list
             </h2>
           </div>
-          <p className={`max-w-[42rem] text-[13.5px] leading-[1.6] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
+          <p className={`max-w-[42rem] text-[13px] leading-[1.55] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
             Scan titles first, then difficulty and acceptance. Open any row for a deeper preview before starting.
           </p>
         </div>

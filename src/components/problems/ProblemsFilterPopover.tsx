@@ -134,7 +134,7 @@ export function ProblemsFilterPopover({
         onClick={() => setOpen((current) => !current)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="pebble-control inline-flex h-12 items-center gap-2 rounded-2xl px-4 text-sm"
+        className="pebble-control inline-flex h-10 items-center gap-2 rounded-2xl px-3.5 text-[13px]"
       >
         <Filter className="h-4 w-4" aria-hidden="true" />
         {labels.filter}
