@@ -582,3 +582,11 @@ export const COMMUNITY_FILTERS = [
 ] as const
 
 export type CommunityFilterId = (typeof COMMUNITY_FILTERS)[number]['id']
+
+export function findCommunityGroupById(groupId: string) {
+  return COMMUNITY_GROUPS.find((group) => group.id === groupId) ?? null
+}
+
+export function findCommunityPostById(postId: string) {
+  return COMMUNITY_POSTS.find((post) => post.id === postId) ?? null
+}

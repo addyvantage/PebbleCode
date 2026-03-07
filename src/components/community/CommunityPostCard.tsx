@@ -1,20 +1,16 @@
 import { CheckCircle2, ChevronRight, Flame, MessageCircleMore, ThumbsUp } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { CommunityPost } from '../../data/communitySeed'
 
 type CommunityPostCardProps = {
   post: CommunityPost
   groupName: string
-  selected?: boolean
-  onSelect: () => void
+  href: string
 }
 
-export function CommunityPostCard({ post, groupName, selected = false, onSelect }: CommunityPostCardProps) {
+export function CommunityPostCard({ post, groupName, href }: CommunityPostCardProps) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`community-post-card text-left ${selected ? 'community-post-card-active' : ''}`}
-    >
+    <article className="community-post-card text-left">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
@@ -36,7 +32,7 @@ export function CommunityPostCard({ post, groupName, selected = false, onSelect 
           <h3 className="text-[16px] font-semibold tracking-[-0.02em] text-pebble-text-primary">{post.title}</h3>
         </div>
 
-        <span className={`community-avatar ${selected ? 'community-avatar-active' : ''}`}>{post.initials}</span>
+        <span className="community-avatar">{post.initials}</span>
       </div>
 
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-pebble-text-muted">
@@ -78,11 +74,14 @@ export function CommunityPostCard({ post, groupName, selected = false, onSelect 
           </span>
         </div>
 
-        <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-pebble-text-primary">
+        <Link
+          to={href}
+          className="inline-flex items-center gap-1 text-[12px] font-semibold text-pebble-text-primary transition hover:text-pebble-accent"
+        >
           Open thread
           <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </span>
+        </Link>
       </div>
-    </button>
+    </article>
   )
 }

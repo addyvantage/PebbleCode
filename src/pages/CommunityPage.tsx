@@ -6,8 +6,6 @@ import {
   ChartNoAxesCombined,
   Compass,
   MessageSquarePlus,
-  MessagesSquare,
-  Pin,
   Sparkles,
   Users,
 } from 'lucide-react'
@@ -17,7 +15,6 @@ import { Badge } from '../components/ui/Badge'
 import {
   COMMUNITY_FILTERS,
   COMMUNITY_GROUPS,
-  COMMUNITY_HERO_STATS,
   COMMUNITY_POSTS,
   COMMUNITY_TOP_HELPERS,
   COMMUNITY_TRENDING_TOPICS,
@@ -25,7 +22,6 @@ import {
   type CommunityPost,
 } from '../data/communitySeed'
 import { CommunityHero } from '../components/community/CommunityHero'
-import { CommunityGroupCard } from '../components/community/CommunityGroupCard'
 import { CommunityPostCard } from '../components/community/CommunityPostCard'
 import { CommunityComposer } from '../components/community/CommunityComposer'
 import type { ComposerPrefill } from '../components/community/communityTypes'
@@ -60,17 +56,11 @@ function buildDemoPost(payload: {
 
 export function CommunityPage() {
   const [activeFilter, setActiveFilter] = useState<CommunityFilterId>('all')
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(COMMUNITY_GROUPS[0]?.id ?? 'debugging-help')
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('')
   const [posts, setPosts] = useState<CommunityPost[]>(COMMUNITY_POSTS)
-  const [selectedPostId, setSelectedPostId] = useState<string>(COMMUNITY_POSTS[0]?.id ?? '')
   const [composerOpen, setComposerOpen] = useState(false)
   const [composerPrefill, setComposerPrefill] = useState<ComposerPrefill | null>(null)
-  const groupAnchorRef = useRef<HTMLDivElement | null>(null)
-
-  const selectedGroup = useMemo(
-    () => COMMUNITY_GROUPS.find((group) => group.id === selectedGroupId) ?? COMMUNITY_GROUPS[0],
-    [selectedGroupId],
-  )
+  const forumAnchorRef = useRef<HTMLDivElement | null>(null)
 
   const filteredPosts = useMemo(() => {
     let next = posts
@@ -80,7 +70,7 @@ export function CommunityPage() {
     }
 
     if (activeFilter === 'unanswered') {
-      next = next.filter((post) => !post.solved && post.replyCount <= 1)
+      next = next.filter((post) => !post.solved)
     } else if (activeFilter === 'helpful') {
       next = [...next].sort((left, right) => right.helpfulCount - left.helpfulCount)
     } else if (activeFilter === 'trending') {
@@ -92,76 +82,22 @@ export function CommunityPage() {
     return next
   }, [activeFilter, posts, selectedGroupId])
 
-  const selectedPost = useMemo(
-    () => filteredPosts.find((post) => post.id === selectedPostId) ?? filteredPosts[0] ?? posts[0] ?? null,
-    [filteredPosts, posts, selectedPostId],
-  )
-
-  const selectedPostGroup = useMemo(
-    () => COMMUNITY_GROUPS.find((group) => group.id === selectedPost?.groupId) ?? selectedGroup,
-    [selectedGroup, selectedPost?.groupId],
-  )
-
-  const communityHealth = useMemo(
-    () => ({
-      solvedThreads: `${posts.filter((post) => post.solved).length}/${posts.length}`,
-      averageReplies: (posts.reduce((sum, post) => sum + post.replyCount, 0) / posts.length).toFixed(1),
-      responseWindow: '18m median first reply',
-    }),
-    [posts],
+  const selectedGroup = useMemo(
+    () => COMMUNITY_GROUPS.find((group) => group.id === selectedGroupId) ?? null,
+    [selectedGroupId],
   )
 
   return (
-    <section className="page-enter space-y-3.5 pb-3">
+    <section className="page-enter space-y-3 pb-3">
       <CommunityHero
-        stats={COMMUNITY_HERO_STATS}
         onAskCommunity={() => {
           setComposerPrefill(null)
           setComposerOpen(true)
         }}
-        onBrowseGroups={() => groupAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        onBrowseGroups={() => forumAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
       />
 
-      <div ref={groupAnchorRef}>
-        <Card padding="sm" interactive className="community-band-shell rounded-[28px] px-4 py-4 md:px-5">
-          <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="community-section-pill inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]">
-                <Compass className="h-3.5 w-3.5" aria-hidden="true" />
-                Featured groups
-              </div>
-              <h2 className="text-[1.02rem] font-semibold tracking-[-0.02em] text-pebble-text-primary">
-                Find the right discussion space fast
-              </h2>
-              <p className="max-w-[58ch] text-[12.75px] leading-[1.62] text-pebble-text-secondary">
-                Seeded study spaces make the ecosystem feel alive and show how Pebble can grow beyond solo practice.
-              </p>
-            </div>
-            <Badge className="community-chip-muted border-0">
-              10 seeded groups
-            </Badge>
-          </div>
-
-          <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-5">
-            {COMMUNITY_GROUPS.map((group) => (
-              <CommunityGroupCard
-                key={group.id}
-                group={group}
-                selected={group.id === selectedGroupId}
-                onClick={() => {
-                  setSelectedGroupId(group.id)
-                  const nextPost = posts.find((post) => post.groupId === group.id)
-                  if (nextPost) {
-                    setSelectedPostId(nextPost.id)
-                  }
-                }}
-              />
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid gap-3.5 xl:grid-cols-[232px_minmax(0,1fr)_296px]">
+      <div ref={forumAnchorRef} className="grid gap-3.5 xl:grid-cols-[232px_minmax(0,1fr)]">
         <Card padding="sm" interactive className="community-rail-shell rounded-[26px] px-4 py-3.5">
           <div className="space-y-3">
             <div>
@@ -188,11 +124,22 @@ export function CommunityPage() {
             <div className="community-divider" />
 
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">
-                Group shortcuts
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">
+                  Group shortcuts
+                </p>
+                {selectedGroupId ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGroupId('')}
+                    className="text-[11px] font-medium text-pebble-accent transition hover:text-pebble-text-primary"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
               <div className="mt-2.5 space-y-1.5">
-                {COMMUNITY_GROUPS.slice(0, 5).map((group) => (
+                {COMMUNITY_GROUPS.slice(0, 6).map((group) => (
                   <button
                     key={group.id}
                     type="button"
@@ -216,10 +163,10 @@ export function CommunityPage() {
                 </span>
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">
-                    Ask from current problem
+                    Create from current problem
                   </p>
-                  <p className="text-[12.5px] leading-[1.66] text-pebble-text-secondary">
-                    Turn a failed run into a discussion post with the problem, language, and testcase context already filled in.
+                  <p className="text-[12.5px] leading-[1.62] text-pebble-text-secondary">
+                    Turn a failed run into a forum thread with the problem, language, and testcase context already filled in.
                   </p>
                 </div>
               </div>
@@ -235,9 +182,9 @@ export function CommunityPage() {
                   })
                   setComposerOpen(true)
                 }}
-                className="mt-4 w-full rounded-2xl"
+                className="mt-3.5 w-full rounded-2xl"
               >
-                Create from current problem
+                Ask from current problem
               </Button>
             </div>
           </div>
@@ -248,21 +195,26 @@ export function CommunityPage() {
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div className="space-y-1">
                 <div className="community-section-pill inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]">
-                  <MessagesSquare className="h-3.5 w-3.5" aria-hidden="true" />
-                  Discussion feed
+                  <Compass className="h-3.5 w-3.5" aria-hidden="true" />
+                  Forum surface
                 </div>
-                <h2 className="text-[1.1rem] font-semibold tracking-[-0.02em] text-pebble-text-primary">
-                  {selectedGroup?.name ?? 'Community feed'}
+                <h2 className="text-[1.08rem] font-semibold tracking-[-0.02em] text-pebble-text-primary">
+                  {selectedGroup ? selectedGroup.name : 'Active discussions'}
                 </h2>
-                <p className="text-[12.75px] leading-[1.62] text-pebble-text-secondary">
-                  Ask peers when AI hints are not enough, or share the one explanation that finally made a concept click.
+                <p className="max-w-[68ch] text-[12.85px] leading-[1.62] text-pebble-text-secondary">
+                  Pebble’s strongest community story is here: real threads about failed testcases, interview framing, collaborator search, and AI-hint clarification.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <span className="community-chip-muted inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium">
-                  {filteredPosts.length} visible threads
-                </span>
+                <Badge className="community-chip-muted border-0">
+                  {filteredPosts.length} threads
+                </Badge>
+                {selectedGroup ? (
+                  <Badge className="community-chip-muted border-0">
+                    {selectedGroup.membersLabel}
+                  </Badge>
+                ) : null}
                 <Button
                   onClick={() => {
                     setComposerPrefill(null)
@@ -276,259 +228,108 @@ export function CommunityPage() {
               </div>
             </div>
 
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {COMMUNITY_TRENDING_TOPICS.slice(0, 4).map((topic) => (
+                <span key={topic} className="community-chip-muted inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium">
+                  {topic}
+                </span>
+              ))}
+            </div>
+
             <div className="mt-3.5 grid gap-2.5">
               {filteredPosts.map((post) => (
                 <CommunityPostCard
                   key={post.id}
                   post={post}
                   groupName={COMMUNITY_GROUPS.find((group) => group.id === post.groupId)?.name ?? 'Community'}
-                  selected={selectedPost?.id === post.id}
-                  onSelect={() => setSelectedPostId(post.id)}
+                  href={`/community/thread/${post.id}`}
                 />
               ))}
             </div>
           </Card>
 
-          <Card padding="sm" interactive className="community-composer-strip rounded-[24px] px-4 py-3.5">
-            <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">
-                  Community composer
-                </p>
-                <p className="text-[13px] leading-[1.62] text-pebble-text-secondary">
-                  Prototype the peer layer: ask for debugging help, share insight, or find collaborators without leaving Pebble.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setComposerPrefill({
-                      title: 'Need help explaining a failing case',
-                      groupId: 'debugging-help',
-                    })
-                    setComposerOpen(true)
-                  }}
-                  className="rounded-2xl px-4"
-                >
-                  Debugging help
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setComposerPrefill({
-                      title: 'Looking for one teammate for a hackathon build',
-                      groupId: 'project-partners',
-                    })
-                    setComposerOpen(true)
-                  }}
-                  className="rounded-2xl px-4"
-                >
-                  Project partners
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div className="space-y-3.5">
-          <Card padding="sm" interactive className="community-preview-shell rounded-[26px] px-4 py-3.5">
-            <div className="mb-2.5 flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">
-                  Live discussion preview
-                </p>
-                <h3 className="mt-1 text-[1rem] font-semibold tracking-[-0.02em] text-pebble-text-primary">
-                  {selectedPost?.title ?? 'Select a thread'}
-                </h3>
-              </div>
-              {selectedPost?.solved ? (
-                <span className="community-chip-accent inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]">
-                  Solved
+          <div className="grid gap-3.5 xl:grid-cols-[1.05fr_0.95fr_1fr]">
+            <Card padding="sm" interactive className="community-rail-shell rounded-[24px] px-4 py-3.5">
+              <div className="flex items-start gap-3">
+                <span className="community-chip-accent inline-flex h-10 w-10 items-center justify-center rounded-2xl">
+                  <Users className="h-4.5 w-4.5" aria-hidden="true" />
                 </span>
-              ) : null}
-            </div>
-
-            {selectedPost ? (
-              <div className="space-y-3">
-                <div className="community-inset rounded-[20px] p-3.5">
-                  <div className="mb-2 flex items-center gap-2 text-[11px] text-pebble-text-muted">
-                    <span className="font-medium text-pebble-text-secondary">{selectedPost.author}</span>
-                    <span>•</span>
-                    <span>{selectedPost.timestamp}</span>
-                    <span>•</span>
-                    <span>{selectedPostGroup?.name}</span>
-                  </div>
-                  <p className="text-[13px] leading-[1.72] text-pebble-text-secondary">{selectedPost.body}</p>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">Top helpers this week</p>
+                  <p className="text-[12.5px] leading-[1.6] text-pebble-text-secondary">A compact proof that the community layer can surface useful peer guidance, not just extra noise.</p>
                 </div>
-
-                <div className="space-y-2">
-                  {selectedPost.previewReplies.map((reply) => (
-                    <div
-                      key={reply.id}
-                      className={classNames(
-                        'community-reply-card rounded-[18px] px-3.5 py-3',
-                        reply.helpful && 'community-reply-card-helpful',
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="community-avatar community-avatar-sm">{reply.initials}</span>
-                          <div>
-                            <p className="text-[12.5px] font-semibold text-pebble-text-primary">{reply.author}</p>
-                            <p className="text-[11px] text-pebble-text-muted">
-                              {reply.role ?? 'Reply'} • {reply.timestamp}
-                            </p>
-                          </div>
+              </div>
+              <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-1">
+                {COMMUNITY_TOP_HELPERS.map((helper) => (
+                  <div key={helper.id} className="community-inset rounded-[18px] px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="community-avatar community-avatar-sm">{helper.initials}</span>
+                        <div>
+                          <p className="text-[13px] font-semibold text-pebble-text-primary">{helper.name}</p>
+                          <p className="text-[11px] text-pebble-text-muted">{helper.specialty}</p>
                         </div>
-                        {reply.helpful ? (
-                          <span className="community-chip-accent inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]">
-                            Marked helpful
-                          </span>
-                        ) : null}
                       </div>
-                      <p className="mt-2 text-[12.5px] leading-[1.72] text-pebble-text-secondary">{reply.body}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="text-[13px] text-pebble-text-secondary">Pick a thread from the feed to preview the discussion.</p>
-            )}
-          </Card>
-
-          <Card padding="sm" interactive className="community-rail-shell rounded-[24px] px-4 py-4">
-            <div className="space-y-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">
-                  Community health
-                </p>
-                <div className="mt-2.5 grid gap-2">
-                  <div className="community-inset rounded-[18px] px-3 py-2.5">
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-pebble-text-muted">Solved threads</p>
-                    <p className="mt-1 text-[1rem] font-semibold text-pebble-text-primary">{communityHealth.solvedThreads}</p>
-                  </div>
-                  <div className="community-inset rounded-[18px] px-3 py-2.5">
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-pebble-text-muted">Avg replies</p>
-                    <p className="mt-1 text-[1rem] font-semibold text-pebble-text-primary">{communityHealth.averageReplies}</p>
-                  </div>
-                  <div className="community-inset rounded-[18px] px-3 py-2.5">
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-pebble-text-muted">Response window</p>
-                    <p className="mt-1 text-[1rem] font-semibold text-pebble-text-primary">{communityHealth.responseWindow}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="community-divider" />
-
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">
-                  Trending topics
-                </p>
-                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  {COMMUNITY_TRENDING_TOPICS.map((topic) => (
-                    <span key={topic} className="community-chip-muted inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium">
-                      {topic}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      <div className="grid gap-3.5 xl:grid-cols-[1.08fr_0.95fr_1fr]">
-        <Card padding="sm" interactive className="community-rail-shell rounded-[24px] px-4 py-3.5">
-          <div className="flex items-start gap-3">
-            <span className="community-chip-accent inline-flex h-10 w-10 items-center justify-center rounded-2xl">
-              <Users className="h-4.5 w-4.5" aria-hidden="true" />
-            </span>
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">Top helpers this week</p>
-              <p className="text-[12.5px] leading-[1.62] text-pebble-text-secondary">Seeded contributors showing the community is already useful and active.</p>
-            </div>
-          </div>
-          <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-1">
-            {COMMUNITY_TOP_HELPERS.slice(0, 3).map((helper) => (
-              <div key={helper.id} className="community-inset rounded-[18px] px-3 py-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className="community-avatar community-avatar-sm">{helper.initials}</span>
-                    <div>
-                      <p className="text-[13px] font-semibold text-pebble-text-primary">{helper.name}</p>
-                      <p className="text-[11px] text-pebble-text-muted">{helper.specialty}</p>
+                      <span className="text-[12px] font-medium text-pebble-text-secondary">{helper.helpfulCount}</span>
                     </div>
                   </div>
-                  <span className="text-[12px] font-medium text-pebble-text-secondary">{helper.helpfulCount} helpful</span>
+                ))}
+              </div>
+            </Card>
+
+            <Card padding="sm" interactive className="community-rail-shell rounded-[24px] px-4 py-3.5">
+              <div className="flex items-start gap-3">
+                <span className="community-chip-accent inline-flex h-10 w-10 items-center justify-center rounded-2xl">
+                  <ChartNoAxesCombined className="h-4.5 w-4.5" aria-hidden="true" />
+                </span>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">Why this matters</p>
+                  <p className="text-[12.5px] leading-[1.6] text-pebble-text-secondary">This is the hackathon thesis in product form: Pebble can connect AI guidance with human learning loops.</p>
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="text-[11px] text-pebble-text-muted">Demo activity seeded for review flow.</p>
-            <span className="community-chip-muted inline-flex rounded-full px-2.5 py-1 text-[10.5px] font-medium">
-              3 highlighted helpers
-            </span>
-          </div>
-        </Card>
-
-        <Card padding="sm" interactive className="community-rail-shell rounded-[24px] px-4 py-3.5">
-          <div className="flex items-start gap-3">
-            <span className="community-chip-accent inline-flex h-10 w-10 items-center justify-center rounded-2xl">
-              <ChartNoAxesCombined className="h-4.5 w-4.5" aria-hidden="true" />
-            </span>
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">Why this matters</p>
-              <p className="text-[12.5px] leading-[1.62] text-pebble-text-secondary">The community layer turns Pebble from a solo coach into a peer-learning ecosystem.</p>
-            </div>
-          </div>
-          <div className="mt-3 space-y-2">
-            {[
-              'Students can escalate from AI hints to human explanations.',
-              'Failed runs can become shareable learning moments.',
-              'Collaborator and mentor discovery becomes a natural next layer.',
-            ].map((item) => (
-              <div key={item} className="community-inset rounded-[18px] px-3 py-2.5 text-[12.75px] leading-[1.62] text-pebble-text-secondary">
-                {item}
+              <div className="mt-3 space-y-2">
+                {[
+                  'Students can escalate from AI hints to peer explanations.',
+                  'Failed runs become shareable learning moments instead of dead ends.',
+                  'The product expands from solo practice into a collaborative ecosystem.',
+                ].map((item) => (
+                  <div key={item} className="community-inset rounded-[18px] px-3 py-2.5 text-[12.75px] leading-[1.6] text-pebble-text-secondary">
+                    {item}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </Card>
+            </Card>
 
-        <Card padding="sm" interactive className="community-rail-shell rounded-[24px] px-4 py-3.5">
-          <div className="flex items-start gap-3">
-            <span className="community-chip-accent inline-flex h-10 w-10 items-center justify-center rounded-2xl">
-              <BookOpenText className="h-4.5 w-4.5" aria-hidden="true" />
-            </span>
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">Coming next</p>
-              <p className="text-[12.5px] leading-[1.62] text-pebble-text-secondary">Future ecosystem signals judges can understand immediately.</p>
-            </div>
-          </div>
-          <div className="mt-3 space-y-2">
-            <div className="community-inset-strong rounded-[18px] px-3.5 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
+            <Card padding="sm" interactive className="community-rail-shell rounded-[24px] px-4 py-3.5">
+              <div className="flex items-start gap-3">
+                <span className="community-chip-accent inline-flex h-10 w-10 items-center justify-center rounded-2xl">
+                  <BookOpenText className="h-4.5 w-4.5" aria-hidden="true" />
+                </span>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">Coming next</p>
+                  <p className="text-[12.5px] leading-[1.6] text-pebble-text-secondary">Future ecosystem signals that judges can understand without extra explanation.</p>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                <div className="community-inset-strong rounded-[18px] px-3.5 py-3">
                   <p className="text-[13px] font-semibold text-pebble-text-primary">Mentor drop-ins</p>
-                  <p className="mt-1 text-[12.25px] leading-[1.62] text-pebble-text-secondary">Future mentor office hours for difficult community threads and interview prep discussions.</p>
+                  <p className="mt-1 text-[12.25px] leading-[1.6] text-pebble-text-secondary">Future office hours for difficult debugging threads, interview prep, and recovery conversations.</p>
                 </div>
-                <Pin className="mt-0.5 h-4 w-4 text-pebble-accent" aria-hidden="true" />
+                <div className="community-inset rounded-[18px] px-3.5 py-3">
+                  <p className="text-[13px] font-semibold text-pebble-text-primary">Student-created problems</p>
+                  <p className="mt-1 text-[12.25px] leading-[1.6] text-pebble-text-secondary">Community-written questions, peer-reviewed solutions, and debrief threads can grow naturally from this forum layer.</p>
+                </div>
+                <Link
+                  to="/problems"
+                  className="community-chip-muted inline-flex items-center gap-2 rounded-full px-3 py-2 text-[12px] font-semibold text-pebble-text-primary"
+                >
+                  Explore current problem bank
+                  <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </Link>
               </div>
-            </div>
-            <div className="community-inset rounded-[18px] px-3.5 py-3">
-              <p className="text-[13px] font-semibold text-pebble-text-primary">Student-created problems</p>
-              <p className="mt-1 text-[12.25px] leading-[1.62] text-pebble-text-secondary">Community-written questions, peer-reviewed solutions, and shared interview debriefs can grow naturally from this layer.</p>
-            </div>
-            <Link
-              to="/problems"
-              className="community-chip-muted inline-flex items-center gap-2 rounded-full px-3 py-2 text-[12px] font-semibold text-pebble-text-primary"
-            >
-              Explore current problem bank
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
+            </Card>
           </div>
-        </Card>
+        </div>
       </div>
 
       <CommunityComposer
@@ -540,7 +341,6 @@ export function CommunityPage() {
           const post = buildDemoPost(payload)
           setPosts((current) => [post, ...current])
           setSelectedGroupId(payload.groupId)
-          setSelectedPostId(post.id)
           setComposerOpen(false)
         }}
       />
