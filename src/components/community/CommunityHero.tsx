@@ -2,16 +2,18 @@ import { Compass, MessageSquarePlus, Sparkles } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
+import { useI18n } from '../../i18n/useI18n'
+import { getProductCopy } from '../../i18n/productCopy'
 
 type CommunityHeroProps = {
   onAskCommunity: () => void
   onBrowseGroups: () => void
 }
 
-export function CommunityHero({
-  onAskCommunity,
-  onBrowseGroups,
-}: CommunityHeroProps) {
+export function CommunityHero({ onAskCommunity, onBrowseGroups }: CommunityHeroProps) {
+  const { lang } = useI18n()
+  const copy = getProductCopy(lang).community?.ui
+
   return (
     <Card className="community-hero-shell relative overflow-hidden rounded-[28px] px-5 py-4 md:px-6 md:py-4.5" interactive>
       <div className="pointer-events-none absolute inset-0">
@@ -23,37 +25,37 @@ export function CommunityHero({
         <div className="flex flex-wrap items-center gap-2">
           <Badge className="gap-1.5">
             <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            Peer learning layer
+            {copy.heroBadge}
           </Badge>
           <span className="community-chip inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium">
-            Seeded demo discussions
+            {copy.heroSeeded}
           </span>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div className="space-y-2">
             <h1 className="max-w-[14ch] text-[1.95rem] font-semibold tracking-[-0.04em] text-pebble-text-primary sm:text-[2.22rem] lg:max-w-[16ch] lg:text-[2.45rem]">
-              Learn with peers, not just prompts.
+              {copy.heroTitle}
             </h1>
             <p className="max-w-[62ch] text-[13.5px] leading-[1.68] text-pebble-text-secondary md:text-[14.25px]">
-              PebbleCode can turn failed runs, interview doubts, and project questions into collaborative learning threads without breaking the focused coding workflow.
+              {copy.heroBody}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 lg:justify-end">
             <Button onClick={onAskCommunity} className="gap-2 rounded-2xl px-5">
               <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
-              Ask community
+              {copy.askCommunity}
             </Button>
             <Button variant="secondary" onClick={onBrowseGroups} className="gap-2 rounded-2xl px-5">
               <Compass className="h-4 w-4" aria-hidden="true" />
-              Browse discussions
+              {copy.browseDiscussions}
             </Button>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-1.5">
-          {['Debugging help', 'Project partners', 'Interview prep', 'SQL + DSA groups'].map((chip) => (
+          {copy.heroChips.map((chip: string) => (
             <span key={chip} className="community-chip-muted inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium">
               {chip}
             </span>

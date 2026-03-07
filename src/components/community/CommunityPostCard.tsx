@@ -1,5 +1,7 @@
 import { CheckCircle2, ChevronRight, Flame, MessageCircleMore, ThumbsUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useI18n } from '../../i18n/useI18n'
+import { getProductCopy } from '../../i18n/productCopy'
 import type { CommunityPost } from '../../data/communitySeed'
 
 type CommunityPostCardProps = {
@@ -9,6 +11,9 @@ type CommunityPostCardProps = {
 }
 
 export function CommunityPostCard({ post, groupName, href }: CommunityPostCardProps) {
+  const { lang } = useI18n()
+  const copy = getProductCopy(lang).community?.ui
+
   return (
     <article className="community-post-card text-left">
       <div className="flex items-start justify-between gap-3">
@@ -25,7 +30,7 @@ export function CommunityPostCard({ post, groupName, href }: CommunityPostCardPr
             {post.trending ? (
               <span className="community-chip-muted inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-medium text-pebble-accent">
                 <Flame className="h-3 w-3" aria-hidden="true" />
-                Trending
+                {copy.trending}
               </span>
             ) : null}
           </div>
@@ -44,15 +49,13 @@ export function CommunityPostCard({ post, groupName, href }: CommunityPostCardPr
             <span>•</span>
             <span className="inline-flex items-center gap-1 text-emerald-500">
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-              Solved
+              {copy.solved}
             </span>
           </>
         ) : null}
       </div>
 
-      <p className="mt-2.5 text-[13px] leading-[1.66] text-pebble-text-secondary">
-        {post.body}
-      </p>
+      <p className="mt-2.5 text-[13px] leading-[1.66] text-pebble-text-secondary">{post.body}</p>
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         {post.tags.map((tag) => (
@@ -66,19 +69,16 @@ export function CommunityPostCard({ post, groupName, href }: CommunityPostCardPr
         <div className="flex flex-wrap items-center gap-3 text-[12px] font-medium text-pebble-text-secondary">
           <span className="inline-flex items-center gap-1.5">
             <MessageCircleMore className="h-3.5 w-3.5" aria-hidden="true" />
-            {post.replyCount} replies
+            {post.replyCount} {copy.replies}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <ThumbsUp className="h-3.5 w-3.5" aria-hidden="true" />
-            {post.helpfulCount} helpful
+            {post.helpfulCount} {copy.helpful}
           </span>
         </div>
 
-        <Link
-          to={href}
-          className="inline-flex items-center gap-1 text-[12px] font-semibold text-pebble-text-primary transition hover:text-pebble-accent"
-        >
-          Open thread
+        <Link to={href} className="inline-flex items-center gap-1 text-[12px] font-semibold text-pebble-text-primary transition hover:text-pebble-accent">
+          {copy.openThread}
           <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       </div>
