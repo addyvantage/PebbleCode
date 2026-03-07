@@ -8,6 +8,9 @@ import { PlacementPage } from './pages/PlacementPage'
 import { ProblemsPage } from './pages/ProblemsPage'
 import { CommunityPage } from './pages/CommunityPage'
 import { CommunityThreadPage } from './pages/CommunityThreadPage'
+import { AboutPage } from './pages/AboutPage'
+import { FaqPage } from './pages/FaqPage'
+import { HowToUsePage } from './pages/HowToUsePage'
 import { SessionPage } from './pages/SessionPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { OpsPage } from './pages/OpsPage'
@@ -33,6 +36,9 @@ function App() {
           <Route path="/problems" element={<ProblemsPage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/community/thread/:threadId" element={<CommunityThreadPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/how-to-use" element={<HowToUsePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/ops" element={<OpsPage />} />

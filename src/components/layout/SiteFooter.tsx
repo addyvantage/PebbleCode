@@ -60,14 +60,24 @@ export function SiteFooter() {
           </div>
 
           <div className="w-full lg:flex lg:justify-center">
-            <div className="grid w-full max-w-[720px] grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-10 md:gap-12">
+            <div className="grid w-full max-w-[860px] grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 sm:gap-10 md:gap-12">
               <div className="space-y-[18px]">
                 <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">Product</h3>
                 <nav className="flex flex-col gap-3.5">
                   <FooterLink to="/">Home</FooterLink>
                   <FooterLink to="/problems">Problems</FooterLink>
                   <FooterLink to="/session/1">Session</FooterLink>
+                  <FooterLink to="/community">Community</FooterLink>
                   <FooterLink to="/dashboard">Insights</FooterLink>
+                </nav>
+              </div>
+
+              <div className="space-y-[18px]">
+                <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">Guides</h3>
+                <nav className="flex flex-col gap-3.5">
+                  <FooterLink to="/about">About</FooterLink>
+                  <FooterLink to="/how-to-use">How to Use</FooterLink>
+                  <FooterLink to="/faq">FAQ</FooterLink>
                 </nav>
               </div>
 
