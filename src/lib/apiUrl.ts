@@ -1,4 +1,5 @@
 const RAW_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()
+const RAW_OPTIONAL_API_ROUTES = (import.meta.env.VITE_OPTIONAL_API_ROUTES as string | undefined)?.trim().toLowerCase()
 
 function normalizeBaseUrl(value: string | undefined) {
     if (!value) return ''
@@ -30,4 +31,10 @@ export function resolveApiAssetUrl(pathOrUrl: string | null | undefined) {
 
 export function getApiBaseUrl() {
     return API_BASE_URL
+}
+
+export function optionalApiRoutesAvailable() {
+    if (RAW_OPTIONAL_API_ROUTES === 'true') return true
+    if (RAW_OPTIONAL_API_ROUTES === 'false') return false
+    return !API_BASE_URL
 }

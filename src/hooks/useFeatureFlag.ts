@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { apiFetch } from '../lib/apiUrl'
+import { apiFetch, optionalApiRoutesAvailable } from '../lib/apiUrl'
 
 const CACHE_KEY = 'pebble.feature_flags'
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
@@ -50,6 +50,7 @@ export function useFeatureFlag(flagName: keyof FeatureFlags): boolean {
 
     useEffect(() => {
         const fetchFlags = async () => {
+            if (!optionalApiRoutesAvailable()) return
             // Don't fetch if memory cache is still super fresh (e.g., from another hook instance)
             if (memoryCache && Date.now() - memoryCache.ts < 10000) return
 
@@ -70,7 +71,9 @@ export function useFeatureFlag(flagName: keyof FeatureFlags): boolean {
 
                 setFlags(merged)
             } catch (error) {
-                console.warn('[FeatureFlags] Using fallback defaults:', error)
+                if (import.meta.env.DEV) {
+                    console.warn('[FeatureFlags] Using fallback defaults:', error)
+                }
             }
         }
 

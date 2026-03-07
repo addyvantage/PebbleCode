@@ -38,7 +38,7 @@ import {
   selectLongestStreak,
 } from '../lib/analyticsDerivers'
 import { loadUnitProgress } from '../lib/progressStore'
-import { apiFetch } from '../lib/apiUrl'
+import { apiFetch, optionalApiRoutesAvailable } from '../lib/apiUrl'
 import { loadSubmissions } from '../lib/submissionsStore'
 import { useLiveMentalState } from '../lib/useLiveMentalState'
 import type { PlacementLanguage } from '../data/onboardingData'
@@ -137,13 +137,21 @@ export function DashboardPage() {
   // ── Phase 5: Cohort Analytics ──────────────────────────────────────────────
   const [cohortData, setCohortData] = useState<CohortData | null>(null)
   useEffect(() => {
+    if (!optionalApiRoutesAvailable()) {
+      return
+    }
     let mounted = true
     apiFetch('/api/analytics/cohort')
-      .then(r => r.json())
-      .then(d => {
-        if (mounted && d.ok && d.data) setCohortData(d.data as CohortData)
+      .then(async (r) => {
+        if (!r.ok) {
+          return null
+        }
+        return r.json() as Promise<{ ok?: boolean; data?: CohortData }>
       })
-      .catch(e => console.error(e))
+      .then(d => {
+        if (mounted && d?.ok && d.data) setCohortData(d.data as CohortData)
+      })
+      .catch(() => {})
     return () => { mounted = false }
   }, [])
 

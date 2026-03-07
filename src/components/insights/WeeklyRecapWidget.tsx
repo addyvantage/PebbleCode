@@ -47,7 +47,7 @@ import {
   saveWeeklyRecapVoicePreferences,
   type WeeklyRecapVoicePreferences,
 } from '../../lib/weeklyRecapPreferences'
-import { apiFetch, resolveApiAssetUrl } from '../../lib/apiUrl'
+import { apiFetch, optionalApiRoutesAvailable, resolveApiAssetUrl } from '../../lib/apiUrl'
 
 type RecapPlayback = {
   mode: RecapVoiceMode
@@ -322,6 +322,44 @@ function friendlyPlaybackStatus(recap: RecapData | null) {
   return 'Your recap script is ready, and Pebble can play it with the best available voice.'
 }
 
+function buildLocalRecap(summary: RecapSummaryPayload): RecapData {
+  const opener =
+    summary.streakDays > 0
+      ? `You kept a ${summary.streakDays}-day streak alive this week`
+      : 'This week was more fragile, but it still gives us a clear learning signal'
+
+  const momentum =
+    summary.solvesLast7 > 0
+      ? `with ${summary.solvesLast7} solved rep${summary.solvesLast7 === 1 ? '' : 's'} and ${summary.daysActiveLast7} active day${summary.daysActiveLast7 === 1 ? '' : 's'}.`
+      : `with ${summary.daysActiveLast7} active day${summary.daysActiveLast7 === 1 ? '' : 's'} but no clean solve yet.`
+
+  const struggle = summary.biggestStruggle
+    ? `The biggest friction pattern was ${summary.biggestStruggle.replace(/_/g, ' ')}.`
+    : 'The main opportunity now is to stay consistent and keep recovery tight.'
+
+  const nextMove =
+    summary.guidanceReliancePct > 40
+      ? 'Next week should focus on one independent first attempt before asking Pebble for help.'
+      : summary.trendDirection === 'worsening'
+        ? 'Next week should focus on correcting one repeated mistake before increasing difficulty.'
+        : 'Next week should focus on protecting momentum with one short daily session.'
+
+  return {
+    script: `${opener} ${momentum} ${struggle} ${nextMove}`,
+    generatedAt: new Date().toISOString(),
+    weekStart: new Date().toISOString().slice(0, 10),
+    tone: summary.trendDirection === 'worsening' ? 'empathetic' : 'encouraging',
+    usedHumor: false,
+    playback: {
+      mode: 'auto',
+      provider: 'device',
+      appLanguage: summary.appLanguage,
+      locale: getLanguageOption(summary.appLanguage as LanguageCode).locale,
+      reason: 'local_recap_fallback',
+    },
+  }
+}
+
 export function WeeklyRecapWidget({ trackLanguage = 'python' }: { trackLanguage?: string }) {
   const { lang } = useI18n()
   const auth = useAuth()
@@ -362,6 +400,7 @@ export function WeeklyRecapWidget({ trackLanguage = 'python' }: { trackLanguage?
       }),
     [analyticsState.updatedAt, analyticsState.events, appLanguage, recapUserName, trackLanguage],
   )
+  const optionalRoutesEnabled = optionalApiRoutesAvailable()
 
   const refreshBrowserVoices = useCallback(async () => {
     if (!isBrowserSpeechSynthesisAvailable()) {
@@ -424,6 +463,11 @@ export function WeeklyRecapWidget({ trackLanguage = 'python' }: { trackLanguage?
 
   const fetchLatestRecap = useCallback(async () => {
     setLoading(true)
+    if (!optionalRoutesEnabled) {
+      setRecapData(null)
+      setLoading(false)
+      return
+    }
     try {
       const response = await apiFetch('/api/growth/weekly-recap/latest', {
         headers: { 'x-user-id': userScope },
@@ -449,7 +493,7 @@ export function WeeklyRecapWidget({ trackLanguage = 'python' }: { trackLanguage?
         setLoading(false)
       }
     }
-  }, [appLanguage, userScope])
+  }, [appLanguage, optionalRoutesEnabled, userScope])
 
   useEffect(() => {
     void fetchLatestRecap()
@@ -461,6 +505,14 @@ export function WeeklyRecapWidget({ trackLanguage = 'python' }: { trackLanguage?
     stopPlayback()
 
     try {
+      if (!optionalRoutesEnabled) {
+        const localRecap = buildLocalRecap(summary)
+        if (mountedRef.current) {
+          setRecapData(localRecap)
+          setScriptExpanded(false)
+        }
+        return
+      }
       const response = await apiFetch('/api/growth/weekly-recap', {
         method: 'POST',
         headers: {
@@ -501,7 +553,7 @@ export function WeeklyRecapWidget({ trackLanguage = 'python' }: { trackLanguage?
         setGenerating(false)
       }
     }
-  }, [appLanguage, stopPlayback, summary, userScope, voicePrefs])
+  }, [appLanguage, optionalRoutesEnabled, stopPlayback, summary, userScope, voicePrefs])
 
   const handlePlay = useCallback(async () => {
     if (!recapData) {

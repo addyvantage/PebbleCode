@@ -16,16 +16,10 @@ import {
   selectDailyCompletions,
 } from '../../lib/analyticsDerivers'
 import type { AnalyticsEvent, AssistAnalyticsEvent, RunAnalyticsEvent, SubmitAnalyticsEvent } from '../../lib/analyticsStore'
-import { apiFetch } from '../../lib/apiUrl'
+import { apiFetch, optionalApiRoutesAvailable } from '../../lib/apiUrl'
+import { localHeuristicRisk, type RiskFeatures, type RiskLabel, type RiskResult } from '../../lib/riskModel'
 
-type RiskLabel = 'low' | 'medium' | 'high'
-
-type RiskData = {
-  score: number
-  label: RiskLabel
-  factors: string[]
-  actions: string[]
-  model: string
+type RiskData = RiskResult & {
   computedAt: string
   weekStart?: string
 }
@@ -38,7 +32,7 @@ function isSuccess(e: RunAnalyticsEvent | SubmitAnalyticsEvent) {
   return e.type === 'run' ? e.passed : e.accepted
 }
 
-function extractRiskFeatures(events: AnalyticsEvent[]) {
+function extractRiskFeatures(events: AnalyticsEvent[]): RiskFeatures {
   const now = Date.now()
   const last7Start = now - 7 * DAY_MS
   const last14Start = now - 14 * DAY_MS
@@ -155,6 +149,7 @@ export function StreakRiskWidget() {
   const [recomputing, setRecomputing] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const mountedRef = useRef(true)
+  const optionalRoutesEnabled = optionalApiRoutesAvailable()
 
   const features = useMemo(
     () => extractRiskFeatures(analyticsState.events),
@@ -168,9 +163,20 @@ export function StreakRiskWidget() {
   useEffect(() => {
     mountedRef.current = true
     setLoading(true)
+    if (!optionalRoutesEnabled) {
+      setRiskData(localHeuristicRisk(features))
+      setErrorMsg(null)
+      setLoading(false)
+      return () => { mountedRef.current = false }
+    }
     apiFetch('/api/risk/current', { headers: { 'x-user-id': userId } })
-      .then((r) => r.json())
-      .then((d: { ok: boolean; data: RiskData | null }) => {
+      .then(async (r) => {
+        if (!r.ok) {
+          throw new Error(`risk_current_unavailable_${r.status}`)
+        }
+        return r.json() as Promise<{ ok: boolean; data: RiskData | null }>
+      })
+      .then((d) => {
         if (!mountedRef.current) return
         if (d.ok && d.data) {
           setRiskData(d.data)
@@ -185,12 +191,20 @@ export function StreakRiskWidget() {
             headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
             body: JSON.stringify({ features: currentFeatures }),
           })
-            .then((r2) => r2.json())
-            .then((d2: { ok: boolean; data: RiskData }) => {
+            .then(async (r2) => {
+              if (!r2.ok) {
+                throw new Error(`risk_recompute_unavailable_${r2.status}`)
+              }
+              return r2.json() as Promise<{ ok: boolean; data: RiskData }>
+            })
+            .then((d2) => {
               if (mountedRef.current && d2.ok && d2.data) setRiskData(d2.data)
             })
-            .catch((err) => {
-              if (mountedRef.current) setErrorMsg(err instanceof Error ? err.message : 'Failed to compute risk.')
+            .catch(() => {
+              if (mountedRef.current) {
+                setRiskData(localHeuristicRisk(currentFeatures))
+                setErrorMsg(null)
+              }
             })
             .finally(() => {
               if (mountedRef.current) { setRecomputing(false); setLoading(false) }
@@ -198,7 +212,11 @@ export function StreakRiskWidget() {
         }
       })
       .catch(() => {
-        if (mountedRef.current) { setLoading(false); setErrorMsg('Backend unreachable.') }
+        if (mountedRef.current) {
+          setRiskData(localHeuristicRisk(features))
+          setLoading(false)
+          setErrorMsg(null)
+        }
       })
     return () => { mountedRef.current = false }
     // Run once on mount only — features are snapshotted inside
@@ -209,6 +227,10 @@ export function StreakRiskWidget() {
     setRecomputing(true)
     setErrorMsg(null)
     try {
+      if (!optionalRoutesEnabled) {
+        setRiskData(localHeuristicRisk(features))
+        return
+      }
       const res = await apiFetch('/api/risk/recompute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
@@ -217,13 +239,16 @@ export function StreakRiskWidget() {
       if (!res.ok) throw new Error(`Server error ${res.status}`)
       const d = await res.json() as { ok: boolean; data: RiskData }
       if (mountedRef.current && d.ok && d.data) setRiskData(d.data)
-      else if (mountedRef.current) setErrorMsg('Unexpected response shape.')
-    } catch (err) {
-      if (mountedRef.current) setErrorMsg(err instanceof Error ? err.message : 'Recompute failed.')
+      else if (mountedRef.current) setRiskData(localHeuristicRisk(features))
+    } catch {
+      if (mountedRef.current) {
+        setRiskData(localHeuristicRisk(features))
+        setErrorMsg(null)
+      }
     } finally {
       if (mountedRef.current) { setRecomputing(false); setLoading(false) }
     }
-  }, [features, userId])
+  }, [features, optionalRoutesEnabled, userId])
 
   const cfg = riskData ? LABEL_CONFIG[riskData.label] : null
 
@@ -240,7 +265,9 @@ export function StreakRiskWidget() {
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-base font-semibold text-pebble-text-primary">Streak Risk</p>
-          <p className="text-sm text-pebble-text-secondary">SageMaker · 7-day forecast</p>
+          <p className="text-sm text-pebble-text-secondary">
+            {riskData?.model === 'sagemaker' ? 'SageMaker · 7-day forecast' : '7-day forecast'}
+          </p>
         </div>
         <button
           onClick={handleRecompute}
