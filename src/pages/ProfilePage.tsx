@@ -22,7 +22,6 @@ export function ProfilePage() {
     const [newUsername, setNewUsername] = useState('')
     const [bio, setBio] = useState('')
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-    const [avatarVersion, setAvatarVersion] = useState<number | null>(null)
     const [saving, setSaving] = useState(false)
     const [savingUsername, setSavingUsername] = useState(false)
     const [uploading, setUploading] = useState(false)
@@ -67,13 +66,11 @@ export function ProfilePage() {
                 setAvatarPreview(null)
                 return
             }
-            const version = avatarVersion
-                ?? (profile.avatarUpdatedAt ? new Date(profile.avatarUpdatedAt).getTime() : Date.now())
-            setAvatarPreview(`${freshUrl}${freshUrl.includes('?') ? '&' : '?'}v=${version}`)
+            setAvatarPreview(freshUrl)
         }
         void hydrateAvatar()
         return () => { cancelled = true }
-    }, [avatarVersion, fetchAvatarUrl, profile])
+    }, [fetchAvatarUrl, profile])
 
     const handleAvatarUpload = useCallback(async (file: File) => {
         if (!idToken) return
@@ -135,12 +132,8 @@ export function ProfilePage() {
 
             // 4. Instant preview
             const resolvedUrl = await fetchAvatarUrl(resolvedAvatarKey)
-            const version = Date.now()
-            const cacheBustedUrl = resolvedUrl
-                ? `${resolvedUrl}${resolvedUrl.includes('?') ? '&' : '?'}v=${version}`
-                : URL.createObjectURL(file)
-            setAvatarVersion(version)
-            setAvatarPreview(cacheBustedUrl)
+            const nextAvatarUrl = resolvedUrl ?? URL.createObjectURL(file)
+            setAvatarPreview(nextAvatarUrl)
             await refreshProfile()
             setMessage({ type: 'success', text: 'Avatar updated!' })
             pushNotification({

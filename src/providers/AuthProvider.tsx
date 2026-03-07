@@ -78,12 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await res.json() as { url?: string }
         return typeof data.url === 'string' ? data.url : null
     }, [])
-
-    const appendAvatarVersion = useCallback((url: string, avatarUpdatedAt?: string | null) => {
-        const version = avatarUpdatedAt ? new Date(avatarUpdatedAt).getTime() : Date.now()
-        return `${url}${url.includes('?') ? '&' : '?'}v=${version}`
-    }, [])
-
     const fetchProfile = useCallback(async (token: string): Promise<UserProfile | null> => {
         try {
             const res = await apiFetch('/api/profile', {
@@ -94,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 let avatarUrl: string | null = null
                 if (data.avatarKey) {
                     const freshUrl = await fetchAvatarUrl(token, data.avatarKey)
-                    avatarUrl = freshUrl ? appendAvatarVersion(freshUrl, data.avatarUpdatedAt) : null
+                    avatarUrl = freshUrl ?? null
                 }
                 const nextProfile = { ...data, avatarUrl }
                 setProfile(nextProfile)
@@ -104,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Profile fetch failed — user is authed but profile not yet created
         }
         return null
-    }, [appendAvatarVersion, fetchAvatarUrl])
+    }, [fetchAvatarUrl])
 
     const refreshProfile = useCallback(async () => {
         if (idToken) await fetchProfile(idToken)
