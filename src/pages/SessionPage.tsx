@@ -34,7 +34,7 @@ import {
   validateFunctionSignature,
   type RunnerSourceMap,
 } from '../lib/functionMode'
-import { Check, ChevronLeft, ChevronRight, FileText, Home, Play, RotateCcw, Settings2, Share2 } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, FileText, Home, Play, RotateCcw, Settings2, Share2, SlidersHorizontal } from 'lucide-react'
 import {
   loadUnitProgress,
   markUnitCompleted,
@@ -108,6 +108,7 @@ import {
 import { ProgramLangDropdown, type ProgramLangOption } from '../components/session/ProgramLangDropdown'
 import { StopwatchControl } from '../components/session/StopwatchControl'
 import { ConfirmDialog } from '../components/modals/ConfirmDialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import {
   loadProblemCodeByLang,
   saveProblemCodeByLang,
@@ -2342,17 +2343,26 @@ export function SessionPage() {
         </div>
 
         <div className="relative flex items-center justify-end gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            title={t('topBar.pageSettings')}
-            aria-label={t('a11y.openPageSettings')}
-            onClick={() => setPageSettingsOpen(true)}
-            className="h-8 w-8 rounded-full border-pebble-border/30 bg-pebble-overlay/[0.08] p-0 text-pebble-text-primary hover:border-pebble-border/45 hover:bg-pebble-overlay/[0.16]"
-          >
-            <Settings2 className="h-[18px] w-[18px]" aria-hidden="true" />
-          </Button>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  title="Page settings"
+                  aria-label="Page settings"
+                  onClick={() => setPageSettingsOpen(true)}
+                  className="h-8 w-8 rounded-full border-pebble-border/30 bg-pebble-overlay/[0.08] p-0 text-pebble-text-primary hover:border-pebble-border/45 hover:bg-pebble-overlay/[0.16]"
+                >
+                  <SlidersHorizontal className="h-5 w-5 shrink-0" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="center">
+                Page settings
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
