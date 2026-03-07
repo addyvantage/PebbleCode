@@ -793,7 +793,7 @@ export function AnimatedProductPreview({
           </div>
         </div>
 
-        <div className={`min-w-0 rounded-[16px] border p-4 md:p-4.5 ${panelOutlineClass} ${coachPanelClass} grid h-[364px] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3`}>
+        <div className={`min-w-0 rounded-[16px] border p-4 md:px-4.5 md:pt-4.5 md:pb-3 ${panelOutlineClass} ${coachPanelClass} grid h-[372px] grid-rows-[auto_minmax(0,1.35fr)_auto_auto] gap-2.5`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-pebble-accent/28 text-[11px] font-semibold text-pebble-text-primary shadow-[0_6px_12px_rgba(55,72,110,0.10)]">
@@ -808,12 +808,12 @@ export function AnimatedProductPreview({
             </span>
           </div>
 
-          <div className={classNames(`min-h-0 rounded-[12px] border ${panelOutlineClass} bg-pebble-overlay/[0.06] p-3`, isUrdu && 'rtlText')}>
-            <div className="grid h-full grid-rows-[56px_minmax(0,1fr)] gap-2">
+          <div className={classNames(`min-h-0 rounded-[12px] border ${panelOutlineClass} bg-pebble-overlay/[0.06] p-3.5`, isUrdu && 'rtlText')}>
+            <div className="grid h-full grid-rows-[54px_minmax(136px,1fr)] gap-2.5">
               <div className="min-h-0">
                 <div
                   className={classNames(
-                    'ml-auto h-full max-w-[95%] rounded-[10px] border border-pebble-accent/28 bg-pebble-accent/10 px-2.5 py-2 text-[12.5px] leading-[1.62] text-pebble-text-primary transition-opacity duration-350',
+                    'ml-auto h-full max-w-[95%] rounded-[10px] border border-pebble-accent/28 bg-pebble-accent/10 px-3 py-2.5 text-[12.5px] leading-[1.66] text-pebble-text-primary transition-opacity duration-350',
                     hasSentQuestion ? 'opacity-100' : 'opacity-0',
                   )}
                   aria-hidden={!hasSentQuestion}
@@ -824,7 +824,7 @@ export function AnimatedProductPreview({
 
               <div
                 ref={coachReplyAnchorRef}
-                className="min-h-0 overflow-hidden rounded-[10px] border border-pebble-border/24 bg-pebble-overlay/[0.08] px-2.5 py-2 text-[12.5px] leading-[1.64] text-pebble-text-secondary"
+                className="min-h-[136px] overflow-hidden rounded-[10px] border border-pebble-border/24 bg-pebble-overlay/[0.08] px-3 py-2.5 text-[12.5px] leading-[1.68] text-pebble-text-secondary"
               >
                 {phase === 'coach_thinking' ? (
                   <div className="flex items-center gap-1.5">
@@ -836,7 +836,7 @@ export function AnimatedProductPreview({
                     </span>
                   </div>
                 ) : isAtOrAfter(phase, 'coach_reply') ? (
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <p className="font-medium text-pebble-text-primary">Grounded suggestion</p>
                     <p className="min-h-[1.2em]">{coachResponseLines[0] || ' '}</p>
                     <p className="min-h-[1.2em]">{coachResponseLines[1] || ' '}</p>
@@ -877,7 +877,7 @@ export function AnimatedProductPreview({
           </div>
 
           <div className={classNames(
-            'rounded-[10px] border px-3 py-2.5 text-[12px] leading-[1.6] transition-colors duration-500',
+            'rounded-[10px] border px-3 py-2 text-[12px] leading-[1.6] transition-colors duration-500',
             isSuccessTone
               ? 'border-emerald-400/30 bg-emerald-500/10 text-pebble-text-secondary'
               : 'border-pebble-accent/22 bg-pebble-accent/10 text-pebble-text-secondary',
