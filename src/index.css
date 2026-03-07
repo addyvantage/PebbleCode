@@ -759,7 +759,7 @@ html {
   .community-group-card {
     border: 1px solid rgba(var(--pebble-border), 0.13);
     border-radius: 22px;
-    padding: 1rem;
+    padding: 0.9rem;
     background:
       linear-gradient(180deg, rgba(var(--pebble-overlay), 0.08) 0%, rgba(var(--pebble-overlay), 0.02) 100%);
     background-color: rgba(var(--pebble-panel), 0.78);
@@ -819,7 +819,7 @@ html {
   .community-post-card {
     border: 1px solid rgba(var(--pebble-border), 0.12);
     border-radius: 22px;
-    padding: 1rem;
+    padding: 0.9rem;
     background:
       linear-gradient(180deg, rgba(var(--pebble-overlay), 0.09) 0%, rgba(var(--pebble-overlay), 0.025) 100%);
     background-color: rgba(var(--pebble-panel), 0.78);
@@ -881,9 +881,9 @@ html {
     border-radius: 16px;
     border: 1px solid rgba(var(--pebble-border), 0.12);
     background-color: rgba(var(--pebble-overlay), 0.12);
-    padding: 0.72rem 0.8rem;
+    padding: 0.62rem 0.74rem;
     color: rgb(var(--pebble-text-secondary));
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 500;
     transition:
       border-color 180ms ease,

@@ -51,17 +51,17 @@ export function CommunityGroupCard({ group, selected = false, onClick }: Communi
         ) : null}
       </div>
 
-      <div className="mt-4 space-y-1.5">
+      <div className="mt-3.5 space-y-1">
         <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-pebble-text-primary">{group.name}</h3>
         <p className="text-[12.5px] leading-[1.65] text-pebble-text-secondary">{group.description}</p>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2 text-[11px] font-medium text-pebble-text-muted">
+      <div className="mt-3.5 flex items-center justify-between gap-2 text-[11px] font-medium text-pebble-text-muted">
         <span>{group.membersLabel}</span>
         <span>{group.lastActivity}</span>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
         {group.tags.map((tag) => (
           <span key={tag} className="community-chip-muted inline-flex rounded-full px-2 py-0.5 text-[10.5px] font-medium">
             {tag}
