@@ -2728,13 +2728,13 @@ export function SessionPage() {
 
       {pageSettingsOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-pebble-border/35 bg-pebble-panel/95 p-4 shadow-[0_20px_60px_rgba(2,8,23,0.32)]">
+          <div className="pebble-modal-shell w-full max-w-md p-4">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-base font-semibold text-pebble-text-primary">{t('settings.pageTitle')}</h2>
               <button
                 type="button"
                 onClick={() => setPageSettingsOpen(false)}
-                className="rounded-lg border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2 py-1 text-xs text-pebble-text-secondary transition hover:bg-pebble-overlay/[0.16]"
+                className="pebble-modal-close border border-pebble-border/35 bg-pebble-overlay/[0.08] px-2 py-1 text-xs text-pebble-text-secondary transition hover:bg-pebble-overlay/[0.16]"
               >
                 {t('actions.close')}
               </button>
@@ -2746,7 +2746,7 @@ export function SessionPage() {
                 <div
                   role="tablist"
                   aria-label={t('settings.theme')}
-                  className="grid grid-cols-2 gap-2 rounded-xl border border-pebble-border/30 bg-pebble-overlay/[0.06] p-1"
+                  className="pebble-modal-section grid grid-cols-2 gap-2 border border-pebble-border/30 bg-pebble-overlay/[0.06] p-1"
                 >
                   {(['dark', 'light'] as const).map((mode) => {
                     const selected = theme === mode
@@ -2758,7 +2758,7 @@ export function SessionPage() {
                         aria-selected={selected}
                         aria-pressed={selected}
                         onClick={() => setTheme(mode)}
-                        className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/50 ${selected
+                        className={`pebble-modal-control inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/50 ${selected
                           ? 'border border-pebble-accent/50 bg-pebble-accent/18 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
                           : 'border border-transparent text-pebble-text-secondary hover:bg-pebble-overlay/[0.12]'
                           }`}
@@ -2778,7 +2778,7 @@ export function SessionPage() {
                   onClick={() =>
                     setPagePrefs((prev) => ({ ...prev, reduceMotion: !prev.reduceMotion }))
                   }
-                  className={`rounded-lg border px-2.5 py-1 text-xs transition ${pagePrefs.reduceMotion
+                  className={`pebble-modal-control border px-2.5 py-1 text-xs transition ${pagePrefs.reduceMotion
                     ? 'border-pebble-accent/45 bg-pebble-accent/18 text-pebble-text-primary'
                     : 'border-pebble-border/35 bg-pebble-overlay/[0.08] text-pebble-text-secondary hover:bg-pebble-overlay/[0.16]'
                     }`}
@@ -2794,7 +2794,7 @@ export function SessionPage() {
                   onClick={() =>
                     setPagePrefs((prev) => ({ ...prev, compactDensity: !prev.compactDensity }))
                   }
-                  className={`rounded-lg border px-2.5 py-1 text-xs transition ${pagePrefs.compactDensity
+                  className={`pebble-modal-control border px-2.5 py-1 text-xs transition ${pagePrefs.compactDensity
                     ? 'border-pebble-accent/45 bg-pebble-accent/18 text-pebble-text-primary'
                     : 'border-pebble-border/35 bg-pebble-overlay/[0.08] text-pebble-text-secondary hover:bg-pebble-overlay/[0.16]'
                     }`}

@@ -45,7 +45,7 @@ function unlockBodyScroll() {
 
 function segmentButtonClass(isActive: boolean) {
   const activeClass = 'bg-pebble-panel text-pebble-text-primary shadow-[0_12px_24px_rgba(2,8,23,0.18)] ring-1 ring-pebble-border/30'
-  return `inline-flex h-11 items-center justify-center gap-2 rounded-[16px] px-4 text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45 ${isActive
+  return `pebble-modal-control inline-flex h-11 items-center justify-center gap-2 px-4 text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45 ${isActive
     ? `${activeClass} scale-[1.01]`
     : 'bg-transparent text-pebble-text-secondary hover:text-pebble-text-primary'
     }`
@@ -97,26 +97,26 @@ export function SettingsModal({
   const isDark = theme === 'dark'
   const modalSurfaceClass =
     theme === 'light'
-      ? 'pebble-panel-float border-pebble-border/28 bg-transparent'
-      : 'border border-[rgba(150,168,205,0.22)] bg-[hsl(228_27%_21%)] shadow-[0_32px_90px_rgba(2,8,23,0.54),0_8px_28px_rgba(8,15,35,0.26)]'
+      ? 'pebble-modal-shell border-pebble-border/28 bg-transparent'
+      : 'pebble-modal-shell'
   const sectionSurfaceClass = isDark
-    ? 'rounded-[22px] border border-[rgba(160,177,212,0.2)] bg-[linear-gradient(180deg,rgba(72,82,112,0.38)_0%,rgba(56,65,92,0.3)_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
-    : 'rounded-[22px] border border-pebble-border/24 bg-pebble-overlay/[0.05] px-4 py-4'
+    ? 'pebble-modal-section border border-[rgba(160,177,212,0.2)] bg-[linear-gradient(180deg,rgba(72,82,112,0.38)_0%,rgba(56,65,92,0.3)_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
+    : 'pebble-modal-section border border-pebble-border/24 bg-pebble-overlay/[0.05] px-4 py-4'
   const iconSurfaceClass = isDark
-    ? 'inline-flex h-10 w-10 items-center justify-center rounded-[14px] border border-[rgba(160,177,212,0.2)] bg-[rgba(255,255,255,0.045)] text-pebble-accent'
-    : 'inline-flex h-10 w-10 items-center justify-center rounded-[14px] border border-pebble-border/24 bg-pebble-overlay/[0.08] text-pebble-accent'
+    ? 'pebble-modal-icon-well inline-flex h-10 w-10 items-center justify-center border border-[rgba(160,177,212,0.2)] bg-[rgba(255,255,255,0.045)] text-pebble-accent'
+    : 'pebble-modal-icon-well inline-flex h-10 w-10 items-center justify-center border border-pebble-border/24 bg-pebble-overlay/[0.08] text-pebble-accent'
   const segmentedRailClass = isDark
-    ? 'grid grid-cols-2 rounded-[18px] border border-[rgba(160,177,212,0.22)] bg-[rgba(255,255,255,0.04)] p-1.5'
-    : 'grid grid-cols-2 rounded-[18px] border border-pebble-border/32 bg-pebble-overlay/[0.08] p-1.5'
+    ? 'pebble-modal-section grid grid-cols-2 border border-[rgba(160,177,212,0.22)] bg-[rgba(255,255,255,0.04)] p-1.5'
+    : 'pebble-modal-section grid grid-cols-2 border border-pebble-border/32 bg-pebble-overlay/[0.08] p-1.5'
   const closeButtonClass = isDark
-    ? 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[rgba(160,177,212,0.22)] bg-[rgba(255,255,255,0.04)] text-pebble-text-secondary transition hover:bg-[rgba(255,255,255,0.08)] hover:text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40'
-    : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-pebble-border/30 bg-pebble-overlay/8 text-pebble-text-secondary transition hover:bg-pebble-overlay/14 hover:text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40'
+    ? 'pebble-modal-close inline-flex h-10 w-10 items-center justify-center border border-[rgba(160,177,212,0.22)] bg-[rgba(255,255,255,0.04)] text-pebble-text-secondary transition hover:bg-[rgba(255,255,255,0.08)] hover:text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40'
+    : 'pebble-modal-close inline-flex h-10 w-10 items-center justify-center border border-pebble-border/30 bg-pebble-overlay/8 text-pebble-text-secondary transition hover:bg-pebble-overlay/14 hover:text-pebble-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40'
   const destructiveSectionClass = isDark
-    ? 'rounded-[22px] border border-[rgba(229,94,124,0.24)] bg-[linear-gradient(180deg,rgba(107,41,58,0.22)_0%,rgba(78,33,46,0.18)_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
-    : 'rounded-[22px] border border-rose-400/18 bg-rose-500/[0.04] px-4 py-4'
+    ? 'pebble-modal-section border border-[rgba(229,94,124,0.24)] bg-[linear-gradient(180deg,rgba(107,41,58,0.22)_0%,rgba(78,33,46,0.18)_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+    : 'pebble-modal-section border border-rose-400/18 bg-rose-500/[0.04] px-4 py-4'
   const destructiveIconClass = isDark
-    ? 'inline-flex h-10 w-10 items-center justify-center rounded-[14px] border border-[rgba(229,94,124,0.24)] bg-[rgba(229,94,124,0.12)] text-rose-300'
-    : 'inline-flex h-10 w-10 items-center justify-center rounded-[14px] border border-rose-400/22 bg-rose-500/[0.08] text-rose-600 dark:text-rose-300'
+    ? 'pebble-modal-icon-well inline-flex h-10 w-10 items-center justify-center border border-[rgba(229,94,124,0.24)] bg-[rgba(229,94,124,0.12)] text-rose-300'
+    : 'pebble-modal-icon-well inline-flex h-10 w-10 items-center justify-center border border-rose-400/22 bg-rose-500/[0.08] text-rose-600 dark:text-rose-300'
 
   return (
     <div
@@ -135,7 +135,7 @@ export function SettingsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className={`soft-ring w-full max-w-[540px] space-y-7 rounded-[28px] p-7 ${isDark ? '' : 'backdrop-blur-2xl'} ${modalSurfaceClass}`}
+        className={`soft-ring w-full max-w-[540px] space-y-7 p-7 ${isDark ? '' : 'backdrop-blur-2xl'} ${modalSurfaceClass}`}
         style={{
           backgroundImage:
             theme === 'light'
@@ -239,7 +239,7 @@ export function SettingsModal({
             <button
               type="button"
               onClick={onResetLocalData}
-              className={`${buttonClass('secondary')} h-11 rounded-2xl border-rose-400/28 bg-rose-500/[0.08] px-4 text-sm font-semibold text-rose-700 hover:bg-rose-500/[0.12] dark:border-rose-400/30 dark:bg-rose-500/[0.10] dark:text-rose-200`}
+              className={`${buttonClass('secondary')} pebble-modal-control h-11 border-rose-400/28 bg-rose-500/[0.08] px-4 text-sm font-semibold text-rose-700 hover:bg-rose-500/[0.12] dark:border-rose-400/30 dark:bg-rose-500/[0.10] dark:text-rose-200`}
             >
               {t('settings.resetLocalData')}
             </button>

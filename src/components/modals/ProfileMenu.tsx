@@ -68,7 +68,7 @@ export function ProfileMenu({
     <div
       data-profile-menu-root="true"
       role="menu"
-      className={`fixed z-[100] isolate overflow-hidden rounded-2xl backdrop-blur-xl ${shellClass}`}
+      className={`fixed z-[100] isolate overflow-hidden rounded-[14px] backdrop-blur-xl ${shellClass}`}
       style={{ top, left, width: panelWidth }}
     >
       {/* Base layer */}
@@ -132,7 +132,7 @@ export function ProfileMenu({
 
         {/* ── Bio (only when present) ── */}
         {userBio && (
-          <div className="rounded-xl border border-pebble-border/22 bg-pebble-overlay/[0.05] px-3 py-2.5">
+          <div className="rounded-[10px] border border-pebble-border/22 bg-pebble-overlay/[0.05] px-3 py-2.5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">
               {t('profile.bio')}
             </p>

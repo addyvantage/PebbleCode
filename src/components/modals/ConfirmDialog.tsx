@@ -78,9 +78,7 @@ export function ConfirmDialog({
                 aria-labelledby={titleId}
                 className={[
                     'relative z-10 w-full max-w-[380px]',
-                    'rounded-2xl border border-pebble-border/30',
-                    'bg-pebble-panel/95 backdrop-blur-xl',
-                    'shadow-[0_30px_80px_rgba(2,8,23,0.45)]',
+                    'pebble-modal-shell backdrop-blur-xl',
                     'p-6 flex flex-col gap-4',
                     'animate-[fadeInScale_180ms_ease-out]',
                 ].join(' ')}
@@ -118,7 +116,7 @@ export function ConfirmDialog({
                         type="button"
                         onClick={onClose}
                         className={[
-                            'rounded-xl border border-pebble-border/35 bg-pebble-overlay/[0.08]',
+                            'pebble-modal-control border border-pebble-border/35 bg-pebble-overlay/[0.08]',
                             'px-4 py-2 text-sm font-medium text-pebble-text-secondary',
                             'transition hover:bg-pebble-overlay/[0.16] hover:text-pebble-text-primary',
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-border/50',
@@ -131,7 +129,7 @@ export function ConfirmDialog({
                         type="button"
                         onClick={handleConfirm}
                         className={[
-                            'rounded-xl border border-pebble-warning/40 bg-pebble-warning/15',
+                            'pebble-modal-control border border-pebble-warning/40 bg-pebble-warning/15',
                             'px-4 py-2 text-sm font-semibold text-pebble-warning',
                             'transition hover:bg-pebble-warning/22',
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-warning/40',

@@ -396,6 +396,31 @@ html {
       0 8px 18px rgba(55, 72, 110, 0.08);
   }
 
+  .pebble-modal-shell {
+    border: 1px solid rgba(var(--pebble-border), 0.24);
+    border-radius: 16px;
+    background-color: rgba(var(--pebble-panel), 0.96);
+    box-shadow:
+      0 24px 68px rgba(2, 8, 23, 0.28),
+      inset 0 1px 0 rgba(var(--pebble-overlay), 0.12);
+  }
+
+  .pebble-modal-section {
+    border-radius: 12px;
+  }
+
+  .pebble-modal-control {
+    border-radius: 10px;
+  }
+
+  .pebble-modal-icon-well {
+    border-radius: 10px;
+  }
+
+  .pebble-modal-close {
+    border-radius: 12px;
+  }
+
   .landing-hero-shell {
     border: 1px solid rgba(var(--pebble-border), 0.14);
     background:
@@ -1511,6 +1536,15 @@ html {
     border-color: rgba(var(--pebble-accent), 0.24);
     background-color: rgba(var(--pebble-accent), 0.14);
     color: hsl(220 24% 94%);
+  }
+
+  .theme-dark .pebble-modal-shell {
+    border-color: rgba(150, 168, 205, 0.22);
+    background-color: hsl(228 27% 21%);
+    box-shadow:
+      0 30px 84px rgba(2, 8, 23, 0.52),
+      0 8px 24px rgba(8, 15, 35, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .theme-dark .community-message-bubble {
