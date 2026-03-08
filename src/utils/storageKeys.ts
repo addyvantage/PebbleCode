@@ -1,4 +1,4 @@
-import { safeGetItem, safeRemoveItem } from '../lib/safeStorage'
+import { safeClearPrefix, safeGetItem, safeRemoveItem } from '../lib/safeStorage'
 
 export const storageKeys = {
   theme: 'pebble.theme.v1',
@@ -47,6 +47,30 @@ export function clearAppLocalData() {
 
 export function clearLocalUserData() {
   clearLocalStorageKeys(localUserKeys)
+}
+
+function clearSessionStoragePrefix(prefix: string) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    for (let index = window.sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = window.sessionStorage.key(index)
+      if (key && key.startsWith(prefix)) {
+        window.sessionStorage.removeItem(key)
+      }
+    }
+  } catch {
+    // no-op
+  }
+}
+
+export function clearAllPebbleLocalData() {
+  // Clear every Pebble-scoped key, including solved status, editor drafts, streak/analytics,
+  // auth cache, and legacy keys like "pebbleUserState" / "pebble_demo_mode".
+  safeClearPrefix('pebble')
+  clearSessionStoragePrefix('pebble')
 }
 
 export function getLocalUserProfile(): LocalUserProfile {

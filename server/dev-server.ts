@@ -1963,11 +1963,15 @@ app.post('/api/report/recovery', async (req: Request, res: Response) => {
     const filename = downloadFilename
     const filepath = join(tmpDir, filename)
     writeFileSync(filepath, pdfBuffer)
+    const apiPublicOriginRaw = String(process.env.API_PUBLIC_ORIGIN ?? '').trim()
+    const apiPublicOrigin = apiPublicOriginRaw
+      ? apiPublicOriginRaw.replace(/\/+$/, '')
+      : `${req.protocol}://${req.get('host')}`
 
     console.log(`[report] PDF saved locally: ${filepath}`)
     return res.status(200).json({
       ok: true,
-      reportUrl: `http://localhost:${process.env.PORT ?? 3001}/api/report/download/${filename}`,
+      reportUrl: `${apiPublicOrigin}/api/report/download/${filename}`,
       expiresIn: 3600,
       filename: downloadFilename,
       _local: true,

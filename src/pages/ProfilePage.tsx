@@ -7,7 +7,7 @@ import { Camera } from 'lucide-react'
 import { ConfirmDialog } from '../components/modals/ConfirmDialog'
 import { useI18n } from '../i18n/useI18n'
 import { LANGUAGES, type LanguageCode } from '../i18n/languages'
-import { clearLocalUserData } from '../utils/storageKeys'
+import { clearAllPebbleLocalData } from '../utils/storageKeys'
 import { apiFetch, apiUrl } from '../lib/apiUrl'
 import { pushNotification } from '../lib/notificationsStore'
 
@@ -198,8 +198,8 @@ export function ProfilePage() {
     }
 
     function handleClearLocalData() {
-        clearLocalUserData()
-        setMessage({ type: 'success', text: 'Local session data cleared from this browser.' })
+        clearAllPebbleLocalData()
+        window.location.reload()
     }
 
     const usernameCooldownRemainingDays = (() => {

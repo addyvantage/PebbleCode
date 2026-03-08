@@ -11,14 +11,14 @@ import { HoverBorderGradient } from '../components/ui/hover-border-gradient'
 import { AnimatedBorderRing } from '../components/ui/rainbow-borders-button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import {
-  clearAppLocalData,
+  clearAllPebbleLocalData,
   clearLocalUserData,
 } from '../utils/storageKeys'
 import { clearTaskProgress } from '../utils/taskProgress'
 import { useI18n } from '../i18n/useI18n'
 import { getAnalyticsState, subscribeAnalytics } from '../lib/analyticsStore'
 import { dateKeyForTimeZone, selectCurrentStreak, selectDailyCompletions } from '../lib/analyticsDerivers'
-import { safeClearPrefix, subscribeStoragePressure } from '../lib/safeStorage'
+import { subscribeStoragePressure } from '../lib/safeStorage'
 import { setNotificationScope, useNotifications } from '../lib/notificationsStore'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
@@ -199,12 +199,12 @@ export function AppLayout() {
 
   function handleResetLocalData() {
     clearTaskProgress()
-    clearAppLocalData()
+    clearAllPebbleLocalData()
     window.location.reload()
   }
 
   function handleResetAfterStoragePressure() {
-    safeClearPrefix(['pebble.', 'pebble:', 'pebble_'])
+    clearAllPebbleLocalData()
     window.location.reload()
   }
 

@@ -2,7 +2,7 @@ import { AlertTriangle, RefreshCcw } from 'lucide-react'
 import type { ContextType, ErrorInfo, ReactNode } from 'react'
 import { Component } from 'react'
 import { I18nContext } from '../../i18n/I18nProvider'
-import { safeClearPrefix } from '../../lib/safeStorage'
+import { clearAllPebbleLocalData } from '../../utils/storageKeys'
 
 type AppErrorBoundaryProps = {
   children: ReactNode
@@ -14,7 +14,7 @@ type AppErrorBoundaryState = {
 }
 
 function clearPebbleLocalData() {
-  safeClearPrefix(['pebble.', 'pebble:'])
+  clearAllPebbleLocalData()
 }
 
 export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
