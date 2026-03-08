@@ -78,11 +78,11 @@ export function SiteFooter() {
                   {copy.builtWith}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
-                  <div className="inline-flex min-w-[168px] items-center justify-center rounded-[10px] border border-pebble-border/16 bg-pebble-overlay/[0.14] px-3 py-2 shadow-[0_8px_18px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.10)] dark:bg-white/[0.05] dark:shadow-[0_10px_22px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] sm:min-w-[196px] sm:px-3.5 sm:py-2.5">
+                  <div className="inline-flex h-[74px] w-[74px] items-center justify-center rounded-[14px] border border-pebble-border/16 bg-pebble-overlay/[0.14] p-2 shadow-[0_8px_18px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.10)] dark:bg-white/[0.05] dark:shadow-[0_10px_22px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] sm:h-[82px] sm:w-[82px] sm:p-2.5">
                     <img
                       src={awsWordmark}
                       alt="Amazon Web Services"
-                      className="h-[34px] w-auto max-w-[154px] object-contain sm:h-[40px] sm:max-w-[178px]"
+                      className="h-full w-full object-contain"
                     />
                   </div>
                   <div className="inline-flex min-w-[144px] items-center gap-3 rounded-[14px] border border-pebble-border/14 bg-pebble-overlay/[0.10] px-3.5 py-2.5 text-[13px] font-semibold text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] dark:bg-white/[0.04] sm:min-w-[156px] sm:px-4 sm:py-3">
