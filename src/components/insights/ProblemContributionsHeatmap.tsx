@@ -67,14 +67,14 @@ export function ProblemContributionsHeatmap() {
     }, [dailyMap])
 
     // Labels
-    const title = t('insights.contributions.title') ?? 'Problem contributions'
-    const subtitle = t('insights.contributions.subtitle') ?? 'Daily solved problems over the last 365 days.'
+    const title = t('insights.contributions.title')
+    const subtitle = t('insights.contributions.subtitle')
 
-    const statTotal = t('insights.contributions.stats.total') ?? 'Total solved'
-    const statBestStreak = t('insights.contributions.stats.bestStreak') ?? 'Best streak'
-    const statMostActive = t('insights.contributions.stats.mostActive') ?? 'Most active day'
-    const statDays = t('insights.contributions.stats.days') ?? 'days'
-    const statSolves = t('insights.contributions.stats.solves') ?? 'solves'
+    const statTotal = t('insights.contributions.stats.total')
+    const statBestStreak = t('insights.contributions.stats.bestStreak')
+    const statMostActive = t('insights.contributions.stats.mostActive')
+    const statDays = t('insights.contributions.stats.days')
+    const statSolves = t('insights.contributions.stats.solves')
 
     // Fallback simple date string for the most active day
     const mostActiveDateStr = maxDayDate
@@ -98,11 +98,10 @@ export function ProblemContributionsHeatmap() {
                     <PebbleCalendarHeatmap
                         data={data}
                         labels={{
-                            less: t('insights.contributions.legendLess') ?? 'Less',
-                            more: t('insights.contributions.legendMore') ?? 'More',
-                            solveSingular: 'solve',
-                            solvePlural: t('insights.contributions.stats.solves') ?? 'solves',
-                            on: 'on'
+                            less: t('insights.contributions.legendLess'),
+                            more: t('insights.contributions.legendMore'),
+                            solveSingular: t('insights.contributions.stats.solves'),
+                            solvePlural: t('insights.contributions.stats.solves'),
                         }}
                     />
                 </div>

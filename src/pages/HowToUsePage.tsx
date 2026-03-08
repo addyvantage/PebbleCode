@@ -9,7 +9,7 @@ import { useI18n } from '../i18n/useI18n'
 import { getProductCopy } from '../i18n/productCopy'
 
 export function HowToUsePage() {
-  const { lang } = useI18n()
+  const { lang, t } = useI18n()
   const copy = getProductCopy(lang).help?.howTo
   const steps = getHowToUseSteps(lang)
   const quickPath = getHowToUseQuickPath(lang)
@@ -25,8 +25,8 @@ export function HowToUsePage() {
             title={copy.title}
             description={copy.description}
             actions={[
-              { label: copy.homeCta ?? 'Start with Home', to: '/', variant: 'primary', icon: Play },
-              { label: copy.faqCta ?? 'Read FAQ', to: '/faq', variant: 'secondary', icon: Compass },
+              { label: copy.homeCta, to: '/', variant: 'primary', icon: Play },
+              { label: copy.faqCta, to: '/faq', variant: 'secondary', icon: Compass },
             ]}
             chips={copy.chips}
           />
@@ -44,7 +44,7 @@ export function HowToUsePage() {
                 <div className="mt-4 grid gap-2.5 md:grid-cols-2 xl:grid-cols-1">
                   {quickPath.map((step, index) => (
                     <div key={step.title} className="help-note rounded-[20px] px-3.5 py-3">
-                      <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-pebble-accent">{copy.quickMoveLabel ?? 'Quick move'} {index + 1}</p>
+                      <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-pebble-accent">{copy.quickMoveLabel} {index + 1}</p>
                       <p className="mt-1 text-[14px] font-semibold text-pebble-text-primary">{step.title}</p>
                       <p className="mt-1 text-[12.5px] leading-[1.65] text-pebble-text-secondary">{step.detail}</p>
                     </div>
@@ -100,16 +100,12 @@ export function HowToUsePage() {
                   {copy.backToHome}
                 </Link>
                 <p className="mt-3 text-[13px] leading-[1.68] text-pebble-text-secondary">
-                  {copy.backBody.split('About PebbleCode')[0]}
-                  <Link to="/about" className="font-medium text-pebble-accent hover:text-pebble-text-primary">About PebbleCode</Link>
-                  {copy.backBody.includes('FAQ') ? (
-                    <>
-                      {copy.backBody.split('About PebbleCode')[1]?.split('FAQ')[0] ?? ' '}
-                      <Link to="/faq" className="font-medium text-pebble-accent hover:text-pebble-text-primary">FAQ</Link>
-                      {copy.backBody.split('FAQ')[1] ?? ''}
-                    </>
-                  ) : null}
+                  {copy.backBody}
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link to="/about" className="font-medium text-pebble-accent hover:text-pebble-text-primary">{t('footer.nav.about')}</Link>
+                  <Link to="/faq" className="font-medium text-pebble-accent hover:text-pebble-text-primary">{t('footer.nav.faq')}</Link>
+                </div>
               </Card>
             </div>
           </div>

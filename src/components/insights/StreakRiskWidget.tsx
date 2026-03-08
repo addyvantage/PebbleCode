@@ -259,6 +259,23 @@ export function StreakRiskWidget() {
   }
 
   const cfg = riskData ? LABEL_CONFIG[riskData.label] : null
+  const localizedSummary = useMemo(
+    () =>
+      `${t('insights.kpi.streak')}: ${features.streakDays} ${t('insights.contributions.stats.days')} · ${t('insights.contributions.stats.total')}: ${features.solvesLast7}`,
+    [features.solvesLast7, features.streakDays, t],
+  )
+  const localizedActions = useMemo(() => {
+    const first = features.daysActiveLast7 < 5
+      ? t('insights.next.maintainStreak')
+      : t('insights.next.continueUnit')
+    const second = features.guidanceRelianceLast7 > 0.4
+      ? t('insights.next.focusDebugging')
+      : t('insights.next.raiseComplexity')
+    const third = features.trendDirection === 'worsening'
+      ? t('insights.next.focusSyntax')
+      : t('insights.next.continueCta')
+    return [first, second, third]
+  }, [features.daysActiveLast7, features.guidanceRelianceLast7, features.trendDirection, t])
 
   const LabelIcon =
     riskData?.label === 'high'
@@ -308,19 +325,16 @@ export function StreakRiskWidget() {
             </span>
           </div>
 
-          {/* First factor as 1-line explanation */}
-          {riskData.factors[0] && (
-            <p className="text-sm text-pebble-text-secondary">{riskData.factors[0]}</p>
-          )}
+          <p className="text-sm text-pebble-text-secondary">{localizedSummary}</p>
 
           {/* Recommended actions */}
-          {riskData.actions.length > 0 && (
+          {localizedActions.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-xs font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">
                 {t('insights.streakRisk.actions')}
               </p>
               <ul className="space-y-1">
-                {riskData.actions.slice(0, 3).map((action, i) => (
+                {localizedActions.slice(0, 3).map((action, i) => (
                   <li
                     key={i}
                     className="flex items-start gap-2 text-sm text-pebble-text-secondary"

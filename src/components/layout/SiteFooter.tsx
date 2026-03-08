@@ -70,12 +70,12 @@ export function SiteFooter() {
                 <BrandLogo className="h-[54px] w-auto object-contain sm:h-[58px] md:h-[64px]" />
               </div>
               <p className="max-w-[31ch] text-[14px] md:text-[15px] leading-relaxed text-pebble-text-secondary">
-                {copy.description ?? 'Elite coding practice with mentor-level guidance.'}
+                {copy.description}
               </p>
 
               <div className="rounded-[20px] border border-pebble-border/12 bg-[linear-gradient(180deg,rgba(var(--pebble-overlay),0.11),rgba(var(--pebble-overlay),0.045))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] dark:border-pebble-border/12 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.022))]">
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-pebble-text-muted">
-                  {copy.builtWith ?? 'Built with'}
+                  {copy.builtWith}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
                   <div className="inline-flex min-w-[168px] items-center justify-center rounded-[10px] border border-pebble-border/16 bg-pebble-overlay/[0.14] px-3 py-2 shadow-[0_8px_18px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.10)] dark:bg-white/[0.05] dark:shadow-[0_10px_22px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] sm:min-w-[196px] sm:px-3.5 sm:py-2.5">
@@ -107,14 +107,14 @@ export function SiteFooter() {
               </div>
 
               <p className="pt-0.5 text-[12px] text-pebble-text-muted">
-                {copy.copyright ?? '© 2026 Pebble. All rights reserved.'}
+                {copy.copyright}
               </p>
             </div>
 
             <div className="w-full">
               <div className="grid w-full grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 sm:gap-9 md:gap-10 xl:gap-12">
                 <div className="space-y-[18px]">
-                  <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">{copy.product ?? 'Product'}</h3>
+                  <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">{copy.product}</h3>
                   <nav className="flex flex-col gap-3.5">
                     <FooterLink to="/">{t('nav.home')}</FooterLink>
                     <FooterLink to="/problems">{t('nav.problems')}</FooterLink>
@@ -125,7 +125,7 @@ export function SiteFooter() {
                 </div>
 
                 <div className="space-y-[18px]">
-                  <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">{copy.guides ?? 'Guides'}</h3>
+                  <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">{copy.guides}</h3>
                   <nav className="flex flex-col gap-3.5">
                     <FooterLink to="/about">{t('footer.nav.about')}</FooterLink>
                     <FooterLink to="/how-to-use">{t('footer.nav.howToUse')}</FooterLink>
@@ -134,7 +134,7 @@ export function SiteFooter() {
                 </div>
 
                 <div className="space-y-[18px]">
-                  <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">{copy.account ?? 'Account'}</h3>
+                  <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">{copy.account}</h3>
                   <nav className="flex flex-col gap-3.5">
                     <FooterLink to="/auth/login">{t('footer.nav.login')}</FooterLink>
                     <FooterLink to="/auth/signup">{t('footer.nav.signUp')}</FooterLink>
@@ -143,7 +143,7 @@ export function SiteFooter() {
                 </div>
 
                 <div className="space-y-[18px]">
-                  <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">{copy.legal ?? 'Legal'}</h3>
+                  <h3 className="text-[12px] font-black uppercase tracking-[0.17em] text-pebble-accent/95">{copy.legal}</h3>
                   <nav className="flex flex-col gap-3.5">
                     <FooterLink to="/legal/privacy">{t('footer.nav.privacy')}</FooterLink>
                     <FooterLink to="/legal/terms">{t('footer.nav.terms')}</FooterLink>

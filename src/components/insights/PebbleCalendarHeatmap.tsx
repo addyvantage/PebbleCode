@@ -73,9 +73,12 @@ export function PebbleCalendarHeatmap({
         const level = datum?.level ?? 0
 
         const labelCount = count
-        const labelSolve = count === 1 ? (labels.solveSingular || "solve") : (labels.solvePlural || "solves")
-        const labelOn = labels.on || "on"
+        const labelSolve = count === 1
+          ? (labels.solveSingular ?? labels.solvePlural ?? "")
+          : (labels.solvePlural ?? labels.solveSingular ?? "")
+        const labelOn = labels.on ?? ""
         const labelDate = formatTooltipDate(toLocalMidnight(date))
+        const dateSuffix = labelOn ? `${labelOn} ${labelDate}` : labelDate
 
         let bgClass = "bg-pebble-chip-surface/70 border border-pebble-border/20"
         if (level === 1) bgClass = "bg-pebble-accent/18 border border-pebble-border/25"
@@ -105,7 +108,7 @@ export function PebbleCalendarHeatmap({
                             tabIndex={modifiers.outside ? -1 : 0}
                         >
                             <span className="sr-only">
-                                {labelCount} {labelSolve} {labelOn} {labelDate}
+                                {labelCount} {labelSolve} {dateSuffix}
                             </span>
                         </div>
                     </TooltipTrigger>
@@ -114,7 +117,7 @@ export function PebbleCalendarHeatmap({
                         align="center"
                         className="whitespace-nowrap z-[99999] bg-pebble-canvas text-pebble-text-primary border border-pebble-border/30 shadow-xl rounded-[10px] px-3 py-1.5 text-[11px]"
                     >
-                        <span className="font-semibold">{labelCount}</span> <span className="text-pebble-text-secondary">{labelSolve} {labelOn} {labelDate}</span>
+                        <span className="font-semibold">{labelCount}</span> <span className="text-pebble-text-secondary">{labelSolve} {dateSuffix}</span>
                     </TooltipContent>
                 </Tooltip>
             </td>
@@ -158,14 +161,14 @@ export function PebbleCalendarHeatmap({
 
             {/* Legend */}
             <div className="mt-3 flex items-center justify-end gap-2 text-[11px] text-pebble-text-secondary">
-                <span>{labels.less || "Less"}</span>
+                <span>{labels.less ?? ""}</span>
                 <div className="flex items-center gap-[4px]">
                     <div className="h-4 w-4 rounded-[4px] bg-pebble-chip-surface/70 border border-pebble-border/20" />
                     <div className="h-4 w-4 rounded-[4px] bg-pebble-accent/18 border border-pebble-border/25" />
                     <div className="h-4 w-4 rounded-[4px] bg-pebble-accent/35 border border-pebble-border/25" />
                     <div className="h-4 w-4 rounded-[4px] bg-pebble-accent/65 border border-pebble-accent/35" />
                 </div>
-                <span>{labels.more || "More"}</span>
+                <span>{labels.more ?? ""}</span>
             </div>
         </div>
     )

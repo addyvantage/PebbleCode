@@ -495,7 +495,7 @@ export function SessionPage() {
 
     const runtimeDisabledReason = (language: LanguageId): string | undefined => {
       const state = runtimeStateFor(language)
-      return state && !state.ok ? (state.reason ?? 'Language runtime is unavailable in this environment.') : undefined
+      return state && !state.ok ? (state.reason ?? t('coach.toolchainUnavailableBody')) : undefined
     }
 
     if (activeProblemBase) {

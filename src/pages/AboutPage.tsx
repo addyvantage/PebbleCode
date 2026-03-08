@@ -34,8 +34,8 @@ export function AboutPage() {
             title={copy.title}
             description={copy.description}
             actions={[
-              { label: copy.howToCta ?? 'How to Use', to: '/how-to-use', variant: 'primary', icon: Compass },
-              { label: copy.faqCta ?? 'Read FAQ', to: '/faq', variant: 'secondary', icon: Sparkles },
+              { label: copy.howToCta, to: '/how-to-use', variant: 'primary', icon: Compass },
+              { label: copy.faqCta, to: '/faq', variant: 'secondary', icon: Sparkles },
             ]}
             chips={copy.chips}
           />

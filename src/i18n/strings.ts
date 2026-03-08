@@ -1,6 +1,7 @@
 import type { LanguageCode } from './languages'
 import { GENERATED_STRINGS } from './generatedStrings'
 import { AUTO_COMPLETION_TRANSLATIONS } from './autoCompletionTranslations'
+import { HI_COMPLETION_TRANSLATIONS } from './hiCompletionTranslations'
 
 export const EN_STRINGS = {
   'nav.home': 'Home',
@@ -3808,6 +3809,7 @@ export const STRINGS: Record<LanguageCode, I18nDictionary> = {
     ...(STREAK_AND_PLACEMENT_TRANSLATIONS.hi ?? {}),
     ...(PROBLEMS_TRANSLATIONS.hi ?? {}),
     ...(GENERATED_STRINGS.hi ?? {}),
+    ...HI_COMPLETION_TRANSLATIONS,
   },
   bn: {
     ...PROBLEMS_FALLBACK,

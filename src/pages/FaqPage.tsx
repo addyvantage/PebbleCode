@@ -9,7 +9,7 @@ import { useI18n } from '../i18n/useI18n'
 import { getProductCopy } from '../i18n/productCopy'
 
 export function FaqPage() {
-  const { lang } = useI18n()
+  const { lang, t } = useI18n()
   const copy = getProductCopy(lang).help?.faq
   const groups = getFaqGroups(lang)
 
@@ -23,8 +23,8 @@ export function FaqPage() {
             title={copy.title}
             description={copy.description}
             actions={[
-              { label: copy.howToCta ?? 'How to use', to: '/how-to-use', variant: 'primary', icon: Compass },
-              { label: copy.sessionCta ?? 'Open Session', to: '/session/1', variant: 'secondary', icon: Bot },
+              { label: copy.howToCta, to: '/how-to-use', variant: 'primary', icon: Compass },
+              { label: copy.sessionCta, to: '/session/1', variant: 'secondary', icon: Bot },
             ]}
             chips={copy.chips}
           />
@@ -80,16 +80,12 @@ export function FaqPage() {
                   {copy.backToHome}
                 </Link>
                 <p className="mt-3 text-[13px] leading-[1.68] text-pebble-text-secondary">
-                  {copy.backBody.split('About PebbleCode')[0]}
-                  <Link to="/about" className="font-medium text-pebble-accent hover:text-pebble-text-primary">About PebbleCode</Link>
-                  {copy.backBody.includes('How to Use') ? (
-                    <>
-                      {copy.backBody.split('About PebbleCode')[1]?.split('How to Use')[0] ?? ' '}
-                      <Link to="/how-to-use" className="font-medium text-pebble-accent hover:text-pebble-text-primary">How to Use</Link>
-                      {copy.backBody.split('How to Use')[1] ?? ''}
-                    </>
-                  ) : null}
+                  {copy.backBody}
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link to="/about" className="font-medium text-pebble-accent hover:text-pebble-text-primary">{t('footer.nav.about')}</Link>
+                  <Link to="/how-to-use" className="font-medium text-pebble-accent hover:text-pebble-text-primary">{t('footer.nav.howToUse')}</Link>
+                </div>
               </Card>
             </div>
           </div>

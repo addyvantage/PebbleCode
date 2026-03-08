@@ -14,6 +14,7 @@ import { FeatureGrid } from '../components/home/FeatureGrid'
 import { SiteFooter } from '../components/layout/SiteFooter'
 import { FooterSeparator } from '../components/home/FooterSeparator'
 import { PebbleHero } from '../components/landing/PebbleHero'
+import { getLanguageOption } from '../i18n/languages'
 
 function classNames(...values: Array<string | undefined>) {
   return values.filter(Boolean).join(' ')
@@ -35,13 +36,15 @@ export function LandingPage() {
   const recent = getRecentActivity()
   const recentProblem = recent ? getProblemById(recent.problemId) : null
   const localizedRecent = recentProblem ? getLocalizedProblem(recentProblem, lang) : null
+  const languageOption = getLanguageOption(lang)
   const recentTimeAgo = recent
     ? (() => {
         const diffMinutes = Math.max(1, Math.round((Date.now() - recent.timestamp) / 60000))
-        if (diffMinutes < 60) return `${diffMinutes}m ago`
+        const rtf = new Intl.RelativeTimeFormat(languageOption.locale, { numeric: 'auto' })
+        if (diffMinutes < 60) return rtf.format(-diffMinutes, 'minute')
         const diffHours = Math.round(diffMinutes / 60)
-        if (diffHours < 24) return `${diffHours}h ago`
-        return `${Math.round(diffHours / 24)}d ago`
+        if (diffHours < 24) return rtf.format(-diffHours, 'hour')
+        return rtf.format(-Math.round(diffHours / 24), 'day')
       })()
     : null
 
@@ -94,7 +97,7 @@ export function LandingPage() {
                         {localizedRecent.title}
                       </p>
                       <p className={`text-[12.5px] leading-[1.68] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
-                        {homeCopy.resumeDescription ?? 'Resume the thread, rerun the last failing case, and close the loop while context is still warm.'}
+                        {homeCopy.resumeDescription}
                       </p>
                     </div>
                   ) : (
@@ -106,7 +109,7 @@ export function LandingPage() {
                         {t('home.continue.empty.title')}
                       </p>
                       <p className={`text-[12.5px] leading-[1.68] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
-                        {homeCopy.emptyDescription ?? 'Pick a first problem and Pebble will keep your runtime context ready to continue next time.'}
+                        {homeCopy.emptyDescription}
                       </p>
                     </div>
                   )}
@@ -131,7 +134,7 @@ export function LandingPage() {
                 </div>
               ) : (
                 <div className="mb-4 flex flex-wrap items-center gap-2">
-                  {(homeCopy.emptyChips ?? ['Guided warm-up', 'Real runtime checks', 'Coach in context']).map((label: string) => (
+                  {(homeCopy.emptyChips ?? []).map((label: string) => (
                     <span key={label} className="landing-chip-muted rounded-full px-2 py-0.5 text-[10.5px] font-medium">
                       {label}
                     </span>
@@ -142,8 +145,8 @@ export function LandingPage() {
               <div className="landing-inset mt-auto flex items-center justify-between gap-3 rounded-[16px] px-3 py-3">
                 <p className={`text-[12px] leading-[1.6] text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
                   {localizedRecent
-                    ? (homeCopy.resumeRail ?? 'Jump straight back into the same unit and keep your recovery loop short.')
-                    : (homeCopy.emptyRail ?? 'Start a first session and Pebble will build your continuation context automatically.')}
+                    ? homeCopy.resumeRail
+                    : homeCopy.emptyRail}
                 </p>
                 <div className="shrink-0">
                   {localizedRecent ? (

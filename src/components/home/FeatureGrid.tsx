@@ -81,7 +81,7 @@ function RuntimePreview({ tone, isDark, copy }: { tone: TileTone; isDark: boolea
           ? 'border-amber-300/55 bg-amber-400/18 text-amber-100 shadow-[0_0_14px_rgba(251,191,36,0.18)]'
           : 'border-amber-500/65 bg-amber-500/18 text-amber-800'
           }`}>
-          {copy?.failBadge ?? 'Fail #2'}
+          {copy?.failBadge}
         </span>
       </div>
       <div className={`rounded-xl border px-3 py-2.5 font-mono text-[11.5px] leading-[1.72] ${isDark
@@ -97,8 +97,8 @@ function RuntimePreview({ tone, isDark, copy }: { tone: TileTone; isDark: boolea
         : 'border-amber-500/35 bg-amber-50/80'
         }`}>
         <div className="flex items-center justify-between gap-2 text-[10px] font-semibold">
-          <span className={isDark ? 'text-amber-100' : 'text-amber-800'}>{copy?.expected ?? 'Expected'}</span>
-          <span className={isDark ? 'text-amber-100' : 'text-amber-800'}>{copy?.actual ?? 'Actual'}</span>
+          <span className={isDark ? 'text-amber-100' : 'text-amber-800'}>{copy?.expected}</span>
+          <span className={isDark ? 'text-amber-100' : 'text-amber-800'}>{copy?.actual}</span>
         </div>
         <div className={`mt-1.5 grid grid-cols-2 gap-1.5 text-[11px] ${isDark ? 'text-pebble-text-primary' : 'text-pebble-text-secondary'}`}>
           <div className={`rounded-md border px-2 py-1 ${isDark ? 'border-emerald-300/40 bg-emerald-400/12' : 'border-emerald-400/45 bg-emerald-50/80'}`}>1 2</div>
@@ -106,14 +106,14 @@ function RuntimePreview({ tone, isDark, copy }: { tone: TileTone; isDark: boolea
         </div>
       </div>
       <div className={`mt-3 rounded-lg border px-3 py-2 text-[11px] leading-[1.6] ${isDark ? 'border-pebble-accent/28 bg-pebble-accent/10 text-pebble-text-secondary' : 'border-pebble-accent/28 bg-pebble-accent/8 text-pebble-text-secondary'}`}>
-        {copy?.signal ?? 'Pebble isolates the fail case first, then points you to the exact recovery move.'}
+        {copy?.signal}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${isDark ? 'border-pebble-accent/42 bg-pebble-accent/14 text-pebble-text-primary' : 'border-pebble-accent/46 bg-pebble-accent/10 text-pebble-accent'}`}>
-          {copy?.caseIsolated ?? 'Case isolated'}
+          {copy?.caseIsolated}
         </span>
         <span className="rounded-full border border-pebble-border/30 bg-pebble-overlay/[0.05] px-2 py-0.5 text-[10px] font-medium text-pebble-text-secondary">
-          {copy?.nextInspect ?? 'Next: inspect complement logic'}
+          {copy?.nextInspect}
         </span>
       </div>
     </div>
@@ -142,24 +142,34 @@ function CoachPreview({ tone, isDark, copy }: { tone: TileTone; isDark: boolean;
           ? 'border-pebble-border/40 bg-pebble-canvas/48 text-pebble-text-primary'
           : 'border-pebble-border/50 bg-pebble-canvas/70 text-pebble-text-primary'
           }`}>
-          {copy?.bubble1 ?? 'Your run failed on case #2. Check the complement before you store the current value.'}
+          {copy?.bubble1}
         </div>
         <div className={`ml-auto w-[90%] rounded-lg border px-3 py-2.5 text-[11.5px] leading-[1.6] ${isDark
           ? 'border-pebble-accent/30 bg-pebble-accent/10 text-pebble-text-primary'
           : 'border-pebble-accent/34 bg-pebble-accent/10 text-pebble-text-primary'
           }`}>
-          {copy?.bubble2 ?? 'One next step: test whether `target - nums[i]` already exists in `seen` first.'}
+          {copy?.bubble2}
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between rounded-lg border border-pebble-border/26 bg-pebble-overlay/[0.05] px-2.5 py-2 text-[10.5px] text-pebble-text-secondary">
-        <span>{copy?.tiered ?? 'Tiered guidance'}</span>
-        <span className="font-medium text-pebble-text-primary">{copy?.grounded ?? 'Grounded in latest run'}</span>
+        <span>{copy?.tiered}</span>
+        <span className="font-medium text-pebble-text-primary">{copy?.grounded}</span>
       </div>
     </div>
   )
 }
 
-function BrowserPreview({ tone, isDark, copy }: { tone: TileTone; isDark: boolean; copy: any }) {
+function BrowserPreview({
+  tone,
+  isDark,
+  copy,
+  difficultyLabels,
+}: {
+  tone: TileTone
+  isDark: boolean
+  copy: any
+  difficultyLabels: Record<'Easy' | 'Medium' | 'Hard', string>
+}) {
   const rows = [
     { title: 'Two Sum', difficulty: 'Easy', acceptance: '63%', solved: true, recommended: false },
     { title: 'Valid Parentheses', difficulty: 'Easy', acceptance: '58%', solved: false, recommended: true },
@@ -173,11 +183,11 @@ function BrowserPreview({ tone, isDark, copy }: { tone: TileTone; isDark: boolea
         : 'border-pebble-border/50 bg-pebble-canvas/70 text-pebble-text-secondary'
         }`}>
         <Search className="h-3.5 w-3.5" />
-        {copy?.search ?? 'Search problems, topics, tags'}
+        {copy?.search}
       </div>
       <div className="mb-3 flex items-center justify-between rounded-lg border border-pebble-border/24 bg-pebble-overlay/[0.05] px-2.5 py-2 text-[10.5px] text-pebble-text-secondary">
-        <span>{copy?.picked ?? 'Picked for Array momentum'}</span>
-        <span className="font-medium text-pebble-text-primary">{copy?.minutes ?? '12 min rep'}</span>
+        <span>{copy?.picked}</span>
+        <span className="font-medium text-pebble-text-primary">{copy?.minutes}</span>
       </div>
       <div className="space-y-1.5">
         {rows.map((row) => (
@@ -196,12 +206,12 @@ function BrowserPreview({ tone, isDark, copy }: { tone: TileTone; isDark: boolea
                   : isDark ? 'bg-rose-500/16 text-pebble-text-primary border border-rose-300/48' : 'bg-rose-500/12 text-rose-700 border border-rose-400/55'
               }`}
             >
-              {row.difficulty}
+              {difficultyLabels[row.difficulty as 'Easy' | 'Medium' | 'Hard']}
             </span>
             <span className={`text-[10.5px] font-medium ${isDark ? 'text-pebble-text-primary' : 'text-pebble-text-secondary'}`}>{row.acceptance}</span>
             <span className="inline-flex w-4 items-center justify-center">
               {row.recommended ? (
-                <span className={`rounded-full px-1.5 py-0.5 text-[8.5px] font-semibold uppercase tracking-[0.08em] ${isDark ? 'bg-pebble-accent/20 text-pebble-text-primary' : 'bg-pebble-accent/12 text-pebble-accent'}`}>{copy?.rec ?? 'Rec'}</span>
+                <span className={`rounded-full px-1.5 py-0.5 text-[8.5px] font-semibold uppercase tracking-[0.08em] ${isDark ? 'bg-pebble-accent/20 text-pebble-text-primary' : 'bg-pebble-accent/12 text-pebble-accent'}`}>{copy?.rec}</span>
               ) : row.solved ? (
                 <CheckCircle2 className="h-3.5 w-3.5 text-pebble-accent" />
               ) : (
@@ -375,7 +385,7 @@ function LanguagePreviewAnimated({ tone, isDark, copy }: { tone: TileTone; isDar
         : 'border-pebble-border/52 bg-pebble-canvas/72'
         } z-20`}>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[12px] font-medium text-pebble-text-secondary">{copy?.language ?? 'Language'}</span>
+          <span className="text-[12px] font-medium text-pebble-text-secondary">{copy?.language}</span>
           <div
             ref={selectorRef}
             className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold ${isDark
@@ -442,8 +452,8 @@ function LanguagePreviewAnimated({ tone, isDark, copy }: { tone: TileTone; isDar
         </AnimatePresence>
       </div>
       <div className="mt-3 flex items-center justify-between rounded-lg border border-pebble-border/24 bg-pebble-overlay/[0.05] px-2.5 py-2 text-[10.5px] text-pebble-text-secondary">
-        <span>{copy?.sameLogic ?? 'Same logic, local language'}</span>
-        <span className="font-medium text-pebble-text-primary">{copy?.sync ?? 'Mentor stays in sync'}</span>
+        <span>{copy?.sameLogic}</span>
+        <span className="font-medium text-pebble-text-primary">{copy?.sync}</span>
       </div>
 
       {!reduceMotion && autoplayEnabled ? (
@@ -476,10 +486,16 @@ function LanguagePreviewAnimated({ tone, isDark, copy }: { tone: TileTone; isDar
   )
 }
 
-function TilePreview({ preview, tone, isDark, copy }: Pick<FeatureTile, 'preview' | 'tone'> & { isDark: boolean; copy: any }) {
+function TilePreview({
+  preview,
+  tone,
+  isDark,
+  copy,
+  difficultyLabels,
+}: Pick<FeatureTile, 'preview' | 'tone'> & { isDark: boolean; copy: any; difficultyLabels: Record<'Easy' | 'Medium' | 'Hard', string> }) {
   if (preview === 'runtime') return <RuntimePreview tone={tone} isDark={isDark} copy={copy?.runtime} />
   if (preview === 'coach') return <CoachPreview tone={tone} isDark={isDark} copy={copy?.coach} />
-  if (preview === 'browser') return <BrowserPreview tone={tone} isDark={isDark} copy={copy?.browser} />
+  if (preview === 'browser') return <BrowserPreview tone={tone} isDark={isDark} copy={copy?.browser} difficultyLabels={difficultyLabels} />
   return <LanguagePreviewAnimated tone={tone} isDark={isDark} copy={copy?.languages} />
 }
 
@@ -507,7 +523,7 @@ const TILE_PREVIEWS: Record<string, FeatureTile['preview']> = {
 export function FeatureGrid() {
   const reduceMotion = useReducedMotion()
   const { theme } = useTheme()
-  const { lang } = useI18n()
+  const { lang, t } = useI18n()
   const isDark = theme === 'dark'
 
   const featureCopy = getProductCopy(lang).home?.featureGrid ?? {}
@@ -521,7 +537,12 @@ export function FeatureGrid() {
     icon: TILE_ICONS[tileCopy.id] ?? Code2,
   }))
 
-  const chips: string[] = featureCopy.capabilityChips ?? ['Real runtime checks', 'Coach in context', 'Multilingual mentoring']
+  const chips: string[] = featureCopy.capabilityChips ?? []
+  const difficultyLabels = {
+    Easy: t('difficulty.easy'),
+    Medium: t('difficulty.medium'),
+    Hard: t('difficulty.hard'),
+  }
 
   return (
     <section className="landing-showcase-shell relative mt-3 overflow-hidden rounded-[32px] px-4 py-6 md:px-6 md:py-8">
@@ -531,15 +552,15 @@ export function FeatureGrid() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.06fr_0.94fr] lg:items-end">
         <div className="space-y-3">
           <p className="landing-chip-muted inline-flex w-fit rounded-full px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.12em]">
-            {featureCopy.sectionPill ?? 'Product capabilities'}
+            {featureCopy.sectionPill}
           </p>
           <h2 className="max-w-[17ch] text-balance text-[1.84rem] font-semibold leading-[1.05] tracking-[-0.03em] text-pebble-text-primary md:text-[2.18rem] lg:text-[2.42rem]">
-            {featureCopy.sectionTitle ?? 'Pebble is designed around the full practice loop, not just the final answer.'}
+            {featureCopy.sectionTitle}
           </h2>
         </div>
         <div className="space-y-3 lg:justify-self-end lg:text-right">
           <p className="max-w-[58ch] text-[14px] leading-[1.8] text-pebble-text-secondary md:text-[14.5px]">
-            {featureCopy.sectionBody ?? 'Run real code, recover faster with grounded help, keep guidance multilingual, and choose the next rep with more intent.'}
+            {featureCopy.sectionBody}
           </p>
           <div className="flex flex-wrap gap-2 lg:justify-end">
             {chips.map((chip: string) => (
@@ -602,7 +623,7 @@ export function FeatureGrid() {
               </div>
 
               <div className="relative z-10 mt-4">
-                <TilePreview preview={tile.preview} tone={tile.tone} isDark={isDark} copy={tileCopyData} />
+                <TilePreview preview={tile.preview} tone={tile.tone} isDark={isDark} copy={tileCopyData} difficultyLabels={difficultyLabels} />
               </div>
             </motion.article>
           )

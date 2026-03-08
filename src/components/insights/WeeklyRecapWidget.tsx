@@ -318,35 +318,22 @@ function friendlyPlaybackStatus(recap: RecapData | null, tFn: (key: I18nKey) => 
     return tFn('insights.weeklyRecap.friendlyEmpty')
   }
   if (recap.playback.provider === 'polly' && recap.audioUrl) {
-    return 'Your recap audio is ready to play.'
+    return tFn('insights.weeklyRecap.readyBody')
   }
-  return 'Your recap script is ready, and Pebble can play it with the best available voice.'
+  return tFn('insights.weeklyRecap.audioUnavailable')
 }
 
-function buildLocalRecap(summary: RecapSummaryPayload): RecapData {
-  const opener =
-    summary.streakDays > 0
-      ? `You kept a ${summary.streakDays}-day streak alive this week`
-      : 'This week was more fragile, but it still gives us a clear learning signal'
-
-  const momentum =
-    summary.solvesLast7 > 0
-      ? `with ${summary.solvesLast7} solved rep${summary.solvesLast7 === 1 ? '' : 's'} and ${summary.daysActiveLast7} active day${summary.daysActiveLast7 === 1 ? '' : 's'}.`
-      : `with ${summary.daysActiveLast7} active day${summary.daysActiveLast7 === 1 ? '' : 's'} but no clean solve yet.`
-
-  const struggle = summary.biggestStruggle
-    ? `The biggest friction pattern was ${summary.biggestStruggle.replace(/_/g, ' ')}.`
-    : 'The main opportunity now is to stay consistent and keep recovery tight.'
-
-  const nextMove =
-    summary.guidanceReliancePct > 40
-      ? 'Next week should focus on one independent first attempt before asking Pebble for help.'
-      : summary.trendDirection === 'worsening'
-        ? 'Next week should focus on correcting one repeated mistake before increasing difficulty.'
-        : 'Next week should focus on protecting momentum with one short daily session.'
+function buildLocalRecap(summary: RecapSummaryPayload, tFn: (key: I18nKey) => string): RecapData {
+  const statLine = `${tFn('insights.kpi.streak')}: ${summary.streakDays} · ${tFn('insights.contributions.stats.total')}: ${summary.solvesLast7}`
+  const supportLine = summary.guidanceReliancePct > 40
+    ? tFn('insights.next.focusDebugging')
+    : summary.trendDirection === 'worsening'
+      ? tFn('insights.next.focusSyntax')
+      : tFn('insights.next.maintainStreak')
+  const narrative = `${tFn('insights.weeklyRecap.subtitle')}. ${statLine}. ${supportLine}.`
 
   return {
-    script: `${opener} ${momentum} ${struggle} ${nextMove}`,
+    script: narrative,
     generatedAt: new Date().toISOString(),
     weekStart: new Date().toISOString().slice(0, 10),
     tone: summary.trendDirection === 'worsening' ? 'empathetic' : 'encouraging',
@@ -541,14 +528,14 @@ export function WeeklyRecapWidget({ trackLanguage = 'python' }: { trackLanguage?
         setScriptExpanded(false)
         return
       }
-      const localRecap = buildLocalRecap(summary)
+      const localRecap = buildLocalRecap(summary, t)
       if (mountedRef.current) {
         setRecapData(localRecap)
         setScriptExpanded(false)
       }
     } catch {
       if (mountedRef.current) {
-        const localRecap = buildLocalRecap(summary)
+        const localRecap = buildLocalRecap(summary, t)
         setRecapData(localRecap)
         setScriptExpanded(false)
         setErrorMsg(null)
@@ -558,7 +545,7 @@ export function WeeklyRecapWidget({ trackLanguage = 'python' }: { trackLanguage?
         setGenerating(false)
       }
     }
-  }, [appLanguage, recapCloudEnabled, stopPlayback, summary, userScope, voicePrefs])
+  }, [appLanguage, recapCloudEnabled, stopPlayback, summary, t, userScope, voicePrefs])
 
   const handlePlay = useCallback(async () => {
     if (!recapData) {
