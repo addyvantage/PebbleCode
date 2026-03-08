@@ -77,7 +77,7 @@ export function SiteFooter() {
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-pebble-text-muted">
                   {copy.builtWith}
                 </p>
-                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-[82px_minmax(0,1fr)] sm:grid-rows-2 sm:gap-3">
+                <div className="mt-3 inline-grid max-w-full grid-cols-1 justify-start gap-2.5 sm:grid-cols-[82px_auto] sm:grid-rows-2 sm:gap-3">
                   <div className="inline-flex h-[82px] w-[82px] items-center justify-center rounded-[14px] border border-pebble-border/16 bg-pebble-overlay/[0.14] p-2.5 shadow-[0_8px_18px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.10)] dark:bg-white/[0.05] dark:shadow-[0_10px_22px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] sm:row-span-2">
                     <img
                       src={awsWordmark}
@@ -86,7 +86,7 @@ export function SiteFooter() {
                     />
                   </div>
 
-                  <div className="inline-flex h-[82px] items-center rounded-[14px] border border-pebble-border/14 bg-pebble-overlay/[0.10] px-3.5 text-[14px] font-semibold text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] dark:bg-white/[0.04] sm:px-4">
+                  <div className="inline-flex h-[82px] w-full max-w-full items-center rounded-[14px] border border-pebble-border/14 bg-pebble-overlay/[0.10] px-3.5 text-[14px] font-semibold text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] dark:bg-white/[0.04] sm:w-fit sm:min-w-[220px] sm:px-4">
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-[11px] border border-pebble-border/18 bg-pebble-overlay/[0.08]">
                       <img
                         src={awsBedrockIcon}
@@ -98,7 +98,7 @@ export function SiteFooter() {
                     <span className="ml-3.5">Bedrock</span>
                   </div>
 
-                  <div className="inline-flex h-[82px] items-center rounded-[14px] border border-pebble-border/14 bg-pebble-overlay/[0.10] px-3.5 text-[14px] font-semibold text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] dark:bg-white/[0.04] sm:px-4">
+                  <div className="inline-flex h-[82px] w-full max-w-full items-center rounded-[14px] border border-pebble-border/14 bg-pebble-overlay/[0.10] px-3.5 text-[14px] font-semibold text-pebble-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] dark:bg-white/[0.04] sm:w-fit sm:min-w-[220px] sm:px-4">
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-[11px] border border-pebble-border/18 bg-pebble-overlay/[0.08]">
                       <img
                         src={awsLambdaLogo}
