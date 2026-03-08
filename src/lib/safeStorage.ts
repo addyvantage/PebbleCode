@@ -128,10 +128,22 @@ export function safeKeys() {
     return [] as string[]
   }
   try {
-    return Object.keys(window.localStorage)
+    const keys: string[] = []
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index)
+      if (key) {
+        keys.push(key)
+      }
+    }
+    return keys
   } catch (error) {
-    warn(`enumerating keys failed: ${error instanceof Error ? error.message : String(error)}`)
-    return [] as string[]
+    warn(`enumerating keys failed via length/key(): ${error instanceof Error ? error.message : String(error)}`)
+    try {
+      return Object.keys(window.localStorage)
+    } catch (secondaryError) {
+      warn(`enumerating keys fallback failed: ${secondaryError instanceof Error ? secondaryError.message : String(secondaryError)}`)
+      return [] as string[]
+    }
   }
 }
 

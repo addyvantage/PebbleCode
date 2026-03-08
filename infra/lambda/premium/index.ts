@@ -6,6 +6,8 @@ import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda
 import { buildRecapNarrative, isScriptSafe, type RecapSummary, type RecapTone } from '../../../server/phase9/recapBuilder'
 import { buildRecapSsml } from '../../../server/phase9/recapSsml'
 import { generateRecapAudio, type RecapAudioDecision } from '../../../server/phase9/pollyClient'
+import { buildRecoveryReport } from '../../../server/reports/buildRecoveryReport'
+import { generateReportPdf } from '../../../server/reports/pdfGenerator'
 import { normalizeAppLanguageCode, type AppLanguageCode, type RecapVoiceMode } from '../../../shared/recapVoice'
 
 const REGION = process.env.AWS_REGION ?? 'ap-south-1'
@@ -32,6 +34,18 @@ type RecapVoiceInput = {
   preferredBrowserVoiceURI?: string | null
 }
 
+type RecoveryReportRequestBody = {
+  problemId?: unknown
+  problemTitle?: unknown
+  difficulty?: unknown
+  language?: unknown
+  userId?: unknown
+  userName?: unknown
+  userEmail?: unknown
+  avatarUrl?: unknown
+  sessionId?: unknown
+}
+
 const DEFAULT_RECAP_PLAYBACK: RecapAudioDecision = {
   mode: 'auto',
   provider: 'device',
@@ -51,6 +65,23 @@ function parseJsonBody(body: string | null): Record<string, unknown> {
   } catch {
     return {}
   }
+}
+
+function asString(value: unknown, fallback = '') {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+function asOptionalString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined
+}
+
+function sanitizeForFilename(value: string, fallback: string, maxLen = 40) {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, maxLen)
+  return slug || fallback
 }
 
 function currentWeekStart(): string {
@@ -335,6 +366,51 @@ async function handleLatestRecap(event: APIGatewayProxyEventV2) {
   })
 }
 
+async function handleRecoveryReport(event: APIGatewayProxyEventV2) {
+  const body = parseJsonBody(event.body ?? null) as RecoveryReportRequestBody
+  const headerUserId = event.headers['x-user-id'] ?? event.headers['X-User-Id']
+
+  const userId = asString(headerUserId, asString(body.userId, 'guest'))
+  const userName = asString(body.userName, 'Guest')
+  const userEmail = asString(body.userEmail, '')
+  const problemId = asString(body.problemId, 'unknown')
+  const sessionId = asString(body.sessionId, `${Date.now()}`)
+  const nowIso = new Date().toISOString()
+
+  // Hackathon prototype payload: deterministic, lightweight fallback events.
+  const mockEvents = [
+    { eventName: 'run.completed', timestamp: nowIso, runtimeMs: 3200, errorType: 'wrong_answer' },
+    { eventName: 'run.completed', timestamp: nowIso, runtimeMs: 2100, errorType: 'wrong_answer' },
+    { eventName: 'submit.completed', timestamp: nowIso, runtimeMs: 1400, accepted: true, tierUsed: 'T2' },
+  ]
+
+  const report = buildRecoveryReport({
+    userId,
+    userName,
+    userEmail,
+    userAvatarUrl: typeof body.avatarUrl === 'string' ? body.avatarUrl : null,
+    sessionId,
+    problemId,
+    problemTitle: asOptionalString(body.problemTitle),
+    difficulty: asOptionalString(body.difficulty),
+    language: asOptionalString(body.language),
+    events: mockEvents,
+  })
+  const pdfBuffer = await generateReportPdf(report)
+
+  const safeUserSlug = sanitizeForFilename(userName || userId, 'guest', 32)
+  const safeProblemSlug = sanitizeForFilename(problemId, 'problem', 40)
+  const dateStamp = new Date().toISOString().slice(0, 10)
+  const filename = `PebbleRecoveryReport_${safeUserSlug}_${safeProblemSlug}_${dateStamp}.pdf`
+
+  return respond(200, {
+    ok: true,
+    filename,
+    mimeType: 'application/pdf',
+    pdfBase64: pdfBuffer.toString('base64'),
+  })
+}
+
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   const method = event.requestContext.http.method.toUpperCase()
   const path = event.requestContext.http.path
@@ -353,7 +429,10 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     if (method === 'GET' && path === '/api/growth/weekly-recap/latest') {
       return await handleLatestRecap(event)
     }
-    return respond(404, { ok: false, error: `No handler for ${method} ${path}` })
+    if (method === 'POST' && path === '/api/report/recovery') {
+      return await handleRecoveryReport(event)
+    }
+    return respond(400, { ok: false, error: `No handler for ${method} ${path}` })
   } catch (error) {
     console.error('[premium-lambda] Unhandled error:', error)
     return respond(500, { ok: false, error: 'Internal server error' })

@@ -67,10 +67,34 @@ function clearSessionStoragePrefix(prefix: string) {
 }
 
 export function clearAllPebbleLocalData() {
-  // Clear every Pebble-scoped key, including solved status, editor drafts, streak/analytics,
-  // auth cache, and legacy keys like "pebbleUserState" / "pebble_demo_mode".
-  safeClearPrefix('pebble')
-  clearSessionStoragePrefix('pebble')
+  // User intent for this action is a full local reset, not just Pebble-prefixed keys.
+  // Clear full origin storage first; if blocked, fall back to known prefixes.
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  let localCleared = false
+  try {
+    window.localStorage.clear()
+    localCleared = true
+  } catch {
+    // no-op
+  }
+  if (!localCleared) {
+    safeClearPrefix(['pebble', 'CognitoIdentityServiceProvider'])
+  }
+
+  let sessionCleared = false
+  try {
+    window.sessionStorage.clear()
+    sessionCleared = true
+  } catch {
+    // no-op
+  }
+  if (!sessionCleared) {
+    clearSessionStoragePrefix('pebble')
+    clearSessionStoragePrefix('CognitoIdentityServiceProvider')
+  }
 }
 
 export function getLocalUserProfile(): LocalUserProfile {
