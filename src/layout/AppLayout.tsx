@@ -278,8 +278,8 @@ export function AppLayout() {
                     </nav>
                   </HoverBorderGradient>
 
-                  <div className="flex items-center gap-1.5 sm:gap-2 justify-end flex-1">
-                    <div className="mr-1.5 sm:mr-2 flex items-center gap-1.5 sm:gap-2">
+                  <div className="flex flex-1 items-center justify-end gap-2 sm:gap-2.5">
+                    <div className="mr-1 flex items-center gap-1.5 sm:gap-2">
                       <StreakPill
                         streak={currentStreak.streak}
                         isTodayComplete={currentStreak.isTodayComplete}
@@ -336,8 +336,14 @@ export function AppLayout() {
                     </div>
 
                     {auth.isAuthenticated ? (
-                      <div className="flex min-w-[74px] flex-col items-center justify-center gap-1">
-                        <AnimatedBorderRing className="h-[50px] w-[50px] sm:h-[54px] sm:w-[54px] rounded-full" variant="avatar">
+                      <div
+                        className={`inline-flex h-11 sm:h-12 items-center gap-2.5 rounded-full border px-1.5 sm:px-2 pr-3 sm:pr-3.5 ${
+                          theme === 'dark'
+                            ? 'border-pebble-border/30 bg-[rgba(10,14,24,0.46)]'
+                            : 'border-pebble-border/30 bg-pebble-overlay/[0.08]'
+                        }`}
+                      >
+                        <AnimatedBorderRing className="h-[38px] w-[38px] sm:h-[40px] sm:w-[40px] rounded-full" variant="avatar">
                           <button
                             ref={profileButtonRef}
                             aria-label={t('layout.profileAria')}
@@ -347,7 +353,7 @@ export function AppLayout() {
                               updateProfileAnchorRect()
                               setIsProfileOpen((current) => !current)
                             }}
-                            className="inline-flex h-full w-full items-center justify-center rounded-full border border-pebble-border/35 overflow-hidden transition hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40"
+                            className="inline-flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-pebble-border/35 transition hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/40"
                             style={{
                               background: theme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.90)',
                             }}
@@ -360,20 +366,22 @@ export function AppLayout() {
                             )}
                           </button>
                         </AnimatedBorderRing>
-                        <span
-                          className={`max-w-[88px] truncate text-[10px] font-semibold leading-none ${
-                            theme === 'dark' ? 'text-[rgba(232,239,255,0.94)]' : 'text-[rgba(27,42,74,0.88)]'
-                          }`}
-                          title={headerUserName}
-                        >
-                          {headerUserName}
-                        </span>
+                        <div className="min-w-0">
+                          <span
+                            className={`block max-w-[120px] truncate text-[12.5px] sm:text-[13px] font-semibold leading-none tracking-[0.01em] ${
+                              theme === 'dark' ? 'text-[rgba(235,242,255,0.96)]' : 'text-[rgba(22,37,64,0.90)]'
+                            }`}
+                            title={headerUserName}
+                          >
+                            {headerUserName}
+                          </span>
+                        </div>
                       </div>
                     ) : (
                       <button
                         type="button"
                         onClick={() => navigate('/auth')}
-                        className="rounded-full border border-pebble-accent/45 bg-pebble-accent/18 px-3.5 py-1.5 text-xs font-semibold text-pebble-text-primary transition hover:bg-pebble-accent/28"
+                        className="inline-flex h-10 sm:h-11 items-center justify-center rounded-full border border-pebble-accent/45 bg-pebble-accent/18 px-4 sm:px-4.5 text-[12.5px] font-semibold tracking-[0.01em] text-pebble-text-primary transition hover:bg-pebble-accent/28"
                       >
                         Sign in
                       </button>
