@@ -8,9 +8,21 @@ function normalizeBaseUrl(value: string | undefined) {
 
 const API_BASE_URL = normalizeBaseUrl(RAW_API_BASE_URL)
 
+function joinApiBaseAndPath(base: string, path: string) {
+    if (!base) return path
+
+    const baseEndsWithApi = /\/api$/i.test(base)
+    const pathStartsWithApi = /^\/api(?:\/|$)/i.test(path)
+    if (baseEndsWithApi && pathStartsWithApi) {
+        return `${base}${path.replace(/^\/api/i, '')}`
+    }
+
+    return `${base}${path}`
+}
+
 export function apiUrl(path: string): string {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`
-    return API_BASE_URL ? `${API_BASE_URL}${normalizedPath}` : normalizedPath
+    return joinApiBaseAndPath(API_BASE_URL, normalizedPath)
 }
 
 export function apiFetch(input: string, init?: RequestInit) {

@@ -58,6 +58,21 @@ function respond(statusCode: number, body: unknown): APIGatewayProxyResultV2 {
   return { statusCode, headers: CORS_HEADERS, body: JSON.stringify(body) }
 }
 
+function normalizeRequestPath(path: string | undefined) {
+  if (!path) return '/'
+  const normalized = path.replace(/\/+$/, '')
+  return normalized || '/'
+}
+
+function pathMatches(path: string, expected: string) {
+  const normalizedPath = normalizeRequestPath(path)
+  const normalizedExpected = normalizeRequestPath(expected)
+  return (
+    normalizedPath === normalizedExpected
+    || normalizedPath.endsWith(normalizedExpected)
+  )
+}
+
 function parseJsonBody(body: string | null): Record<string, unknown> {
   if (!body) return {}
   try {
@@ -413,23 +428,27 @@ async function handleRecoveryReport(event: APIGatewayProxyEventV2) {
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   const method = event.requestContext.http.method.toUpperCase()
-  const path = event.requestContext.http.path
+  const path = normalizeRequestPath(
+    event.requestContext.http.path
+    || event.rawPath
+    || '/',
+  )
 
   if (method === 'OPTIONS') {
     return { statusCode: 200, headers: CORS_HEADERS, body: '' }
   }
 
   try {
-    if (method === 'POST' && path === '/api/telemetry') {
+    if (method === 'POST' && pathMatches(path, '/api/telemetry')) {
       return await handleTelemetry(event.body ?? null)
     }
-    if (method === 'POST' && path === '/api/growth/weekly-recap') {
+    if (method === 'POST' && pathMatches(path, '/api/growth/weekly-recap')) {
       return await handleGenerateRecap(event)
     }
-    if (method === 'GET' && path === '/api/growth/weekly-recap/latest') {
+    if (method === 'GET' && pathMatches(path, '/api/growth/weekly-recap/latest')) {
       return await handleLatestRecap(event)
     }
-    if (method === 'POST' && path === '/api/report/recovery') {
+    if (method === 'POST' && pathMatches(path, '/api/report/recovery')) {
       return await handleRecoveryReport(event)
     }
     return respond(400, { ok: false, error: `No handler for ${method} ${path}` })
