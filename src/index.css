@@ -143,16 +143,22 @@ html {
   }
 
   html,
-  body {
-    height: 100%;
+  body,
+  #root {
     min-height: 100%;
-    overflow: hidden;
+  }
+
+  html {
+    overflow-y: scroll;
+    overflow-x: hidden;
   }
 
   body {
     position: relative;
     margin: 0;
     min-width: 320px;
+    overflow-y: visible;
+    overflow-x: hidden;
     background:
       radial-gradient(980px 360px at 12% -10%,
         rgba(var(--pebble-glow-primary), 0.16),
@@ -185,10 +191,7 @@ html {
   #root {
     position: relative;
     z-index: 1;
-    height: 100%;
-    min-height: 100dvh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible;
   }
 
   @keyframes noise-gradient-shift {
