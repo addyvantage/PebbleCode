@@ -19,6 +19,14 @@ type HelpHeroProps = {
   note?: string
 }
 
+function fallbackActionLabel(to: string) {
+  if (to === '/how-to-use') return 'How to use'
+  if (to === '/faq') return 'FAQ'
+  if (to.startsWith('/session')) return 'Open session'
+  if (to === '/') return 'Home'
+  return 'Open'
+}
+
 export function HelpHero({ badge, title, description, chips, actions, note }: HelpHeroProps) {
   return (
     <div className="help-hero-shell rounded-[30px] px-5 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-6">
@@ -44,11 +52,12 @@ export function HelpHero({ badge, title, description, chips, actions, note }: He
         <div className="flex flex-wrap gap-2 pt-1">
           {actions.map((action) => {
             const Icon = action.icon
+            const label = action.label?.trim() || fallbackActionLabel(action.to)
             return (
-              <Link key={action.label} to={action.to} className="inline-flex">
-                <Button variant={action.variant ?? 'secondary'} className="gap-2 rounded-2xl px-4.5">
+              <Link key={`${action.to}-${label}`} to={action.to} className="inline-flex">
+                <Button variant={action.variant ?? 'secondary'} className="min-w-[132px] justify-center gap-2 rounded-2xl px-4.5">
                   {Icon ? <Icon className="h-4 w-4" aria-hidden="true" /> : null}
-                  {action.label}
+                  {label}
                 </Button>
               </Link>
             )
