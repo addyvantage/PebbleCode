@@ -1163,7 +1163,9 @@ export function SessionPage() {
     hydratedEditorKeyRef.current = hydrationKey
 
     const solvedProblemEntry = activeProblemBase ? loadSolvedProblems()[activeProblemBase.id] : undefined
-    const shouldReopenSolvedWithStarter = Boolean(solvedProblemEntry?.solvedAt)
+    const shouldReopenSolvedWithStarter =
+      Boolean(solvedProblemEntry?.solvedAt) ||
+      (!activeProblemBase && unitProgress[currentUnit.id]?.completed === true)
     const storedEntry = problemCodeByLang[currentSessionKey]
     const storedCode = storedEntry?.codeByLanguage[sessionLanguage]
     const starterCode = resolveSessionTemplate(currentUnit, sessionLanguage)
@@ -1192,6 +1194,7 @@ export function SessionPage() {
     queueLiveCodeSnapshot,
     resolveSessionTemplate,
     sessionLanguage,
+    unitProgress,
   ])
 
   useEffect(() => {
@@ -2277,7 +2280,7 @@ export function SessionPage() {
     <section
       className={`session-shell flex h-[100dvh] flex-col overflow-hidden ${pagePrefs.compactDensity ? 'text-[13px]' : ''}`}
     >
-      <header className="session-topbar grid h-[64px] shrink-0 grid-cols-[minmax(0,1.05fr)_auto_minmax(0,1.2fr)] items-center gap-2.5 px-3.5">
+      <header className="session-topbar grid h-[58px] shrink-0 grid-cols-[minmax(0,1.05fr)_auto_minmax(0,1.2fr)] items-center gap-2 px-3">
         <div className="flex min-w-0 items-center gap-2">
           <Link
             to="/"
@@ -2582,8 +2585,8 @@ export function SessionPage() {
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 overflow-hidden px-2.5 pb-2.5 pt-2">
-        <div className="grid h-full min-h-0 grid-cols-[clamp(320px,20vw,370px)_minmax(0,1.24fr)_clamp(320px,21vw,376px)] gap-2.5">
+      <main className="flex-1 min-h-0 overflow-hidden px-2 pb-2 pt-1.5">
+        <div className="grid h-full min-h-0 grid-cols-[clamp(320px,20vw,370px)_minmax(0,1.24fr)_clamp(320px,21vw,376px)] gap-2">
           <ProblemStatementPanel
             unitId={currentUnit.id}
             title={activeProblem?.title ?? currentUnitCopy?.title ?? currentUnit.title}
@@ -2608,23 +2611,23 @@ export function SessionPage() {
           />
 
           <div
-            className="grid h-full min-h-0 min-w-0 gap-2.5 overflow-hidden"
+            className="grid h-full min-h-0 min-w-0 gap-2 overflow-hidden"
             style={{
-              gridTemplateRows: 'minmax(440px,58vh) minmax(180px,1fr)',
+              gridTemplateRows: 'minmax(490px,63vh) minmax(148px,0.75fr)',
             }}
           >
             <section className="session-surface-strong flex min-h-0 flex-col overflow-hidden rounded-[24px]">
-              <div className="flex items-center justify-between gap-2.5 border-b border-pebble-border/20 px-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="truncate text-[15px] font-semibold text-pebble-text-primary">
+              <div className="flex items-center justify-between gap-2 border-b border-pebble-border/20 px-2.5 py-2">
+                <div className="min-w-0 flex items-center gap-1.5">
+                  <p className="truncate text-[14px] font-semibold text-pebble-text-primary">
                     {activeProblem?.title ?? currentUnitCopy?.title ?? currentUnit.title}
                   </p>
-                  <p className="mt-0.5 truncate text-[11px] text-pebble-text-muted">
+                  <span className="shrink-0 rounded-full border border-pebble-border/25 bg-pebble-overlay/[0.08] px-2 py-[0.18rem] text-[10px] font-medium text-pebble-text-secondary">
                     {sessionLanguageLabel} • {currentModeDescriptor.mode === 'function' ? t('editor.functionMode') : t('editor.stdioMode')}
-                  </p>
+                  </span>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
                   <ProgramLangDropdown
                     value={sessionLanguage}
                     options={dropdownLanguageOptions}
@@ -2640,7 +2643,7 @@ export function SessionPage() {
                     size="sm"
                     title={t('editor.resetCode')}
                     onClick={handleResetCode}
-                    className="h-9 w-9 rounded-xl border-pebble-border/35 bg-pebble-overlay/[0.08] p-0 text-pebble-text-primary hover:border-pebble-border/50 hover:bg-pebble-overlay/[0.16]"
+                    className="h-8 w-8 rounded-xl border-pebble-border/35 bg-pebble-overlay/[0.08] p-0 text-pebble-text-primary hover:border-pebble-border/50 hover:bg-pebble-overlay/[0.16]"
                   >
                     <RotateCcw className="h-4 w-4" aria-hidden="true" />
                   </Button>
@@ -2651,7 +2654,7 @@ export function SessionPage() {
                     title={t('topBar.sessionSettings')}
                     aria-label={t('a11y.openSessionSettings')}
                     onClick={() => setSessionSettingsOpen(true)}
-                    className="h-9 w-9 rounded-xl border-pebble-border/35 bg-pebble-overlay/[0.08] p-0 text-pebble-text-primary hover:border-pebble-border/50 hover:bg-pebble-overlay/[0.16]"
+                    className="h-8 w-8 rounded-xl border-pebble-border/35 bg-pebble-overlay/[0.08] p-0 text-pebble-text-primary hover:border-pebble-border/50 hover:bg-pebble-overlay/[0.16]"
                   >
                     <Settings2 className="h-4 w-4" aria-hidden="true" />
                   </Button>
@@ -2660,7 +2663,7 @@ export function SessionPage() {
                     size="sm"
                     onClick={() => void runAllTests('run')}
                     disabled={isRunningAll}
-                    className="h-9 rounded-xl gap-1.5 px-3.5 text-[13px] font-semibold shadow-[0_12px_28px_rgba(8,15,35,0.18)]"
+                    className="h-8 rounded-xl gap-1.5 px-3 text-[12.5px] font-semibold shadow-[0_10px_24px_rgba(8,15,35,0.18)]"
                   >
                     <Play className="h-3.5 w-3.5" aria-hidden="true" />
                     {isRunningAll && activeAction === 'run' ? t('actions.running') : t('actions.run')}
@@ -2671,7 +2674,7 @@ export function SessionPage() {
                     size="sm"
                     onClick={() => void runAllTests('submit')}
                     disabled={isRunningAll}
-                    className={`h-9 rounded-xl px-3.5 text-[13px] font-medium ${submitAccepted ? '!border-pebble-success/45 !bg-pebble-success/18 !text-pebble-success' : ''}`}
+                    className={`h-8 rounded-xl px-3 text-[12.5px] font-medium ${submitAccepted ? '!border-pebble-success/45 !bg-pebble-success/18 !text-pebble-success' : ''}`}
                   >
                     {isRunningAll && activeAction === 'submit'
                       ? t('actions.submitting')
@@ -2682,7 +2685,7 @@ export function SessionPage() {
                 </div>
               </div>
 
-              <div dir="ltr" className="ltrSafe min-h-0 flex-1 overflow-hidden px-3 pb-2 pt-1.5">
+              <div dir="ltr" className="ltrSafe min-h-0 flex-1 overflow-hidden px-2.5 pb-1.5 pt-1">
                 <div className="session-inset h-full overflow-hidden rounded-[20px]">
                   <Editor
                     height="100%"
@@ -2694,7 +2697,7 @@ export function SessionPage() {
                     options={{
                       minimap: { enabled: false },
                       fontSize: editorFontSize,
-                      lineHeight: 21,
+                      lineHeight: 20,
                       automaticLayout: true,
                       wordWrap: wordWrapEnabled ? 'on' : 'off',
                       scrollBeyondLastLine: false,
@@ -2706,19 +2709,19 @@ export function SessionPage() {
                         horizontalScrollbarSize: 8,
                       },
                       padding: {
-                        top: 8,
-                        bottom: 8,
+                        top: 6,
+                        bottom: 6,
                       },
                     }}
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-2 border-t border-pebble-border/20 px-3 py-1.5 text-[12px] text-pebble-text-secondary">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="shrink-0 text-[10px] uppercase tracking-[0.1em] text-pebble-text-muted">{t('session.statusLabel')}</span>
+              <div className="flex items-center justify-between gap-2 border-t border-pebble-border/20 px-2.5 py-1 text-[11.5px] text-pebble-text-secondary">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <span className="shrink-0 text-[9px] uppercase tracking-[0.1em] text-pebble-text-muted">{t('session.statusLabel')}</span>
                   <span
-                    className={`shrink-0 rounded-full border px-2 py-[0.2rem] text-[10px] font-semibold ${
+                    className={`shrink-0 rounded-full border px-1.5 py-[0.18rem] text-[9.5px] font-semibold ${
                       runStatus === 'success'
                         ? 'border-pebble-success/35 bg-pebble-success/15 text-pebble-success'
                         : runStatus === 'error'
@@ -2730,10 +2733,10 @@ export function SessionPage() {
                   >
                     {statusLabelMap[runStatus]}
                   </span>
-                  <p className="truncate text-[12.5px] text-pebble-text-secondary">{runMessage}</p>
+                  <p className="truncate text-[11.5px] text-pebble-text-secondary">{runMessage}</p>
                 </div>
                 {currentIsCompleted ? (
-                  <span className="rounded-full border border-pebble-success/35 bg-pebble-success/15 px-2 py-[0.22rem] text-[10px] font-semibold text-pebble-success">
+                  <span className="rounded-full border border-pebble-success/35 bg-pebble-success/15 px-1.5 py-[0.18rem] text-[9.5px] font-semibold text-pebble-success">
                     {t('editor.completed')}
                   </span>
                 ) : null}

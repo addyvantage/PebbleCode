@@ -7,7 +7,7 @@ import { Camera } from 'lucide-react'
 import { ConfirmDialog } from '../components/modals/ConfirmDialog'
 import { useI18n } from '../i18n/useI18n'
 import { LANGUAGES, type LanguageCode } from '../i18n/languages'
-import { clearAllPebbleLocalData } from '../utils/storageKeys'
+import { clearAllPebbleLocalDataDeep } from '../utils/storageKeys'
 import { apiFetch, apiUrl } from '../lib/apiUrl'
 import { pushNotification } from '../lib/notificationsStore'
 
@@ -197,8 +197,8 @@ export function ProfilePage() {
         }
     }
 
-    function handleClearLocalData() {
-        clearAllPebbleLocalData()
+    async function handleClearLocalData() {
+        await clearAllPebbleLocalDataDeep()
         window.location.reload()
     }
 

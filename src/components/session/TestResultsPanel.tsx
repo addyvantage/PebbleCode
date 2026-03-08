@@ -99,16 +99,16 @@ export function TestResultsPanel({
   return (
     <Card
       padding="none"
-      className={`session-surface flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-[22px] ${className ?? ''}`}
+      className={`session-surface flex h-full min-h-0 flex-col gap-1.5 overflow-hidden rounded-[22px] ${className ?? ''}`}
       interactive
       dir="ltr"
     >
-      <div className="flex items-center justify-between gap-2 border-b border-pebble-border/20 px-3 py-2">
+      <div className="flex items-center justify-between gap-2 border-b border-pebble-border/20 px-2.5 py-1.5">
         <p className={`text-[14px] font-semibold text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>{t('tests.title')}</p>
-        <p className={`rounded-full border border-pebble-border/25 bg-pebble-overlay/[0.08] px-2.5 py-[0.24rem] text-[10px] font-medium text-pebble-text-secondary ${isUrdu ? 'ltrSafe' : ''}`}>{summaryLabel}</p>
+        <p className={`rounded-full border border-pebble-border/25 bg-pebble-overlay/[0.08] px-2 py-[0.2rem] text-[9.5px] font-medium text-pebble-text-secondary ${isUrdu ? 'ltrSafe' : ''}`}>{summaryLabel}</p>
       </div>
 
-      <div className="shrink-0 flex flex-wrap gap-1 px-3">
+      <div className="shrink-0 flex flex-wrap gap-1 px-2.5">
         {tests.map((_, index) => {
           const result = resultsByIndex[index]
           const isSelected = selectedTestIndex === index
@@ -117,7 +117,7 @@ export function TestResultsPanel({
               key={`test-select-${index}`}
               type="button"
               onClick={() => onSelectTest(index)}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11.5px] font-medium transition ${
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-2.25 py-[0.3rem] text-[11px] font-medium transition ${
                 isSelected
                   ? 'border-pebble-accent/45 bg-pebble-accent/12 text-pebble-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
                   : 'border-pebble-border/24 bg-pebble-overlay/[0.05] text-pebble-text-secondary hover:bg-pebble-overlay/[0.12]'
@@ -134,11 +134,11 @@ export function TestResultsPanel({
         })}
       </div>
 
-      <div className="session-inset mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-[18px] p-2.5 pebble-scrollbar">
+      <div className="session-inset mx-2.5 mb-2.5 min-h-0 flex-1 overflow-y-auto rounded-[16px] p-2 pebble-scrollbar">
         {!selectedTest ? (
           <p className="text-sm text-pebble-text-secondary">{t('tests.noCases')}</p>
         ) : (
-          <div className="grid content-start gap-2">
+          <div className="grid content-start gap-1.5">
             <FieldBlock label={t('tests.input')} value={selectedTest.input || t('common.empty')} isUrdu={isUrdu} />
             <FieldBlock
               label={t('tests.expected')}
@@ -164,7 +164,7 @@ export function TestResultsPanel({
             />
 
             {selectedResult?.diagnostic ? (
-              <section className="space-y-1 rounded-xl border border-pebble-warning/35 bg-pebble-warning/10 p-2.5 text-[12.5px] text-pebble-warning">
+              <section className="space-y-1 rounded-xl border border-pebble-warning/35 bg-pebble-warning/10 p-2 text-[12px] text-pebble-warning">
                 <p className={`text-xs uppercase tracking-[0.06em] ${isUrdu ? 'rtlText' : ''}`}>
                   {resolveDiagnosticTitle(t, selectedResult.diagnostic.status)}
                 </p>
@@ -191,7 +191,7 @@ export function TestResultsPanel({
                   </p>
                 ) : null}
 
-                <details className="rounded-lg border border-pebble-warning/35 bg-pebble-canvas/65 px-2.5 py-1.5 text-xs">
+                <details className="rounded-lg border border-pebble-warning/35 bg-pebble-canvas/65 px-2 py-1.5 text-xs">
                   <summary className="cursor-pointer text-pebble-text-primary">{t('coach.runnerDetails')}</summary>
                   <pre className="mt-1 whitespace-pre-wrap break-words font-mono leading-relaxed text-pebble-warning">
                     {selectedResult.diagnostic.details || selectedResult.stderr || t('common.empty')}
@@ -205,7 +205,7 @@ export function TestResultsPanel({
             {sqlPreview && selectedResult ? (
               <div className="space-y-1">
                 <p className={`text-xs uppercase tracking-[0.06em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>{t('sql.resultPreview')}</p>
-                <div className="overflow-x-auto rounded-lg border border-pebble-border/24 bg-pebble-canvas/55 p-2" dir="ltr">
+                <div className="overflow-x-auto rounded-lg border border-pebble-border/24 bg-pebble-canvas/55 p-1.5" dir="ltr">
                   <table className="min-w-full text-left text-[12px] text-pebble-text-secondary ltrSafe">
                     <thead className="text-pebble-text-primary">
                       <tr>
@@ -250,12 +250,12 @@ function FieldBlock({
   isUrdu: boolean
 }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       <div className="flex items-center justify-between gap-2">
         <p className={`text-[10px] uppercase tracking-[0.07em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>{label}</p>
         {status && (
           <span
-            className={`rounded-full border px-2 py-[0.2rem] text-[10px] font-semibold ${
+            className={`rounded-full border px-1.5 py-[0.16rem] text-[9.5px] font-semibold ${
               status === 'pass'
                 ? 'border-pebble-success/35 bg-pebble-success/15 text-pebble-success'
                 : status === 'fail'
@@ -268,7 +268,7 @@ function FieldBlock({
         )}
       </div>
       <div
-        className={`rounded-lg border px-2.5 py-2 font-mono text-[12px] leading-5 ${
+        className={`rounded-lg border px-2 py-1.5 font-mono text-[11.5px] leading-[1.35rem] ${
           warning
             ? 'border-pebble-warning/35 bg-pebble-warning/10 text-pebble-warning'
             : 'border-pebble-border/24 bg-pebble-canvas/55 text-pebble-text-primary'

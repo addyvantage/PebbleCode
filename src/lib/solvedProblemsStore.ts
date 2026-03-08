@@ -1,4 +1,4 @@
-import { safeGetJSON, safeSetJSON } from './safeStorage'
+import { safeGetJSON, safeRemoveItem, safeSetJSON } from './safeStorage'
 
 const SOLVED_PROBLEMS_STORAGE_KEY = 'pebble.solvedProblems.v1'
 const SOLVED_PROBLEMS_EVENT = 'pebble:solved-problems-updated'
@@ -75,6 +75,12 @@ function saveSolvedProblemsToStorage(map: SolvedProblemsMap) {
 export function saveSolvedProblems(map: SolvedProblemsMap) {
   solvedProblemsCache = compactSolvedMap(map)
   saveSolvedProblemsToStorage(solvedProblemsCache)
+  emitUpdate()
+}
+
+export function clearSolvedProblems() {
+  solvedProblemsCache = {}
+  safeRemoveItem(SOLVED_PROBLEMS_STORAGE_KEY)
   emitUpdate()
 }
 

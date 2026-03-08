@@ -2,7 +2,7 @@ import { AlertTriangle, RefreshCcw } from 'lucide-react'
 import type { ContextType, ErrorInfo, ReactNode } from 'react'
 import { Component } from 'react'
 import { I18nContext } from '../../i18n/I18nProvider'
-import { clearAllPebbleLocalData } from '../../utils/storageKeys'
+import { clearAllPebbleLocalDataDeep } from '../../utils/storageKeys'
 
 type AppErrorBoundaryProps = {
   children: ReactNode
@@ -13,8 +13,8 @@ type AppErrorBoundaryState = {
   message: string
 }
 
-function clearPebbleLocalData() {
-  clearAllPebbleLocalData()
+async function clearPebbleLocalData() {
+  await clearAllPebbleLocalDataDeep()
 }
 
 export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
@@ -42,8 +42,8 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     }
   }
 
-  handleReset = () => {
-    clearPebbleLocalData()
+  handleReset = async () => {
+    await clearPebbleLocalData()
     window.location.reload()
   }
 

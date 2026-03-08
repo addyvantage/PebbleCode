@@ -24,11 +24,21 @@ export function getRecentActivity(): RecentActivity | null {
 }
 
 export function setRecentActivity(problemId: string) {
-    try {
-        const data: RecentActivity = { problemId, timestamp: Date.now() }
-        localStorage.setItem(RECENT_KEY, JSON.stringify(data))
-        cachedActivity = data
-    } catch {
-        // Ignore
-    }
+  try {
+    const data: RecentActivity = { problemId, timestamp: Date.now() }
+    localStorage.setItem(RECENT_KEY, JSON.stringify(data))
+    cachedActivity = data
+  } catch {
+    // Ignore
+  }
+}
+
+export function clearRecentActivity() {
+  try {
+    localStorage.removeItem(RECENT_KEY)
+  } catch {
+    // Ignore
+  }
+  cachedActivity = null
+  initialized = true
 }

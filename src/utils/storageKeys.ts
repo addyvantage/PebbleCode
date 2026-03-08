@@ -1,4 +1,7 @@
 import { safeClearPrefix, safeGetItem, safeRemoveItem } from '../lib/safeStorage'
+import { clearAnalyticsState } from '../lib/analyticsStore'
+import { clearSolvedProblems } from '../lib/solvedProblemsStore'
+import { clearRecentActivity } from '../lib/recentStore'
 
 export const storageKeys = {
   theme: 'pebble.theme.v1',
@@ -95,6 +98,109 @@ export function clearAllPebbleLocalData() {
     clearSessionStoragePrefix('pebble')
     clearSessionStoragePrefix('CognitoIdentityServiceProvider')
   }
+}
+
+function clearCookiesForCurrentOrigin() {
+  if (typeof document === 'undefined') {
+    return
+  }
+
+  try {
+    const cookieRows = document.cookie ? document.cookie.split(';') : []
+    const host = window.location.hostname
+    const domainParts = host.split('.').filter(Boolean)
+    const domainVariants = ['']
+    for (let index = 0; index < domainParts.length - 1; index += 1) {
+      domainVariants.push(`.${domainParts.slice(index).join('.')}`)
+    }
+
+    for (const row of cookieRows) {
+      const [namePart] = row.split('=')
+      const name = namePart?.trim()
+      if (!name) {
+        continue
+      }
+      for (const domain of domainVariants) {
+        const domainAttr = domain ? `; domain=${domain}` : ''
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${domainAttr}`
+      }
+    }
+  } catch {
+    // no-op
+  }
+}
+
+function deleteIndexedDbDatabase(name: string) {
+  return new Promise<void>((resolve) => {
+    try {
+      const request = window.indexedDB.deleteDatabase(name)
+      request.onsuccess = () => resolve()
+      request.onerror = () => resolve()
+      request.onblocked = () => resolve()
+    } catch {
+      resolve()
+    }
+  })
+}
+
+async function clearIndexedDbDatabases() {
+  if (typeof window === 'undefined' || !('indexedDB' in window)) {
+    return
+  }
+
+  try {
+    const indexedDbFactory = window.indexedDB as IDBFactory & {
+      databases?: () => Promise<Array<{ name?: string }>>
+    }
+    if (typeof indexedDbFactory.databases === 'function') {
+      const databases = await indexedDbFactory.databases()
+      const names = databases
+        .map((database) => database?.name)
+        .filter((name): name is string => typeof name === 'string' && name.length > 0)
+
+      await Promise.allSettled(names.map((name) => deleteIndexedDbDatabase(name)))
+      return
+    }
+  } catch {
+    // no-op
+  }
+
+  // Fallback for browsers without indexedDB.databases support.
+  const knownDatabaseNames = [
+    'localforage',
+    'firebaseLocalStorageDb',
+    'workbox-expiration',
+    'workbox-precache-v2',
+    'pebble',
+  ]
+  await Promise.allSettled(knownDatabaseNames.map((name) => deleteIndexedDbDatabase(name)))
+}
+
+async function clearCacheStorage() {
+  if (typeof window === 'undefined' || !('caches' in window)) {
+    return
+  }
+
+  try {
+    const cacheKeys = await window.caches.keys()
+    await Promise.allSettled(cacheKeys.map((cacheKey) => window.caches.delete(cacheKey)))
+  } catch {
+    // no-op
+  }
+}
+
+export async function clearAllPebbleLocalDataDeep() {
+  clearAllPebbleLocalData()
+  // Ensure in-memory stores are reset immediately in the active tab as well.
+  clearAnalyticsState()
+  clearSolvedProblems()
+  clearRecentActivity()
+  clearCookiesForCurrentOrigin()
+
+  await Promise.allSettled([
+    clearIndexedDbDatabases(),
+    clearCacheStorage(),
+  ])
 }
 
 export function getLocalUserProfile(): LocalUserProfile {

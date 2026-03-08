@@ -11,7 +11,7 @@ import { HoverBorderGradient } from '../components/ui/hover-border-gradient'
 import { AnimatedBorderRing } from '../components/ui/rainbow-borders-button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import {
-  clearAllPebbleLocalData,
+  clearAllPebbleLocalDataDeep,
   clearLocalUserData,
 } from '../utils/storageKeys'
 import { clearTaskProgress } from '../utils/taskProgress'
@@ -197,14 +197,14 @@ export function AppLayout() {
     })
   }, [])
 
-  function handleResetLocalData() {
+  async function handleResetLocalData() {
     clearTaskProgress()
-    clearAllPebbleLocalData()
+    await clearAllPebbleLocalDataDeep()
     window.location.reload()
   }
 
-  function handleResetAfterStoragePressure() {
-    clearAllPebbleLocalData()
+  async function handleResetAfterStoragePressure() {
+    await clearAllPebbleLocalDataDeep()
     window.location.reload()
   }
 
