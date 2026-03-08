@@ -39,6 +39,10 @@ type PlacementFlowQuestion =
   | { kind: 'mcq'; question: PlacementMcqQuestion }
   | { kind: 'coding'; question: PlacementCodingQuestion }
 
+function classNames(...values: Array<string | false | undefined>) {
+  return values.filter(Boolean).join(' ')
+}
+
 function normalizeOutput(value: string) {
   return value.replace(/\r\n/g, '\n').trim()
 }
@@ -110,6 +114,7 @@ export function PlacementPage() {
   }, [weeklySet])
 
   const currentQuestion = questionFlow[currentQuestionIndex]
+  const isCodingQuestion = currentQuestion?.kind === 'coding'
   const totalQuestions = questionFlow.length
   const progressPercent = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0
   const currentQuestionSkipped = currentQuestion ? skippedByQuestionId[currentQuestion.question.id] === true : false
@@ -342,8 +347,15 @@ export function PlacementPage() {
   }
 
   return (
-    <section className="min-h-[100dvh] overflow-x-hidden px-3 pb-3 pt-2">
-      <Card padding="md" className="mx-auto flex min-h-[calc(100dvh-1.25rem)] w-full max-w-[1080px] flex-col" interactive>
+    <section className="min-h-[100dvh] overflow-x-hidden px-3 pb-5 pt-2.5">
+      <Card
+        padding="md"
+        className={classNames(
+          'mx-auto flex w-full max-w-[1140px] flex-col',
+          isCodingQuestion && 'min-h-[calc(100dvh-1.5rem)]',
+        )}
+        interactive
+      >
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -384,9 +396,12 @@ export function PlacementPage() {
           </div>
         </div>
 
-        <div className="my-4 h-px bg-pebble-border/22" />
+        <div className="my-3.5 h-px bg-pebble-border/22" />
 
-        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className={classNames(
+          'pr-1',
+          isCodingQuestion ? 'min-h-0 flex-1 overflow-y-auto' : '',
+        )}>
           {currentQuestion ? (
             currentQuestion.kind === 'mcq' ? (
               <McqQuestionCard
@@ -416,21 +431,31 @@ export function PlacementPage() {
           ) : null}
         </div>
 
-        <div className="sticky bottom-0 mt-4 border-t border-pebble-border/24 bg-pebble-panel/90 pb-0 pt-3 backdrop-blur-md">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
-              disabled={!canGoBack}
-            >
-              {t('placement.back')}
-            </Button>
+        <div
+          className={classNames(
+            'z-10 mt-4 rounded-[16px] border border-pebble-border/24 bg-[linear-gradient(180deg,rgba(var(--pebble-overlay),0.11)_0%,rgba(var(--pebble-overlay),0.04)_100%)] px-3.5 py-3 shadow-[0_14px_34px_rgba(2,8,23,0.12),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md',
+            isCodingQuestion && 'sticky bottom-0',
+          )}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <Button
+                variant="secondary"
+                onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
+                disabled={!canGoBack}
+                className="h-10 min-w-[92px]"
+              >
+                {t('placement.back')}
+              </Button>
+              <p className="hidden text-xs text-pebble-text-muted sm:block">{t('placement.skipHint')}</p>
+            </div>
 
             <div className="flex items-center gap-2">
               <Button
                 variant="secondary"
                 onClick={skipCurrentQuestion}
                 title={t('placement.skipHint')}
+                className="h-10 min-w-[92px]"
               >
                 {t('placement.skip')}
               </Button>
@@ -438,12 +463,13 @@ export function PlacementPage() {
                 <Button
                   onClick={() => setCurrentQuestionIndex((prev) => Math.min(totalQuestions - 1, prev + 1))}
                   disabled={!canGoNext}
+                  className="h-10 min-w-[92px]"
                 >
                   {t('placement.next')}
                 </Button>
               )}
               {canFinish && (
-                <Button onClick={finishPlacement}>
+                <Button onClick={finishPlacement} className="h-10 min-w-[112px]">
                   {t('placement.finish')}
                 </Button>
               )}
