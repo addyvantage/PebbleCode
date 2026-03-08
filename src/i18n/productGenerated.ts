@@ -1063,1067 +1063,6 @@ export const PRODUCT_GENERATED: Partial<Record<LanguageCode, any>> = {
       }
     }
   },
-  "hi": {
-    "footer": {
-      "description": "Elite coding practice with mentor-level guidance.",
-      "builtWith": "Built with",
-      "product": "Product",
-      "guides": "Guides",
-      "account": "Account",
-      "legal": "Legal",
-      "copyright": "© 2026 Pebble. All rights reserved."
-    },
-    "home": {
-      "continue": {
-        "resumeDescription": "Resume the thread, rerun the last failing case, and close the loop while context is still warm.",
-        "emptyDescription": "Pick a first problem and Pebble will keep your runtime context ready to continue next time.",
-        "emptyChips": [
-          "Guided warm-up",
-          "Real runtime checks",
-          "Coach in context"
-        ],
-        "resumeRail": "Jump straight back into the same unit and keep your recovery loop short.",
-        "emptyRail": "Start a first session and Pebble will build your continuation context automatically."
-      },
-      "todayPlan": {
-        "dailyLoop": "Daily loop",
-        "focusChip": "25 मिनट फोकस",
-        "focusLoad": "Focus load",
-        "stateNeutral": "Neutral",
-        "stateBalanced": "Balanced",
-        "stateStretch": "Stretch",
-        "stateHeavy": "Heavy",
-        "emptyTitle": "Generate a focused set of small wins from your recent momentum.",
-        "emptyBody": "Pebble will shape one warm-up, one recovery task, and one review step so the session starts with clear intent.",
-        "sessionPacing": "Session pacing",
-        "sessionPacingBody": "Three deliberate tasks tuned for consistency over thrash.",
-        "expectedLabel": "Expected by end of session",
-        "outcomes": {
-          "backInRhythm": "Today should leave you back in rhythm with one clean win and a clearer next step.",
-          "reviewAndWin": "By the end of this session, you should have one clean win, one reviewed mistake, and better recovery flow.",
-          "heavy": "A short focused session should rebuild momentum without letting the workload sprawl.",
-          "drill": "You should finish with one solved rep, one review insight, and a cleaner recovery loop.",
-          "light": "This session should help you leave with momentum restored, not mentally drained.",
-          "default": "You should finish today with steady momentum, one completed focus loop, and stronger confidence for the next session."
-        },
-        "closeDialog": "Close dialog"
-      },
-      "recommended": {
-        "emptyDescription": "Open the browser to pick a fresh concept or revisit a topic you want to sharpen next.",
-        "bestNextMove": "Best next move",
-        "whyPicked": "Why Pebble picked this",
-        "reasonMomentum": "Keeps your {topic} momentum going from the last session.",
-        "reasonBalanced": "Balanced next step to keep your practice streak moving without spiking difficulty.",
-        "cueWarmup": "Low-friction warm-up",
-        "cueMomentum": "Momentum-building challenge",
-        "cueStretch": "Stretch rep for confidence",
-        "close": "Close"
-      },
-      "featureGrid": {
-        "sectionPill": "Product capabilities",
-        "sectionTitle": "Pebble is designed around the full practice loop, not just the final answer.",
-        "sectionBody": "Run real code, recover faster with grounded help, keep guidance multilingual, and choose the next rep with more intent.",
-        "capabilityChips": [
-          "Runtime feedback",
-          "Coach in context",
-          "Multilingual guidance",
-          "Curated browser"
-        ],
-        "tiles": [
-          {
-            "id": "runtime",
-            "title": "Run code with real feedback",
-            "detail": "Run against examples and hidden checks, isolate the failing case fast, and rerun with cleaner intent.",
-            "tag": "Runtime",
-            "runtime": {
-              "failBadge": "Fail #2",
-              "expected": "Expected",
-              "actual": "Actual",
-              "signal": "Pebble isolates the fail case first, then points you to the exact recovery move.",
-              "caseIsolated": "Case isolated",
-              "nextInspect": "Next: inspect complement logic"
-            }
-          },
-          {
-            "id": "coach",
-            "title": "Pebble Coach",
-            "detail": "Hint, Explain, and next-step guidance stay anchored to your current code, latest run output, and recovery state.",
-            "tag": "Coach",
-            "coach": {
-              "chips": [
-                "Hint",
-                "Explain",
-                "Next step"
-              ],
-              "bubble1": "Your run failed on case #2. Check the complement before you store the current value.",
-              "bubble2": "One next step: test whether target - nums[i] already exists in seen first.",
-              "tiered": "Tiered guidance",
-              "grounded": "Grounded in latest run"
-            }
-          },
-          {
-            "id": "languages",
-            "title": "Multilingual mentor",
-            "detail": "Switch guidance across English and Indian languages without losing technical precision or the coding context.",
-            "tag": "Language",
-            "languages": {
-              "language": "Language",
-              "hintEn": "Hint: keep the map updated before checking the next index.",
-              "sameLogic": "Same logic, local language",
-              "sync": "Mentor stays in sync"
-            }
-          },
-          {
-            "id": "browser",
-            "title": "LeetCode-style problems browser",
-            "detail": "Browse by topic, difficulty, and readiness so the next rep feels selected, not random.",
-            "tag": "Browser",
-            "browser": {
-              "search": "Search problems, topics, tags",
-              "picked": "Picked for Array momentum",
-              "minutes": "12 मिनट प्रतिनिधि",
-              "rec": "Rec"
-            }
-          }
-        ]
-      }
-    },
-    "insights": {
-      "streakRisk": {
-        "title": "Streak Risk",
-        "subtitleLocal": "7-day forecast",
-        "subtitleCloud": "SageMaker · 7-day forecast",
-        "recompute": "Recompute",
-        "recomputeTitle": "Recompute risk score",
-        "computing": "Computing…",
-        "computingBody": "Computing risk score…",
-        "low": "Low Risk",
-        "medium": "Medium Risk",
-        "high": "High Risk",
-        "sagemaker": "SageMaker model",
-        "local": "Local model",
-        "actions": "Recommended actions",
-        "empty": "No risk data yet — click Recompute to generate."
-      },
-      "weeklyRecap": {
-        "title": "Weekly Pebble Recap",
-        "subtitle": "A mentor-style summary of your last 7 days",
-        "metaLast7": "Last 7 days",
-        "metaMentor": "Mentor summary",
-        "metaAudio": "Audio ready",
-        "metaScript": "Script ready",
-        "loading": "Loading recap…",
-        "emptyTitle": "No recap generated yet for this week.",
-        "emptyBody": "Generate a mentor summary to hear how your practice, recovery, and momentum evolved.",
-        "readyTitle": "This week’s recap is ready.",
-        "readyBody": "Press play to hear Pebble summarize your progress, setbacks, and recovery pattern.",
-        "generate": "Generate recap",
-        "regenerate": "Regenerate",
-        "generating": "Generating…",
-        "play": "Play recap",
-        "stop": "Stop",
-        "showScript": "Show script",
-        "hideScript": "Hide script",
-        "transcript": "Transcript",
-        "playbackReady": "Playback ready",
-        "scriptReady": "Script ready",
-        "cloudUnavailable": "Cloud audio was unavailable, but the recap script is ready.",
-        "audioUnavailable": "Audio voice unavailable right now — script is ready.",
-        "bestVoice": "Playing with the best available voice for this language.",
-        "friendlyEmpty": "Generate a mentor-style summary to hear how your practice, recovery, and momentum evolved this week."
-      }
-    },
-    "session": {
-      "hintTones": [
-        {
-          "label": "Pebble Tip",
-          "prefix": "Tiny nudge: "
-        },
-        {
-          "label": "Quick Nudge",
-          "prefix": "Quick sanity check: "
-        },
-        {
-          "label": "Tiny Step",
-          "prefix": "Small win: "
-        },
-        {
-          "label": "Coach Cue",
-          "prefix": "Try this: "
-        }
-      ]
-    },
-    "community": {
-      "ui": {
-        "heroBadge": "Peer learning layer",
-        "heroSeeded": "Seeded demo discussions",
-        "heroTitle": "Learn with peers, not just prompts.",
-        "heroBody": "PebbleCode can turn failed runs, interview doubts, and project questions into collaborative learning threads without breaking the focused coding workflow.",
-        "askCommunity": "Ask community",
-        "browseDiscussions": "Browse discussions",
-        "heroChips": [
-          "Debugging help",
-          "Project partners",
-          "Interview prep",
-          "SQL + DSA groups"
-        ],
-        "viewLabel": "Community view",
-        "groupShortcuts": "Group shortcuts",
-        "clear": "Clear",
-        "createFromProblem": "Create from current problem",
-        "createFromProblemBody": "Turn a failed run into a forum thread with the problem, language, and testcase context already filled in.",
-        "askFromProblem": "Ask from current problem",
-        "forumPill": "Forum surface",
-        "activeDiscussions": "Active discussions",
-        "forumBody": "Pebble’s strongest community story is here: real threads about failed testcases, interview framing, collaborator search, and AI-hint clarification.",
-        "threads": "threads",
-        "topHelpers": "Top helpers this week",
-        "topHelpersBody": "A compact proof that the community layer can surface useful peer guidance, not just extra noise.",
-        "whyMatters": "Why this matters",
-        "whyMattersBody": "Pebble is stronger when AI guidance and peer discussion reinforce each other after a confusing run.",
-        "comingNext": "Coming next",
-        "comingNextItems": [
-          "Mentor drop-ins for difficult threads",
-          "Student-created problem rooms",
-          "Direct share from Session into Community"
-        ],
-        "openThread": "Open thread",
-        "trending": "Trending",
-        "solved": "Solved",
-        "replies": "replies",
-        "helpful": "helpful",
-        "threadBack": "Back to community",
-        "discussion": "Discussion",
-        "solvedThread": "Solved thread",
-        "trendingNow": "Trending now",
-        "threadDescription": "A collaborative study-room view for one coding discussion: what the learner asked, how peers responded, and how Pebble could turn stuck moments into shared recovery.",
-        "roomNow": "Room now",
-        "participants": "participants",
-        "discussionRoom": "Discussion room",
-        "discussionRoomTitle": "Peer replies around one coding issue",
-        "markedSolved": "Marked solved",
-        "originalQuestion": "Original question",
-        "fromProblem": "From problem",
-        "peerReply": "Peer reply",
-        "helpfulChip": "Helpful",
-        "replyDiscussion": "Reply to the discussion",
-        "replyDiscussionBody": "Share what Pebble suggested, ask for clarification, or help someone debug the current issue.",
-        "replyPlaceholder": "Reply to the discussion…",
-        "attach": "Attach",
-        "attachHint": "Attachment flow is staged for the backend phase of the prototype.",
-        "localReplyNote": "Local replies append instantly for demo flow.",
-        "send": "Send",
-        "roomContext": "Room context",
-        "roomContextTitle": "Why this thread matters in Pebble",
-        "roomContextBody": "This room shows the collaborative layer Pebble needs: a learner hits friction, AI narrows the gap, and peers help translate the final confusion into understanding.",
-        "workflowSignal": "Workflow signal",
-        "workflowLine": "Failed run → Pebble hint → community discussion → cleaner retry.",
-        "keepExploring": "Keep exploring",
-        "composer": {
-          "title": "Turn a stuck moment into a discussion.",
-          "body": "Ask for debugging help, share an insight, or start a collaboration thread that connects Pebble sessions with real peer learning.",
-          "close": "Close composer",
-          "quickDebug": "Ask for debugging help",
-          "quickInsight": "Share insight",
-          "quickPartners": "Find project partners",
-          "titleLabel": "Title",
-          "titlePlaceholder": "What are you stuck on?",
-          "bodyLabel": "Body",
-          "bodyPlaceholder": "Share the failing case, the logic you tried, or the kind of review you want from peers.",
-          "tagsLabel": "Tags",
-          "tagsPlaceholder": "Array, Hash Map, Python",
-          "linkedLabel": "Linked problem",
-          "linkedPlaceholder": "Two Sum",
-          "groupLabel": "Group",
-          "prefillLabel": "Create from current problem",
-          "prefillBody": "Problem: Two Sum\nLanguage: Python\nIssue: Fails on test case #2",
-          "prefillAction": "Prefill from session",
-          "postingNoteLabel": "Posting note",
-          "postingNoteBody": "This prototype appends locally for demo purposes. It is structured to map cleanly to future community APIs.",
-          "ready": "Ready to post into the seeded community feed.",
-          "needsMore": "Add a clearer title and a little more context.",
-          "cancel": "Cancel",
-          "post": "Post"
-        }
-      },
-      "groups": [
-        {
-          "id": "debugging-help",
-          "name": "Debugging Help",
-          "description": "Turn failed runs into clear next steps with peer debugging eyes.",
-          "icon": "bug",
-          "membersLabel": "2.4k शिक्षार्थी",
-          "lastActivity": "Active 8m ago",
-          "tags": [
-            "Fail cases",
-            "Edge cases",
-            "Runtime"
-          ],
-          "featured": true
-        },
-        {
-          "id": "python-help",
-          "name": "Python Help",
-          "description": "Python syntax, patterns, interview-style review, and cleanup.",
-          "icon": "code",
-          "membersLabel": "1.9k शिक्षार्थी",
-          "lastActivity": "Active 14m ago",
-          "tags": [
-            "Python",
-            "Hash Map",
-            "Loops"
-          ]
-        },
-        {
-          "id": "sql-help",
-          "name": "SQL Help",
-          "description": "Queries, joins, subqueries, and interview-style database thinking.",
-          "icon": "database",
-          "membersLabel": "1.3k शिक्षार्थी",
-          "lastActivity": "Active 21m ago",
-          "tags": [
-            "JOIN",
-            "CTE",
-            "Practice"
-          ]
-        },
-        {
-          "id": "interview-prep",
-          "name": "Interview Prep",
-          "description": "Mock prompts, explanation drills, and placement strategy threads.",
-          "icon": "briefcase",
-          "membersLabel": "3.1k शिक्षार्थी",
-          "lastActivity": "Active 6m ago",
-          "tags": [
-            "Placements",
-            "Complexity",
-            "Mocks"
-          ]
-        },
-        {
-          "id": "project-partners",
-          "name": "Project Partners",
-          "description": "Find teammates for student builds, demos, and hackathon sprint work.",
-          "icon": "users",
-          "membersLabel": "860 builders",
-          "lastActivity": "Active 39m ago",
-          "tags": [
-            "Hackathon",
-            "Collab",
-            "MVP"
-          ]
-        },
-        {
-          "id": "dsa-strategy",
-          "name": "DSA Strategy",
-          "description": "Pattern selection, sequencing, and how to recover after a wrong turn.",
-          "icon": "blocks",
-          "membersLabel": "2.8k शिक्षार्थी",
-          "lastActivity": "Active 11m ago",
-          "tags": [
-            "Arrays",
-            "DP",
-            "Graph"
-          ]
-        }
-      ],
-      "posts": [
-        {
-          "id": "post-two-sum-duplicates",
-          "groupId": "debugging-help",
-          "title": "Why does my Two Sum fail when the same value appears twice?",
-          "author": "Aarav",
-          "initials": "AA",
-          "timestamp": "15 मी पहले",
-          "body": "Pebble flagged test case #2 and hinted at complement order, but I still keep missing the duplicate case. Can someone explain why storing first breaks it?",
-          "replyCount": 14,
-          "helpfulCount": 23,
-          "solved": true,
-          "trending": true,
-          "tags": [
-            "Array",
-            "Hash Map",
-            "Python"
-          ],
-          "linkedProblem": "Two Sum",
-          "previewReplies": [
-            {
-              "id": "reply-two-sum-1",
-              "author": "Meera",
-              "initials": "ME",
-              "role": "Helpful reply",
-              "body": "Check whether target minus current already exists before storing the current value. That prevents the element from matching itself.",
-              "helpful": true,
-              "timestamp": "11 मिनट पहले"
-            },
-            {
-              "id": "reply-two-sum-2",
-              "author": "Rohan",
-              "initials": "RO",
-              "body": "Think of the map as memory of previous values only. The current index should never be available to itself.",
-              "timestamp": "9m ago"
-            }
-          ]
-        },
-        {
-          "id": "post-sql-join",
-          "groupId": "sql-help",
-          "title": "How do you explain LEFT JOIN vs INNER JOIN in a real interview answer?",
-          "author": "Kavya",
-          "initials": "KA",
-          "timestamp": "28 मिनट पहले",
-          "body": "I can write the query, but my explanation sounds mechanical. I want a sharper, business-friendly explanation.",
-          "replyCount": 9,
-          "helpfulCount": 17,
-          "solved": false,
-          "tags": [
-            "SQL",
-            "JOIN",
-            "Interview"
-          ],
-          "linkedProblem": "Customer Orders Join",
-          "previewReplies": [
-            {
-              "id": "reply-sql-1",
-              "author": "Isha",
-              "initials": "IS",
-              "body": "Anchor your answer around missing matches. INNER JOIN keeps overlap only; LEFT JOIN preserves the left table even without a match.",
-              "helpful": true,
-              "timestamp": "19 मिनट पहले"
-            },
-            {
-              "id": "reply-sql-2",
-              "author": "Rahul",
-              "initials": "RA",
-              "body": "Use a business frame like “show every customer, even if they never ordered.” It lands well in interviews.",
-              "timestamp": "17 मी पहले"
-            }
-          ]
-        },
-        {
-          "id": "post-recursion-review",
-          "groupId": "interview-prep",
-          "title": "Can someone review how I explain recursion without sounding lost?",
-          "author": "Aditya",
-          "initials": "AD",
-          "timestamp": "43m ago",
-          "body": "I understand the idea, but in mock interviews my explanation gets messy. Looking for a concise structure.",
-          "replyCount": 11,
-          "helpfulCount": 15,
-          "solved": false,
-          "tags": [
-            "Recursion",
-            "Interview",
-            "Communication"
-          ],
-          "previewReplies": [
-            {
-              "id": "reply-rec-1",
-              "author": "Tanvi",
-              "initials": "TA",
-              "body": "Use three parts: what shrinks, where it stops, and what returns back up.",
-              "helpful": true,
-              "timestamp": "33 मी पहले"
-            },
-            {
-              "id": "reply-rec-2",
-              "author": "Priyanshu",
-              "initials": "PR",
-              "body": "Start with the repeated subproblem first. Mention the call stack only if they ask.",
-              "timestamp": "29 मिनट पहले"
-            }
-          ]
-        },
-        {
-          "id": "post-hackathon-teammate",
-          "groupId": "project-partners",
-          "title": "Need one frontend teammate for an AI hackathon build this weekend",
-          "author": "Dev",
-          "initials": "DE",
-          "timestamp": "1 घंटे पहले",
-          "body": "We have backend and product covered. Looking for someone comfortable with React and Tailwind for polish and demo prep.",
-          "replyCount": 6,
-          "helpfulCount": 8,
-          "solved": false,
-          "tags": [
-            "Hackathon",
-            "React",
-            "Frontend"
-          ],
-          "previewReplies": [
-            {
-              "id": "reply-team-1",
-              "author": "Harsh",
-              "initials": "HA",
-              "body": "What timezone and scope? I can help if the work is mostly polish and demo readiness.",
-              "timestamp": "52m ago"
-            },
-            {
-              "id": "reply-team-2",
-              "author": "Kavya",
-              "initials": "KA",
-              "body": "If you still need help on Sunday, I can join for UX review and finishing touches.",
-              "helpful": true,
-              "timestamp": "49m ago"
-            }
-          ]
-        },
-        {
-          "id": "post-pebble-hint",
-          "groupId": "debugging-help",
-          "title": "Pebble gave me a hint, but I still do not get the hashmap logic",
-          "author": "Meera",
-          "initials": "ME",
-          "timestamp": "1 घंटे पहले",
-          "body": "The hint sounds smart, but I still cannot translate it into code. How do you turn a hint into an actual step?",
-          "replyCount": 18,
-          "helpfulCount": 31,
-          "solved": true,
-          "trending": true,
-          "tags": [
-            "AI hints",
-            "Hash Map",
-            "Workflow"
-          ],
-          "previewReplies": [
-            {
-              "id": "reply-hint-1",
-              "author": "Aarav",
-              "initials": "AA",
-              "role": "Helpful reply",
-              "body": "Rewrite the hint in plain words first. Ask what the current element needs and what you want to have seen already.",
-              "helpful": true,
-              "timestamp": "54m ago"
-            },
-            {
-              "id": "reply-hint-2",
-              "author": "Sneha",
-              "initials": "SN",
-              "body": "Ask Pebble to restate the hint against the failing testcase. That usually makes it concrete.",
-              "timestamp": "41m ago"
-            }
-          ]
-        },
-        {
-          "id": "post-python-to-sql",
-          "groupId": "sql-help",
-          "title": "How should I start SQL if I already know Python?",
-          "author": "Isha",
-          "initials": "IS",
-          "timestamp": "3h ago",
-          "body": "I am comfortable with Python logic, but SQL feels like a different mental model. Looking for the most useful entry path.",
-          "replyCount": 10,
-          "helpfulCount": 19,
-          "solved": true,
-          "tags": [
-            "SQL",
-            "Placements",
-            "Beginner"
-          ],
-          "previewReplies": [
-            {
-              "id": "reply-sql-path-1",
-              "author": "Dev",
-              "initials": "DE",
-              "body": "Think in tables instead of loops. Start with select, filter, and grouping before joins.",
-              "helpful": true,
-              "timestamp": "2 घंटे पहले"
-            },
-            {
-              "id": "reply-sql-path-2",
-              "author": "Kavya",
-              "initials": "KA",
-              "body": "Use interview-style datasets early so the syntax stays tied to real questions.",
-              "timestamp": "2 घंटे पहले"
-            }
-          ]
-        },
-        {
-          "id": "post-session-recovery",
-          "groupId": "debugging-help",
-          "title": "After three failed runs I stop thinking clearly. How do you reset?",
-          "author": "Sneha",
-          "initials": "SN",
-          "timestamp": "Yesterday",
-          "body": "I like the Pebble recovery loop, but after a few wrong answers I still spiral and start patching randomly. Looking for human strategies that work.",
-          "replyCount": 16,
-          "helpfulCount": 29,
-          "solved": true,
-          "trending": true,
-          "tags": [
-            "Recovery",
-            "Mindset",
-            "Debugging"
-          ],
-          "previewReplies": [
-            {
-              "id": "reply-recovery-1",
-              "author": "Rahul",
-              "initials": "RA",
-              "role": "Helpful reply",
-              "body": "Force a two-minute reset. Write the failing case in words, state the invariant, then rerun only one change.",
-              "helpful": true,
-              "timestamp": "Yesterday"
-            },
-            {
-              "id": "reply-recovery-2",
-              "author": "Harsh",
-              "initials": "HA",
-              "body": "Do not stack fixes. Ask Pebble for one next check, then explain the case to yourself before touching code.",
-              "timestamp": "Yesterday"
-            }
-          ]
-        },
-        {
-          "id": "post-hackathon-scope",
-          "groupId": "project-partners",
-          "title": "How do you decide what to cut from a hackathon MVP without weakening the story?",
-          "author": "Rohan",
-          "initials": "RO",
-          "timestamp": "2 दिन पहले",
-          "body": "We keep adding features, but the pitch is getting blurry. Curious how others decide what stays in the demo and what becomes future scope.",
-          "replyCount": 13,
-          "helpfulCount": 24,
-          "solved": true,
-          "tags": [
-            "Hackathon",
-            "MVP",
-            "Product"
-          ],
-          "previewReplies": [
-            {
-              "id": "reply-mvp-1",
-              "author": "Aditya",
-              "initials": "AD",
-              "body": "Keep only what proves the thesis. Everything else becomes future ecosystem potential in the narrative.",
-              "helpful": true,
-              "timestamp": "2 दिन पहले"
-            },
-            {
-              "id": "reply-mvp-2",
-              "author": "Sneha",
-              "initials": "SN",
-              "body": "If a feature needs too much explanation, it is probably not MVP for the demo.",
-              "timestamp": "2 दिन पहले"
-            }
-          ]
-        }
-      ],
-      "trendingTopics": [
-        "Hash Map recovery",
-        "LEFT JOIN vs INNER JOIN",
-        "Hackathon teammate search",
-        "Recursion explanations",
-        "Placement resume bullets"
-      ],
-      "topHelpers": [
-        {
-          "id": "helper-meera",
-          "name": "Meera",
-          "initials": "ME",
-          "specialty": "Debugging clarity",
-          "helpfulCount": 38
-        },
-        {
-          "id": "helper-rahul",
-          "name": "Rahul",
-          "initials": "RA",
-          "specialty": "Interview framing",
-          "helpfulCount": 32
-        },
-        {
-          "id": "helper-isha",
-          "name": "Isha",
-          "initials": "IS",
-          "specialty": "SQL and placement prep",
-          "helpfulCount": 29
-        }
-      ],
-      "filters": [
-        {
-          "id": "all",
-          "label": "All discussions"
-        },
-        {
-          "id": "unanswered",
-          "label": "Unanswered"
-        },
-        {
-          "id": "helpful",
-          "label": "Most helpful"
-        },
-        {
-          "id": "trending",
-          "label": "Trending"
-        },
-        {
-          "id": "problem",
-          "label": "Problem discussions"
-        }
-      ]
-    },
-    "help": {
-      "about": {
-        "badge": "About PebbleCode",
-        "note": "Built from the live prototype",
-        "title": "A recovery-first coding mentor built for real student learning",
-        "description": "PebbleCode is a coding practice product designed around what happens after a learner gets stuck. The prototype combines a real coding workspace, grounded AI guidance, reflection surfaces, multilingual accessibility, and a seeded peer-learning layer.",
-        "chips": [
-          "Recovery-first learning",
-          "Multilingual guidance",
-          "Insights and recap",
-          "Community layer"
-        ],
-        "whyTitle": "Why PebbleCode exists",
-        "whyHeadline": "Most coding tools evaluate answers well, but they do not teach recovery well.",
-        "whyBody1": "Students are usually told whether a run passed or failed, but not given a structured way to recover, understand the failure, and build confidence from that moment.",
-        "whyBody2": "PebbleCode treats wrong runs, confusing hints, and repeated mistakes as first-class learning signals.",
-        "whyCallout": "Coding practice should help a learner diagnose, recover, reflect, and improve, not just chase an accepted badge.",
-        "builtFor": "Built for",
-        "builtForTitle": "Learners who need clarity, not just correctness",
-        "builtForItems": [
-          "Students practicing DSA, SQL, and interview reasoning",
-          "Placement-focused learners who need a guided start",
-          "Multilingual users who understand explanations better in a familiar language",
-          "Anyone who wants AI help, reflection, and peer learning in one flow"
-        ],
-        "diffLabel": "What makes it different",
-        "diffs": [
-          {
-            "label": "Recovery loop",
-            "title": "Pebble treats failure as the main learning surface.",
-            "body": "Run → diagnose → coach → recover → rerun is the core product loop."
-          },
-          {
-            "label": "Grounded mentor",
-            "title": "Coach responses stay attached to the active coding context.",
-            "body": "Guidance uses the current problem, code, and latest run state instead of generic chat."
-          },
-          {
-            "label": "Reflection layer",
-            "title": "Insights turn attempts into measurable learning signals.",
-            "body": "The dashboard and weekly recap surface momentum, recovery time, and guidance reliance."
-          },
-          {
-            "label": "Peer layer",
-            "title": "Community extends solo recovery into collaborative learning.",
-            "body": "The seeded community shows how a stuck moment can become a shared learning thread."
-          }
-        ],
-        "flowLabel": "How the product works",
-        "flowTitle": "A practice loop built around recovery, not only acceptance",
-        "flowChip": "Home → Problems → Session → Insights → Community",
-        "flowSteps": [
-          "Start with intent from landing, onboarding, and placement.",
-          "Pick the right problem from a curated browser.",
-          "Run into something real inside Session.",
-          "Use Pebble Coach to recover deliberately.",
-          "Reflect in Insights and extend in Community."
-        ],
-        "multiLabel": "Multilingual vision",
-        "multiTitle": "Understanding improves when explanations meet the learner where they are.",
-        "multiBody1": "Many students write code in English syntax but understand reasoning better in a familiar language.",
-        "multiBody2": "PebbleCode uses multilingual UI and guidance to lower the barrier to understanding without diluting technical rigor.",
-        "multiCallout": "Multilingual support is a product differentiator because it expands who can recover confidently, not just who can read syntax.",
-        "prototypeLabel": "What is included in the prototype",
-        "prototypeTitle": "The build is broad today, but honest about what is seeded and what depends on configuration.",
-        "prototypeAreas": [
-          {
-            "label": "Interactive now",
-            "title": "Core product loop is demoable today.",
-            "items": [
-              "Landing, onboarding, and placement",
-              "Problems browser and session IDE",
-              "Run, submit, solutions, and submissions",
-              "Pebble Coach, auth, profile, settings",
-              "Insights dashboard and recap surface"
-            ]
-          },
-          {
-            "label": "Seeded for storytelling",
-            "title": "Frontend-first surfaces that prove the broader vision.",
-            "items": [
-              "Community groups, posts, and replies use seeded demo data",
-              "Thread rooms support local reply behavior",
-              "Some showcase and recommendation content is curated for demo clarity"
-            ]
-          },
-          {
-            "label": "Configuration dependent",
-            "title": "Cloud-backed paths become stronger when AWS services are wired.",
-            "items": [
-              "Cognito auth and verification",
-              "S3 avatars and recap audio",
-              "API Gateway + Lambda backend routes",
-              "Optional Bedrock-backed mentor and recap paths"
-            ]
-          }
-        ],
-        "stackLabel": "How we built it",
-        "stackTitle": "The architecture is serious enough to show real depth while staying hackathon-practical.",
-        "stackItems": [
-          {
-            "label": "Frontend",
-            "title": "Vite + React + TypeScript + Tailwind",
-            "body": "A premium multi-surface app shell for Home, Problems, Session, Insights, Community, auth, profile, and help."
-          },
-          {
-            "label": "Execution",
-            "title": "Local runner plus serverless-compatible APIs",
-            "body": "Pebble supports real run and submit flows, testcase diagnostics, and report generation."
-          },
-          {
-            "label": "Identity and storage",
-            "title": "Cognito, DynamoDB, S3, and local-first persistence",
-            "body": "Profiles, usernames, avatars, solved state, and activity signals persist cleanly while degrading safely in prototype mode."
-          },
-          {
-            "label": "Cloud and AI",
-            "title": "AWS CDK path with optional Bedrock guidance",
-            "body": "The repo includes CloudFront or Amplify frontend hosting, API Gateway + Lambda services, and optional Bedrock-backed mentor orchestration."
-          }
-        ],
-        "impactLabel": "Why this matters",
-        "impactItems": [
-          "Students need more than accepted or rejected outputs.",
-          "Interview prep improves when explanation quality improves.",
-          "Peer learning grows stronger when AI and humans reinforce each other.",
-          "A recovery-first model can scale beyond one problem into long-term confidence."
-        ],
-        "closingLabel": "Closing note",
-        "closingTitle": "PebbleCode treats coding practice as a learning system, not just a problem list.",
-        "closingBody": "The prototype already proves a credible product argument: students need a workflow that helps them write, fail, recover, reflect, and eventually learn with others.",
-        "closingCtas": [
-          "See the full product walkthrough",
-          "Read judge-facing product answers",
-          "Open the core Session experience"
-        ]
-      },
-      "faq": {
-        "badge": "FAQ",
-        "note": "Judge-friendly product context",
-        "title": "Fast answers about what PebbleCode actually does",
-        "description": "This page explains the real product shape of PebbleCode as it exists in the repo today: what is interactive, what is seeded for demo value, and why the product is organized around recovery instead of raw acceptance alone.",
-        "chips": [
-          "Recovery-first practice",
-          "Grounded mentor help",
-          "Seeded community layer",
-          "Prototype with real flows"
-        ],
-        "groups": [
-          {
-            "id": "product",
-            "label": "Product",
-            "title": "What PebbleCode is solving",
-            "description": "The first questions judges and new users ask.",
-            "icon": "Sparkles",
-            "items": [
-              {
-                "question": "What is PebbleCode?",
-                "answer": "PebbleCode is a recovery-first coding practice workspace. It is built around opening a problem, running code, understanding failure, getting grounded help, fixing it, and measuring improvement over time."
-              },
-              {
-                "question": "How is it different from a normal coding platform?",
-                "answer": "It combines a premium session workspace, testcase-level feedback, guided mentor help, reflection surfaces, and a seeded peer-learning layer in one flow."
-              },
-              {
-                "question": "What should a judge notice first in a demo?",
-                "answer": "The strongest sequence is: open a problem, fail a run, use Pebble Coach, rerun, then show how Insights and Community extend the same learning loop."
-              }
-            ]
-          },
-          {
-            "id": "mentor",
-            "label": "AI mentor",
-            "title": "How the coach behaves",
-            "description": "Grounded help, not generic chatbot behavior.",
-            "icon": "Bot",
-            "items": [
-              {
-                "question": "Does Pebble give full solutions immediately?",
-                "answer": "Not by default. The mentor is designed around hint, explain, and next-step guidance so learners recover deliberately before seeing a full answer."
-              },
-              {
-                "question": "What happens after I run code?",
-                "answer": "Pebble shows testcase results, expected versus actual output, and a failure summary. That context feeds the coach rail and the next recovery step."
-              },
-              {
-                "question": "How does the recovery loop work?",
-                "answer": "Run or submit, inspect failure, use grounded help, make one focused change, rerun, then reflect on the pattern in Insights."
-              }
-            ]
-          },
-          {
-            "id": "scope",
-            "label": "Prototype scope",
-            "title": "What is implemented now",
-            "description": "Clear boundaries without underselling the product.",
-            "icon": "FileText",
-            "items": [
-              {
-                "question": "Is the Community page real or seeded?",
-                "answer": "It is a frontend-first seeded prototype. The interactions and thread routes are real, but the activity is intentionally seeded for demo clarity."
-              },
-              {
-                "question": "What does multilingual support mean here?",
-                "answer": "The prototype includes multilingual UI and localized content paths across English and several Indian languages, plus language-aware guidance where wired."
-              },
-              {
-                "question": "Is PebbleCode complete?",
-                "answer": "No. It is a serious working prototype with real flows, runner logic, auth, and AWS deployment paths, but some richer cloud features still depend on configuration."
-              }
-            ]
-          }
-        ],
-        "bestSignal": "Best demo signal",
-        "bestSignalTitle": "What judges should notice first",
-        "bestSignalItems": [
-          "Pebble is strongest when a user fails a run, opens Coach, applies the explanation, and reruns.",
-          "Community is intentionally seeded, but it proves the product can evolve from solo AI guidance into collaborative learning."
-        ],
-        "prototypeNote": "Prototype note",
-        "prototypeNoteTitle": "What is real today",
-        "prototypeNoteItems": [
-          "Problems, Session, Coach, auth flows, placement, notifications, settings, and local-first insights are real interactive surfaces.",
-          "Weekly recap and cloud-backed analytics exist, but some deeper backend paths depend on environment configuration.",
-          "Community uses seeded content by design so the product direction is visible without claiming live user traffic."
-        ],
-        "backToHome": "Back to home",
-        "backBody": "If you want the full product story first, open About PebbleCode. If you want the guided walkthrough, open How to Use."
-      },
-      "howTo": {
-        "badge": "How to Use",
-        "note": "Built from current app flow",
-        "title": "The fastest way to understand PebbleCode end to end",
-        "description": "This is a product tour of the app as it exists now. Follow it if you are evaluating PebbleCode for the first time, or if you want the shortest path from landing page to the core recovery-loop demo.",
-        "chips": [
-          "Home",
-          "Problems",
-          "Session",
-          "Insights",
-          "Community"
-        ],
-        "quickTour": "Judge quick tour",
-        "quickTourTitle": "Best demo flow in under 3 minutes",
-        "quickTourChip": "High signal",
-        "quickPath": [
-          {
-            "title": "1. Home → Pebble आज़माएं",
-            "detail": "Set the product narrative before touching the IDE."
-          },
-          {
-            "title": "2. ऑनबोर्डिंग + प्लेसमेंट",
-            "detail": "Show that Pebble personalizes the starting path instead of dropping users into a random problem."
-          },
-          {
-            "title": "3. Problems → एक चुनौती खोलें",
-            "detail": "Pick a problem that can fail early so the recovery loop becomes visible."
-          },
-          {
-            "title": "4. Session → run → coach → rerun",
-            "detail": "This is the core product moment: failure becomes grounded help and a cleaner next attempt."
-          }
-        ],
-        "steps": [
-          {
-            "id": "home",
-            "label": "Step 1",
-            "title": "Start from the landing page",
-            "body": "Use the homepage to frame Pebble as a coding practice product built around runtime feedback, mentor help, and reflection.",
-            "detail": "This is where you set the thesis: Pebble turns failed runs into guided next steps.",
-            "chips": [
-              "Landing",
-              "Daily plan",
-              "Product preview"
-            ],
-            "icon": "Sparkles"
-          },
-          {
-            "id": "placement",
-            "label": "Step 2",
-            "title": "Set level and language, then use placement",
-            "body": "Onboarding captures level and language focus, while placement suggests a sensible starting path.",
-            "detail": "This shows Pebble is trying to personalize learning, not just host questions.",
-            "chips": [
-              "Onboarding",
-              "Placement",
-              "Track"
-            ],
-            "icon": "Brain"
-          },
-          {
-            "id": "problems",
-            "label": "Step 3",
-            "title": "Use Problems to pick the right challenge",
-            "body": "The Problems page supports search, topic filtering, solved tracking, and preview before entering a session.",
-            "detail": "In a demo, pick one problem that can fail clearly so the mentor has useful context.",
-            "chips": [
-              "Browser",
-              "Filters",
-              "Preview"
-            ],
-            "icon": "Compass"
-          },
-          {
-            "id": "session",
-            "label": "Step 4",
-            "title": "Open Session and run imperfect code first",
-            "body": "Session is the core workspace. The editor, testcases, and mentor rail are arranged around quick recovery after a wrong run.",
-            "detail": "Pebble is strongest when the first attempt is not perfect.",
-            "chips": [
-              "IDE",
-              "Run",
-              "Testcases"
-            ],
-            "icon": "BookOpen"
-          },
-          {
-            "id": "coach",
-            "label": "Step 5",
-            "title": "Use Pebble Coach to recover deliberately",
-            "body": "Hint, explain, and next-step guidance stay attached to the current problem, code, and run output.",
-            "detail": "This is the clearest product differentiation moment in the app.",
-            "chips": [
-              "Hint",
-              "Explain",
-              "Next step"
-            ],
-            "icon": "Bot"
-          },
-          {
-            "id": "insights",
-            "label": "Step 6",
-            "title": "Finish on Insights or Community",
-            "body": "Insights shows recovery patterns and momentum, while Community shows how solo struggle can become peer learning.",
-            "detail": "This gives the demo breadth beyond one accepted answer.",
-            "chips": [
-              "Insights",
-              "Recap",
-              "Community"
-            ],
-            "icon": "Globe"
-          }
-        ],
-        "suggestedRun": "Suggested first run",
-        "suggestedRunTitle": "The cleanest live demo sequence",
-        "suggestedRunItems": [
-          "Open Two Sum or another problem with a visible fail case.",
-          "Run an imperfect solution first so Pebble Coach has something concrete to react to.",
-          "Use hint → explain → next step, then rerun.",
-          "Finish on Insights or Community so the demo ends with product breadth."
-        ],
-        "prototypeNotes": "Prototype notes",
-        "prototypeNotesTitle": "What is interactive vs seeded",
-        "prototypeNotesItems": [
-          "Core practice surfaces are interactive and local-first.",
-          "Some deeper cloud-backed paths depend on backend configuration.",
-          "Community activity is seeded intentionally for demo storytelling."
-        ],
-        "backToHome": "Back to home",
-        "backBody": "If you want the judge-facing narrative first, open About PebbleCode. If you need sharper question-and-answer framing, open FAQ."
-      }
-    }
-  },
   "bn": {
     "footer": {
       "description": "Elite coding practice with mentor-level guidance.",
@@ -13792,6 +12731,503 @@ export const PRODUCT_GENERATED: Partial<Record<LanguageCode, any>> = {
         ],
         "backToHome": "Back to home",
         "backBody": "If you want the judge-facing narrative first, open About PebbleCode. If you need sharper question-and-answer framing, open FAQ."
+      }
+    }
+  },
+  "hi": {
+    "footer": {
+      "description": "मेंटर-स्तरीय मार्गदर्शन के साथ एलीट कोडिंग अभ्यास।",
+      "builtWith": "इसके साथ बनाया गया",
+      "product": "उत्पाद",
+      "guides": "गाइड",
+      "account": "खाता",
+      "legal": "कानूनी",
+      "copyright": "© 2026 Pebble. सर्वाधिकार सुरक्षित।"
+    },
+    "home": {
+      "continue": {
+        "resumeDescription": "थ्रेड फिर से शुरू करें, आखिरी फेल केस दोबारा चलाएँ, और संदर्भ गर्म रहते हुए लूप बंद करें।",
+        "emptyDescription": "पहली समस्या चुनें और Pebble आपका रनटाइम संदर्भ अगली बार जारी रखने के लिए तैयार रखेगा।",
+        "emptyChips": [
+          "गाइडेड वार्म-अप",
+          "वास्तविक रनटाइम जांच",
+          "संदर्भ में कोच"
+        ],
+        "resumeRail": "उसी यूनिट पर सीधे वापस जाएँ और अपना रिकवरी लूप छोटा रखें।",
+        "emptyRail": "पहला सत्र शुरू करें और Pebble स्वचालित रूप से आपका निरंतरता संदर्भ बनाएगा।"
+      },
+      "todayPlan": {
+        "dailyLoop": "दैनिक लूप",
+        "focusChip": "25 मिनट फ़ोकस",
+        "focusLoad": "फ़ोकस लोड",
+        "stateNeutral": "तटस्थ",
+        "stateBalanced": "संतुलित",
+        "stateStretch": "खिंचाव",
+        "stateHeavy": "भारी",
+        "emptyTitle": "अपनी हालिया गति से छोटी जीत का एक केंद्रित सेट बनाएँ।",
+        "emptyBody": "Pebble एक वार्म-अप, एक रिकवरी कार्य, और एक समीक्षा चरण तैयार करेगा ताकि सत्र स्पष्ट इरादे से शुरू हो।",
+        "sessionPacing": "सत्र गति",
+        "sessionPacingBody": "निरंतरता के लिए तीन जानबूझकर कार्य तैयार किए गए हैं।",
+        "expectedLabel": "सत्र के अंत तक अपेक्षित",
+        "outcomes": {
+          "backInRhythm": "आज का सत्र आपको एक साफ़ जीत और एक स्पष्ट अगले कदम के साथ लय में वापस लाना चाहिए।",
+          "reviewAndWin": "इस सत्र के अंत तक, आपके पास एक साफ़ जीत, एक समीक्षा की गई गलती, और बेहतर रिकवरी प्रवाह होना चाहिए।",
+          "heavy": "एक छोटा केंद्रित सत्र बिना कार्यभार फैलाए गति पुनः बनानी चाहिए।",
+          "drill": "आपको एक हल किया हुआ रेप, एक समीक्षा अंतर्दृष्टि, और एक स्वच्छ रिकवरी लूप से समाप्त होना चाहिए।",
+          "light": "यह सत्र आपको मानसिक रूप से थके बिना गति बहाल करने में मदद करना चाहिए।",
+          "default": "आपको आज स्थिर गति, एक पूर्ण फ़ोकस लूप, और अगले सत्र के लिए मजबूत आत्मविश्वास के साथ समाप्त होना चाहिए।"
+        },
+        "closeDialog": "डायलॉग बंद करें"
+      },
+      "recommended": {
+        "emptyDescription": "ब्राउज़र खोलें एक नई अवधारणा चुनने या उस विषय पर वापस जाने के लिए जिसे आप अगला तेज़ करना चाहते हैं।",
+        "bestNextMove": "सर्वश्रेष्ठ अगला कदम",
+        "whyPicked": "Pebble ने यह क्यों चुना",
+        "reasonMomentum": "पिछले सत्र से आपकी {topic} गति जारी रखता है।",
+        "reasonBalanced": "कठिनाई बढ़ाए बिना आपकी अभ्यास स्ट्रीक चलते रखने के लिए संतुलित अगला कदम।",
+        "cueWarmup": "कम-घर्षण वार्म-अप",
+        "cueMomentum": "गति-निर्माण चुनौती",
+        "cueStretch": "आत्मविश्वास के लिए स्ट्रेच रेप",
+        "close": "बंद करें"
+      },
+      "featureGrid": {
+        "sectionPill": "उत्पाद क्षमताएँ",
+        "sectionTitle": "Pebble पूर्ण अभ्यास लूप के आसपास बनाया गया है, न कि सिर्फ अंतिम उत्तर के लिए।",
+        "sectionBody": "वास्तविक कोड चलाएँ, आधारित मदद से तेज़ी से रिकवर करें, मार्गदर्शन बहुभाषी रखें, और अधिक इरादे के साथ अगला रेप चुनें।",
+        "capabilityChips": [
+          "रनटाइम फ़ीडबैक",
+          "संदर्भ में कोच",
+          "बहुभाषी मार्गदर्शन",
+          "क्यूरेटेड ब्राउज़र"
+        ],
+        "tiles": [
+          {
+            "id": "runtime",
+            "title": "वास्तविक फ़ीडबैक के साथ कोड चलाएँ",
+            "detail": "उदाहरणों और छिपी जांचों के विरुद्ध चलाएँ, फेल केस को तेज़ी से अलग करें, और स्वच्छ इरादे से फिर चलाएँ।",
+            "tag": "रनटाइम",
+            "runtime": {
+              "failBadge": "फ़ेल #2",
+              "expected": "अपेक्षित",
+              "actual": "वास्तविक",
+              "signal": "Pebble पहले फेल केस को अलग करता है, फिर आपको सटीक रिकवरी कदम बताता है।",
+              "caseIsolated": "केस अलग किया",
+              "nextInspect": "अगला: पूरक लॉजिक जांचें"
+            }
+          },
+          {
+            "id": "coach",
+            "title": "Pebble कोच",
+            "detail": "संकेत, स्पष्टीकरण, और अगला-कदम मार्गदर्शन आपके वर्तमान कोड, नवीनतम रन आउटपुट, और रिकवरी स्थिति से जुड़े रहते हैं।",
+            "tag": "कोच",
+            "coach": {
+              "chips": [
+                "संकेत",
+                "समझाएँ",
+                "अगला कदम"
+              ],
+              "bubble1": "आपका रन केस #2 पर विफल हुआ। वर्तमान मान संग्रहीत करने से पहले पूरक जांचें।",
+              "bubble2": "एक अगला कदम: परीक्षण करें कि target - nums[i] पहले से ही seen में है या नहीं।",
+              "tiered": "स्तरीकृत मार्गदर्शन",
+              "grounded": "नवीनतम रन पर आधारित"
+            }
+          },
+          {
+            "id": "languages",
+            "title": "बहुभाषी मेंटर",
+            "detail": "तकनीकी सटीकता या कोडिंग संदर्भ खोए बिना अंग्रेज़ी और भारतीय भाषाओं में मार्गदर्शन स्विच करें।",
+            "tag": "भाषा",
+            "languages": {
+              "language": "भाषा",
+              "hintEn": "संकेत: अगले index से पहले map को अपडेट रखें।",
+              "sameLogic": "समान लॉजिक, स्थानीय भाषा",
+              "sync": "मेंटर सिंक में रहता है"
+            }
+          },
+          {
+            "id": "browser",
+            "title": "LeetCode-शैली समस्याएँ ब्राउज़र",
+            "detail": "विषय, कठिनाई, और तैयारी के अनुसार ब्राउज़ करें ताकि अगला रेप चुना हुआ लगे, यादृच्छिक नहीं।",
+            "tag": "ब्राउज़र",
+            "browser": {
+              "search": "समस्याएँ, विषय, टैग खोजें",
+              "picked": "Array गति के लिए चुना गया",
+              "minutes": "12 मिनट रेप",
+              "rec": "अनुशं"
+            }
+          }
+        ]
+      }
+    },
+    "insights": {
+      "streakRisk": {
+        "title": "स्ट्रीक जोखिम",
+        "subtitleLocal": "7-दिन का पूर्वानुमान",
+        "subtitleCloud": "SageMaker · 7-दिन का पूर्वानुमान",
+        "recompute": "पुनः गणना",
+        "recomputeTitle": "जोखिम स्कोर पुनः गणना करें",
+        "computing": "गणना हो रही है…",
+        "computingBody": "जोखिम स्कोर की गणना हो रही है…",
+        "low": "कम जोखिम",
+        "medium": "मध्यम जोखिम",
+        "high": "उच्च जोखिम",
+        "sagemaker": "SageMaker मॉडल",
+        "local": "स्थानीय मॉडल",
+        "actions": "अनुशंसित कार्रवाइयाँ",
+        "empty": "अभी कोई जोखिम डेटा नहीं — उत्पन्न करने के लिए पुनः गणना पर क्लिक करें।"
+      },
+      "weeklyRecap": {
+        "title": "साप्ताहिक Pebble सारांश",
+        "subtitle": "पिछले 7 दिनों का मेंटर-शैली सारांश",
+        "metaLast7": "पिछले 7 दिन",
+        "metaMentor": "मेंटर सारांश",
+        "metaAudio": "ऑडियो तैयार",
+        "metaScript": "स्क्रिप्ट तैयार",
+        "loading": "सारांश लोड हो रहा है…",
+        "emptyTitle": "इस सप्ताह अभी तक कोई सारांश नहीं बनाया गया।",
+        "emptyBody": "सुनने के लिए मेंटर सारांश बनाएँ कि आपका अभ्यास, रिकवरी और गति कैसे विकसित हुई।",
+        "readyTitle": "इस सप्ताह का सारांश तैयार है।",
+        "readyBody": "Pebble को आपकी प्रगति, असफलताओं और रिकवरी पैटर्न का सारांश सुनाने के लिए Play दबाएँ।",
+        "generate": "सारांश बनाएँ",
+        "regenerate": "पुनः बनाएँ",
+        "generating": "बन रहा है…",
+        "play": "सारांश चलाएँ",
+        "stop": "रोकें",
+        "showScript": "स्क्रिप्ट दिखाएँ",
+        "hideScript": "स्क्रिप्ट छिपाएँ",
+        "transcript": "ट्रांस्क्रिप्ट",
+        "playbackReady": "प्लेबैक तैयार",
+        "scriptReady": "स्क्रिप्ट तैयार",
+        "cloudUnavailable": "क्लाउड ऑडियो उपलब्ध नहीं था, लेकिन सारांश स्क्रिप्ट तैयार है।",
+        "audioUnavailable": "ऑडियो आवाज़ अभी उपलब्ध नहीं — स्क्रिप्ट तैयार है।",
+        "bestVoice": "इस भाषा के लिए सर्वोत्तम उपलब्ध आवाज़ से चल रहा है।",
+        "friendlyEmpty": "सुनने के लिए मेंटर-शैली सारांश बनाएँ कि इस सप्ताह आपका अभ्यास, रिकवरी और गति कैसे विकसित हुई।"
+      }
+    },
+    "session": {
+      "hintTones": [
+        {
+          "label": "Pebble टिप",
+          "prefix": "छोटा संकेत: "
+        },
+        {
+          "label": "त्वरित संकेत",
+          "prefix": "त्वरित जांच: "
+        },
+        {
+          "label": "छोटा कदम",
+          "prefix": "छोटी जीत: "
+        },
+        {
+          "label": "कोच संकेत",
+          "prefix": "यह आज़माएँ: "
+        }
+      ]
+    },
+    "community": {
+      "ui": {
+        "heroBadge": "पीयर लर्निंग परत",
+        "heroSeeded": "सीडेड डेमो चर्चाएँ",
+        "heroTitle": "सिर्फ प्रॉम्प्ट से नहीं, साथियों के साथ सीखें।",
+        "heroBody": "PebbleCode विफल रन, इंटरव्यू संदेह, और प्रोजेक्ट प्रश्नों को केंद्रित कोडिंग वर्कफ़्लो तोड़े बिना सहयोगी लर्निंग थ्रेड में बदल सकता है।",
+        "askCommunity": "समुदाय से पूछें",
+        "browseDiscussions": "चर्चाएँ ब्राउज़ करें",
+        "heroChips": [
+          "डीबगिंग सहायता",
+          "प्रोजेक्ट पार्टनर",
+          "इंटरव्यू तैयारी",
+          "SQL + DSA समूह"
+        ],
+        "viewLabel": "समुदाय दृश्य",
+        "groupShortcuts": "समूह शॉर्टकट",
+        "clear": "साफ़ करें",
+        "createFromProblem": "वर्तमान समस्या से बनाएँ",
+        "createFromProblemBody": "एक विफल रन को समस्या, भाषा, और टेस्टकेस संदर्भ पहले से भरे फ़ोरम थ्रेड में बदलें।",
+        "askFromProblem": "वर्तमान समस्या से पूछें",
+        "forumPill": "फ़ोरम सतह",
+        "activeDiscussions": "सक्रिय चर्चाएँ",
+        "forumBody": "Pebble की सबसे मजबूत समुदाय कहानी यहाँ है: विफल टेस्टकेस, इंटरव्यू फ्रेमिंग, सहयोगी खोज, और AI-संकेत स्पष्टीकरण के बारे में वास्तविक थ्रेड।",
+        "threads": "थ्रेड",
+        "topHelpers": "इस सप्ताह शीर्ष सहायक",
+        "topHelpersBody": "एक संक्षिप्त प्रमाण कि समुदाय परत उपयोगी पीयर मार्गदर्शन दिखा सकती है, न कि सिर्फ अतिरिक्त शोर।",
+        "whyMatters": "यह क्यों मायने रखता है",
+        "whyMattersBody": "Pebble तब मजबूत होता है जब AI मार्गदर्शन और पीयर चर्चा एक भ्रामक रन के बाद एक-दूसरे को मजबूत करते हैं।",
+        "comingNext": "आगे क्या आ रहा है",
+        "comingNextItems": [
+          "कठिन थ्रेड के लिए मेंटर ड्रॉप-इन",
+          "छात्र-निर्मित समस्या कक्ष",
+          "सत्र से समुदाय में सीधा शेयर"
+        ],
+        "openThread": "थ्रेड खोलें",
+        "trending": "ट्रेंडिंग",
+        "solved": "हल किया",
+        "replies": "जवाब",
+        "helpful": "उपयोगी",
+        "threadBack": "समुदाय पर वापस",
+        "discussion": "चर्चा",
+        "solvedThread": "हल किया हुआ थ्रेड",
+        "trendingNow": "अभी ट्रेंडिंग",
+        "threadDescription": "एक कोडिंग चर्चा के लिए सहयोगी स्टडी-रूम दृश्य: सीखने वाले ने क्या पूछा, साथियों ने कैसे जवाब दिया, और Pebble फँसे हुए क्षणों को साझा रिकवरी में कैसे बदल सकता है।",
+        "roomNow": "अभी कक्ष में",
+        "participants": "प्रतिभागी",
+        "discussionRoom": "चर्चा कक्ष",
+        "discussionRoomTitle": "एक कोडिंग समस्या के आसपास पीयर जवाब",
+        "markedSolved": "हल चिह्नित",
+        "originalQuestion": "मूल प्रश्न",
+        "fromProblem": "समस्या से",
+        "peerReply": "पीयर जवाब",
+        "helpfulChip": "उपयोगी",
+        "replyDiscussion": "चर्चा का जवाब दें",
+        "replyDiscussionBody": "Pebble ने क्या सुझाया शेयर करें, स्पष्टीकरण माँगें, या किसी को वर्तमान समस्या डीबग करने में मदद करें।",
+        "replyPlaceholder": "चर्चा का जवाब दें…",
+        "attach": "संलग्न करें",
+        "attachHint": "संलग्नक प्रवाह प्रोटोटाइप के बैकएंड चरण के लिए स्टेज किया गया है।",
+        "localReplyNote": "स्थानीय जवाब डेमो प्रवाह के लिए तुरंत जुड़ते हैं।",
+        "send": "भेजें",
+        "roomContext": "कक्ष संदर्भ",
+        "roomContextTitle": "यह थ्रेड Pebble में क्यों मायने रखता है",
+        "roomContextBody": "यह कक्ष वह सहयोगी परत दिखाता है जो Pebble को चाहिए: एक सीखने वाला घर्षण से टकराता है, AI अंतर को संकीर्ण करता है, और साथी अंतिम भ्रम को समझ में बदलने में मदद करते हैं।",
+        "workflowSignal": "वर्कफ़्लो संकेत",
+        "workflowLine": "विफल रन → Pebble संकेत → समुदाय चर्चा → स्वच्छ पुनः प्रयास।",
+        "keepExploring": "खोजते रहें",
+        "composer": {
+          "title": "एक फँसे हुए क्षण को चर्चा में बदलें।",
+          "body": "डीबगिंग सहायता माँगें, एक अंतर्दृष्टि शेयर करें, या एक सहयोग थ्रेड शुरू करें जो Pebble सत्रों को वास्तविक पीयर लर्निंग से जोड़ता है।",
+          "close": "composer बंद करें",
+          "quickDebug": "डीबगिंग सहायता माँगें",
+          "quickInsight": "अंतर्दृष्टि शेयर करें",
+          "quickPartners": "प्रोजेक्ट पार्टनर खोजें",
+          "titleLabel": "शीर्षक",
+          "titlePlaceholder": "आप किसमें फँसे हैं?",
+          "bodyLabel": "विवरण",
+          "bodyPlaceholder": "विफल केस, आपने जो लॉजिक आज़माया, या साथियों से जो समीक्षा चाहते हैं वह शेयर करें।",
+          "tagsLabel": "टैग",
+          "tagsPlaceholder": "Array, Hash Map, Python",
+          "linkedLabel": "जुड़ी समस्या",
+          "linkedPlaceholder": "Two Sum",
+          "groupLabel": "समूह",
+          "prefillLabel": "वर्तमान समस्या से बनाएँ",
+          "prefillBody": "समस्या: Two Sum\nभाषा: Python\nसमस्या: टेस्ट केस #2 पर विफल",
+          "prefillAction": "सत्र से प्री-फिल करें",
+          "postingNoteLabel": "पोस्टिंग नोट",
+          "postingNoteBody": "यह प्रोटोटाइप डेमो उद्देश्यों के लिए स्थानीय रूप से जोड़ता है। यह भविष्य के समुदाय APIs से स्वच्छ रूप से मैप करने के लिए संरचित है।",
+          "ready": "सीडेड समुदाय फ़ीड में पोस्ट करने के लिए तैयार।",
+          "needsMore": "एक स्पष्ट शीर्षक और थोड़ा और संदर्भ जोड़ें।",
+          "cancel": "रद्द करें",
+          "post": "पोस्ट करें"
+        }
+      },
+      "groups": [
+        {
+          "id": "debugging-help",
+          "name": "डीबगिंग सहायता",
+          "description": "पीयर डीबगिंग दृष्टि के साथ विफल रन को स्पष्ट अगले कदमों में बदलें।",
+          "icon": "bug",
+          "membersLabel": "2.4k सीखने वाले",
+          "lastActivity": "8 मिनट पहले सक्रिय",
+          "tags": ["फेल केस", "एज केस", "रनटाइम"],
+          "featured": true
+        },
+        {
+          "id": "python-help",
+          "name": "Python सहायता",
+          "description": "Python सिंटैक्स, पैटर्न, इंटरव्यू-शैली समीक्षा, और सफाई।",
+          "icon": "code",
+          "membersLabel": "1.9k सीखने वाले",
+          "lastActivity": "14 मिनट पहले सक्रिय",
+          "tags": ["Python", "Hash Map", "लूप्स"]
+        },
+        {
+          "id": "sql-help",
+          "name": "SQL सहायता",
+          "description": "क्वेरी, जॉइन, सबक्वेरी, और इंटरव्यू-शैली डेटाबेस सोच।",
+          "icon": "database",
+          "membersLabel": "1.3k सीखने वाले",
+          "lastActivity": "21 मिनट पहले सक्रिय",
+          "tags": ["JOIN", "CTE", "अभ्यास"]
+        },
+        {
+          "id": "interview-prep",
+          "name": "इंटरव्यू तैयारी",
+          "description": "मॉक प्रॉम्प्ट, स्पष्टीकरण अभ्यास, और प्लेसमेंट रणनीति थ्रेड।",
+          "icon": "briefcase",
+          "membersLabel": "3.1k सीखने वाले",
+          "lastActivity": "6 मिनट पहले सक्रिय",
+          "tags": ["प्लेसमेंट", "जटिलता", "मॉक्स"]
+        },
+        {
+          "id": "project-partners",
+          "name": "प्रोजेक्ट पार्टनर",
+          "description": "छात्र बिल्ड, डेमो, और हैकाथॉन स्प्रिंट के लिए टीममेट खोजें।",
+          "icon": "users",
+          "membersLabel": "860 बिल्डर",
+          "lastActivity": "39 मिनट पहले सक्रिय",
+          "tags": ["हैकाथॉन", "सहयोग", "MVP"]
+        },
+        {
+          "id": "dsa-strategy",
+          "name": "DSA रणनीति",
+          "description": "पैटर्न चयन, अनुक्रमण, और गलत मोड़ के बाद रिकवर करने के तरीके।",
+          "icon": "blocks",
+          "membersLabel": "2.8k सीखने वाले",
+          "lastActivity": "11 मिनट पहले सक्रिय",
+          "tags": ["Arrays", "DP", "Graph"]
+        }
+      ],
+      "posts": [],
+      "trendingTopics": [
+        "Hash Map रिकवरी",
+        "LEFT JOIN बनाम INNER JOIN",
+        "हैकाथॉन टीममेट खोज",
+        "Recursion स्पष्टीकरण",
+        "प्लेसमेंट रिज्यूमे बिंदु"
+      ],
+      "topHelpers": [
+        {
+          "id": "helper-meera",
+          "name": "Meera",
+          "initials": "ME",
+          "specialty": "डीबगिंग स्पष्टता",
+          "helpfulCount": 38
+        },
+        {
+          "id": "helper-rahul",
+          "name": "Rahul",
+          "initials": "RA",
+          "specialty": "इंटरव्यू फ्रेमिंग",
+          "helpfulCount": 32
+        },
+        {
+          "id": "helper-isha",
+          "name": "Isha",
+          "initials": "IS",
+          "specialty": "SQL और प्लेसमेंट तैयारी",
+          "helpfulCount": 29
+        }
+      ],
+      "filters": [
+        { "id": "all", "label": "सभी चर्चाएँ" },
+        { "id": "unanswered", "label": "अनुत्तरित" },
+        { "id": "helpful", "label": "सबसे उपयोगी" },
+        { "id": "trending", "label": "ट्रेंडिंग" },
+        { "id": "problem", "label": "समस्या चर्चाएँ" }
+      ]
+    },
+    "help": {
+      "about": {
+        "badge": "PebbleCode के बारे में",
+        "note": "लाइव प्रोटोटाइप से बनाया गया",
+        "title": "वास्तविक छात्र लर्निंग के लिए बनाया गया रिकवरी-फ़र्स्ट कोडिंग मेंटर",
+        "description": "PebbleCode एक कोडिंग अभ्यास उत्पाद है जो इस बात के आसपास डिज़ाइन किया गया है कि एक सीखने वाले के फँसने के बाद क्या होता है।",
+        "chips": ["रिकवरी-फ़र्स्ट लर्निंग", "बहुभाषी मार्गदर्शन", "अंतर्दृष्टि और सारांश", "समुदाय परत"],
+        "whyTitle": "PebbleCode क्यों मौजूद है",
+        "whyHeadline": "अधिकांश कोडिंग टूल उत्तरों का अच्छी तरह मूल्यांकन करते हैं, लेकिन वे रिकवरी अच्छी तरह नहीं सिखाते।",
+        "whyBody1": "छात्रों को आमतौर पर बताया जाता है कि रन पास हुआ या विफल, लेकिन उस क्षण से रिकवर करने, विफलता समझने, और आत्मविश्वास बनाने का कोई संरचित तरीका नहीं दिया जाता।",
+        "whyBody2": "PebbleCode गलत रन, भ्रामक संकेत, और बार-बार होने वाली गलतियों को प्रथम श्रेणी की लर्निंग संकेत मानता है।",
+        "whyCallout": "कोडिंग अभ्यास को एक सीखने वाले को diagnose, recover, reflect, और improve करने में मदद करनी चाहिए — न कि सिर्फ accepted बैज का पीछा करना।",
+        "builtFor": "के लिए बनाया गया",
+        "builtForTitle": "ऐसे सीखने वाले जिन्हें सिर्फ सटीकता नहीं, स्पष्टता चाहिए",
+        "builtForItems": [
+          "DSA, SQL, और इंटरव्यू reasoning का अभ्यास करने वाले छात्र",
+          "प्लेसमेंट-केंद्रित सीखने वाले जिन्हें एक गाइडेड शुरुआत चाहिए",
+          "बहुभाषी उपयोगकर्ता जो परिचित भाषा में स्पष्टीकरण बेहतर समझते हैं",
+          "जो AI सहायता, reflection, और peer learning एक ही flow में चाहते हैं"
+        ],
+        "diffLabel": "इसे अलग क्या बनाता है",
+        "diffs": [
+          {
+            "label": "रिकवरी लूप",
+            "title": "Pebble विफलता को मुख्य लर्निंग सतह मानता है।",
+            "body": "Run → diagnose → coach → recover → rerun मुख्य उत्पाद लूप है।"
+          },
+          {
+            "label": "आधारित मेंटर",
+            "title": "कोच प्रतिक्रियाएँ सक्रिय कोडिंग संदर्भ से जुड़ी रहती हैं।",
+            "body": "मार्गदर्शन सामान्य चैट के बजाय वर्तमान समस्या, कोड, और नवीनतम रन स्थिति का उपयोग करता है।"
+          },
+          {
+            "label": "reflection परत",
+            "title": "अंतर्दृष्टि प्रयासों को मापनीय लर्निंग संकेतों में बदलती है।",
+            "body": "डैशबोर्ड और साप्ताहिक सारांश गति, रिकवरी समय, और मार्गदर्शन निर्भरता दिखाते हैं।"
+          },
+          {
+            "label": "पीयर परत",
+            "title": "समुदाय एकल रिकवरी को सहयोगी लर्निंग तक विस्तारित करता है।",
+            "body": "सीडेड समुदाय दिखाता है कि एक फँसा हुआ क्षण एक साझा लर्निंग थ्रेड कैसे बन सकता है।"
+          }
+        ],
+        "flowLabel": "उत्पाद कैसे काम करता है",
+        "flowTitle": "केवल acceptance नहीं, recovery के आसपास बना अभ्यास लूप",
+        "flowChip": "Home → Problems → Session → Insights → Community",
+        "flowSteps": [
+          "landing, onboarding, और placement से स्पष्ट इरादे से शुरू करें।",
+          "क्यूरेटेड ब्राउज़र से सही समस्या चुनें।",
+          "Session में कुछ वास्तविक में run करें।",
+          "Pebble Coach का उपयोग करके जानबूझकर रिकवर करें।",
+          "Insights में reflect करें और Community में विस्तार करें।"
+        ],
+        "multiLabel": "बहुभाषी दृष्टिकोण",
+        "multiTitle": "समझ तब सुधरती है जब स्पष्टीकरण सीखने वाले तक उनकी भाषा में पहुँचे।",
+        "multiBody1": "कई छात्र अंग्रेज़ी सिंटैक्स में कोड लिखते हैं लेकिन परिचित भाषा में तर्क बेहतर समझते हैं।",
+        "multiBody2": "PebbleCode बहुभाषी UI और मार्गदर्शन का उपयोग करके समझ की बाधा को कम करता है।",
+        "multiCallout": "बहुभाषी समर्थन एक उत्पाद विभेदक है क्योंकि यह उन लोगों का विस्तार करता है जो आत्मविश्वास से recover कर सकते हैं।",
+        "prototypeLabel": "प्रोटोटाइप में क्या शामिल है",
+        "prototypeTitle": "यह बिल्ड आज व्यापक है, लेकिन इस बारे में ईमानदार है कि क्या सीडेड है और क्या configuration पर निर्भर है।",
+        "prototypeAreas": [
+          {
+            "label": "अभी इंटरैक्टिव",
+            "title": "मुख्य उत्पाद लूप आज demo-योग्य है।",
+            "items": ["Landing, onboarding, और placement", "Problems browser और session IDE", "Run, submit, solutions, और submissions", "Pebble Coach, auth, profile, settings", "Insights dashboard और recap surface"]
+          },
+          {
+            "label": "कहानी के लिए सीडेड",
+            "title": "Frontend-first surfaces जो व्यापक दृष्टि साबित करती हैं।",
+            "items": ["Community groups, posts, और replies सीडेड demo data उपयोग करते हैं", "thread rooms स्थानीय reply behavior का समर्थन करते हैं", "कुछ showcase और recommendation content demo स्पष्टता के लिए क्यूरेटेड है"]
+          },
+          {
+            "label": "configuration निर्भर",
+            "title": "Cloud-backed paths तब मजबूत होते हैं जब AWS services वायर्ड हों।",
+            "items": ["Cognito auth और verification", "S3 avatars और recap audio", "API Gateway + Lambda backend routes", "Optional Bedrock-backed mentor और recap paths"]
+          }
+        ],
+        "stackLabel": "हमने इसे कैसे बनाया",
+        "stackTitle": "यह architecture demo के लिए व्यावहारिक रहते हुए पर्याप्त गहराई दिखाने के लिए गंभीर है।",
+        "stackItems": [
+          { "label": "Frontend", "title": "Vite + React + TypeScript + Tailwind", "body": "Home, Problems, Session, Insights, Community, auth, profile, और help के लिए एक premium multi-surface app shell।" },
+          { "label": "Execution", "title": "Local runner plus serverless-compatible APIs", "body": "Pebble वास्तविक run और submit flows, testcase diagnostics, और report generation का समर्थन करता है।" },
+          { "label": "Identity और storage", "title": "Cognito, DynamoDB, S3, और local-first persistence", "body": "Profiles, usernames, avatars, solved state, और activity signals prototype mode में सुरक्षित रूप से degrading। " },
+          { "label": "Cloud और AI", "title": "AWS CDK path with optional Bedrock guidance", "body": "Repo में CloudFront या Amplify frontend hosting, API Gateway + Lambda services, और optional Bedrock-backed mentor orchestration शामिल है।" }
+        ],
+        "impactLabel": "यह क्यों मायने रखता है",
+        "impactItems": [
+          "छात्रों को accepted या rejected outputs से अधिक की जरूरत है।",
+          "Interview prep तब सुधरता है जब explanation quality सुधरती है।",
+          "Peer learning तब मजबूत होती है जब AI और humans एक-दूसरे को मजबूत करते हैं।",
+          "एक recovery-first model एक समस्या से आगे बढ़कर दीर्घकालिक आत्मविश्वास तक scale हो सकता है।"
+        ],
+        "closingLabel": "समापन नोट",
+        "closingTitle": "PebbleCode कोडिंग अभ्यास को एक learning system मानता है, न कि सिर्फ एक problem list।",
+        "closingBody": "प्रोटोटाइप पहले से एक विश्वसनीय product argument साबित करता है: छात्रों को एक workflow चाहिए जो उन्हें write, fail, recover, reflect, और eventually learn with others में मदद करे।",
+        "closingCtas": [
+          "पूर्ण उत्पाद walkthrough देखें",
+          "judge-facing product उत्तर पढ़ें",
+          "मुख्य Session अनुभव खोलें"
+        ]
+      },
+      "faq": {
+        "badge": "अक्सर पूछे जाने वाले प्रश्न",
+        "note": "Judge-friendly product context",
+        "title": "PebbleCode वास्तव में क्या करता है इसके बारे में त्वरित उत्तर",
+        "description": "यह पृष्ठ PebbleCode के वास्तविक product shape को आज repo में बताता है।",
+        "chips": ["Recovery-first अभ्यास", "Grounded mentor सहायता", "Seeded community परत", "वास्तविक flows के साथ prototype"],
+        "groups": []
+      },
+      "howTo": {
+        "badge": "उपयोग कैसे करें",
+        "title": "Pebble को 5 मिनट में उपयोग करना शुरू करें",
+        "description": "यह उत्पाद guide दिखाती है कि Pebble के मुख्य learning loop को कैसे navigate करें।",
+        "chips": ["Placement", "Problems", "Session", "Coach", "Insights"],
+        "steps": []
       }
     }
   }

@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import type { CommunityGroup } from '../../data/communitySeed'
+import { useI18n } from '../../i18n/useI18n'
 
 const iconMap = {
   bug: Bug,
@@ -33,6 +34,7 @@ type CommunityGroupCardProps = {
 
 export function CommunityGroupCard({ group, selected = false, onClick }: CommunityGroupCardProps) {
   const Icon = iconMap[group.icon]
+  const { t } = useI18n()
 
   return (
     <button
@@ -46,7 +48,7 @@ export function CommunityGroupCard({ group, selected = false, onClick }: Communi
         </span>
         {group.featured ? (
           <span className="community-chip-accent inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]">
-            Featured
+            {t('community.featured')}
           </span>
         ) : null}
       </div>
