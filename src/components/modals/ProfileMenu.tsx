@@ -59,8 +59,19 @@ export function ProfileMenu({
   )
 
   const shellClass = dark
-    ? 'border border-pebble-border/42 shadow-[0_22px_54px_rgba(2,8,23,0.40)]'
+    ? 'border border-[rgba(154,172,210,0.34)] shadow-[0_24px_60px_rgba(2,8,23,0.48)]'
     : 'border border-pebble-border/25 shadow-[0_12px_40px_rgba(55,72,110,0.18)]'
+
+  const metaTextClass = dark ? 'text-[rgba(191,205,232,0.86)]' : 'text-pebble-text-muted'
+  const titleTextClass = dark ? 'text-[rgba(241,247,255,0.98)]' : 'text-pebble-text-primary'
+  const secondaryTextClass = dark ? 'text-[rgba(207,219,242,0.92)]' : 'text-pebble-text-muted'
+  const dividerClass = dark ? 'border-[rgba(160,176,208,0.28)]' : 'border-pebble-border/22'
+  const noteSurfaceClass = dark
+    ? 'border-[rgba(160,176,208,0.24)] bg-[rgba(255,255,255,0.04)]'
+    : 'border-pebble-border/22 bg-pebble-overlay/[0.05]'
+  const actionClass = dark
+    ? 'w-full rounded-[12px] border border-[rgba(160,176,208,0.30)] bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.05)_100%)] text-[rgba(233,242,255,0.96)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:border-[rgba(170,190,225,0.48)] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.13)_0%,rgba(255,255,255,0.08)_100%)] hover:text-[rgba(245,250,255,1)]'
+    : `${buttonClass('secondary', 'sm')} w-full`
 
   const displayName = userName || 'Set username'
 
@@ -104,14 +115,14 @@ export function ProfileMenu({
 
           {/* Name + email */}
           <div className={`min-w-0 flex-1 ${isRTL ? 'rtlText' : ''}`}>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.07em] text-pebble-text-muted">
+            <p className={`text-[10px] font-semibold uppercase tracking-[0.07em] ${metaTextClass}`}>
               {t('profile.signedInAs')}
             </p>
-            <p className="mt-0.5 truncate text-[14px] font-semibold leading-5 text-pebble-text-primary">
+            <p className={`mt-0.5 truncate text-[14px] font-semibold leading-5 ${titleTextClass}`}>
               {displayName}
             </p>
             {userEmail && (
-              <p className="truncate text-[11px] leading-4 text-pebble-text-muted">
+              <p className={`truncate text-[11.5px] leading-4 ${secondaryTextClass}`}>
                 {userEmail}
               </p>
             )}
@@ -132,17 +143,17 @@ export function ProfileMenu({
 
         {/* ── Bio (only when present) ── */}
         {userBio && (
-          <div className="rounded-[10px] border border-pebble-border/22 bg-pebble-overlay/[0.05] px-3 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">
+          <div className={`rounded-[10px] border px-3 py-2.5 ${noteSurfaceClass}`}>
+            <p className={`text-[10px] font-semibold uppercase tracking-[0.06em] ${metaTextClass}`}>
               {t('profile.bio')}
             </p>
-            <p className={`mt-1 text-[12.5px] leading-5 text-pebble-text-secondary ${isRTL ? 'rtlText' : ''}`}>
+            <p className={`mt-1 text-[12.5px] leading-5 ${secondaryTextClass} ${isRTL ? 'rtlText' : ''}`}>
               {userBio}
             </p>
           </div>
         )}
 
-        <div className="border-t border-pebble-border/22" />
+        <div className={`border-t ${dividerClass}`} />
 
         {/* ── Actions ── */}
         <div className="space-y-1.5">
@@ -152,7 +163,7 @@ export function ProfileMenu({
               onRequestClose()
               window.location.href = '/profile'
             }}
-            className={`${buttonClass('secondary', 'sm')} w-full`}
+            className={actionClass}
           >
             {t('profile.viewProfile')}
           </button>
@@ -163,7 +174,7 @@ export function ProfileMenu({
               onSignOut()
               onRequestClose()
             }}
-            className={`${buttonClass('secondary', 'sm')} w-full`}
+            className={actionClass}
           >
             {t('profile.signOut')}
           </button>

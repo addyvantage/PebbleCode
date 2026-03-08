@@ -6,15 +6,16 @@ export function useBodyScrollLock(locked: boolean) {
       return
     }
 
+    const html = document.documentElement
     const previousOverflow = document.body.style.overflow
-    const previousHeight = document.body.style.height
+    const previousHtmlOverflow = html.style.overflow
 
+    html.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
-    document.body.style.height = '100vh'
 
     return () => {
+      html.style.overflow = previousHtmlOverflow
       document.body.style.overflow = previousOverflow
-      document.body.style.height = previousHeight
     }
   }, [locked])
 }

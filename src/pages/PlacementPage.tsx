@@ -22,7 +22,6 @@ import {
   type PlacementMcqQuestion,
 } from '../data/placementBank'
 import { savePebblePlacement } from '../utils/pebbleUserState'
-import { useBodyScrollLock } from '../utils/useBodyScrollLock'
 import { useI18n } from '../i18n/useI18n'
 import { logPlacementSkipEvent } from '../lib/analyticsStore'
 import { requestRunApi } from '../lib/runApi'
@@ -77,7 +76,6 @@ export function PlacementPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  useBodyScrollLock(true)
 
   const langParam = searchParams.get('lang')
   const levelParam = searchParams.get('level')
