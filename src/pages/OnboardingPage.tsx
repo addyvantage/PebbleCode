@@ -40,7 +40,7 @@ function summaryValue(value: string | null) {
 
 function selectCardClass(isSelected: boolean) {
   return [
-    'group relative overflow-hidden rounded-[22px] border p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45',
+    'group relative overflow-hidden rounded-[22px] border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-accent/45',
     isSelected
       ? 'border-pebble-accent/60 bg-pebble-accent/14 text-pebble-text-primary shadow-[0_18px_38px_rgba(37,99,235,0.16),inset_0_1px_0_rgba(255,255,255,0.2)]'
       : 'border-pebble-border/24 bg-pebble-overlay/[0.05] text-pebble-text-secondary hover:-translate-y-[1px] hover:border-pebble-border/42 hover:bg-pebble-overlay/[0.10] hover:text-pebble-text-primary',
@@ -80,26 +80,26 @@ export function OnboardingPage() {
   }
 
   return (
-    <section className="page-enter mx-auto w-full max-w-[1180px] px-3 pb-8 pt-3 lg:px-4">
-      <div className="onboarding-stage relative rounded-[32px] px-6 pb-6 pt-7 sm:px-8 sm:pt-8 lg:px-10 lg:pb-7">
+    <section className="page-enter mx-auto w-full max-w-[1380px] px-3 pb-6 pt-3 lg:px-5">
+      <div className="onboarding-stage relative rounded-[32px] px-6 pb-5 pt-6 sm:px-8 sm:pt-7 lg:px-10 lg:pb-6">
         <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-pebble-accent/16 blur-3xl" />
         <div className="pointer-events-none absolute -left-24 bottom-[-7rem] h-80 w-80 rounded-full bg-sky-400/10 blur-3xl" />
 
-        <div className="relative space-y-8 lg:space-y-9">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-[700px] space-y-4">
+        <div className="relative space-y-6 lg:space-y-7">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-[760px] space-y-3">
               <Badge>Onboarding</Badge>
-              <div className="space-y-3">
-                <h1 className="max-w-[14ch] text-balance text-[2.35rem] font-semibold tracking-[-0.03em] text-pebble-text-primary sm:text-[2.8rem] lg:text-[3.2rem]">
+              <div className="space-y-2.5">
+                <h1 className="max-w-[18ch] text-balance text-[2.2rem] font-semibold tracking-[-0.03em] text-pebble-text-primary sm:text-[2.6rem] lg:text-[2.95rem]">
                   Personalize your Pebble learning track
                 </h1>
-                <p className="max-w-[58ch] text-[15px] leading-7 text-pebble-text-secondary sm:text-base">
+                <p className="max-w-[62ch] text-[15px] leading-6 text-pebble-text-secondary sm:text-base">
                   Choose your current level and preferred language so Pebble can start you at the right depth from day one.
                 </p>
               </div>
             </div>
 
-            <div className="onboarding-stage-muted rounded-[24px] px-4 py-4 lg:max-w-[330px]">
+            <div className="onboarding-stage-muted rounded-[24px] px-4 py-4 lg:max-w-[360px]">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted">
                 Placement-aligned setup
               </p>
@@ -120,9 +120,9 @@ export function OnboardingPage() {
             </div>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)] lg:gap-6">
-            <div className="space-y-6">
-              <section className="space-y-3">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.26fr)_minmax(360px,0.74fr)] lg:gap-5">
+            <div className="space-y-5">
+              <section className="space-y-2.5">
                 <div className="flex items-end justify-between gap-3">
                   <div className="space-y-2">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted">
@@ -139,7 +139,7 @@ export function OnboardingPage() {
                   ) : null}
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-3">
+                <div className="grid gap-2.5 md:grid-cols-3">
                   {levels.map((item) => {
                     const selected = level === item.id
                     const Icon = item.icon
@@ -165,10 +165,10 @@ export function OnboardingPage() {
                             </span>
                           ) : null}
                         </div>
-                        <div className="relative mt-5 space-y-2.5">
+                        <div className="relative mt-4 space-y-2">
                           <p className="text-[1.02rem] font-semibold text-pebble-text-primary">{item.label}</p>
-                          <p className="text-[13px] leading-6 text-pebble-text-secondary">{item.subtitle}</p>
-                          <p className="pt-1 text-[12px] leading-6 text-pebble-text-muted">{item.outcome}</p>
+                          <p className="text-[13px] leading-5.5 text-pebble-text-secondary">{item.subtitle}</p>
+                          <p className="pt-0.5 text-[12px] leading-5.5 text-pebble-text-muted">{item.outcome}</p>
                         </div>
                       </button>
                     )
@@ -176,7 +176,7 @@ export function OnboardingPage() {
                 </div>
               </section>
 
-              <section className="space-y-3">
+              <section className="space-y-2.5">
                 <div className="flex items-end justify-between gap-3">
                   <div className="space-y-2">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted">
@@ -193,16 +193,15 @@ export function OnboardingPage() {
                   ) : null}
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                  {visibleLanguages.map((item, index) => {
+                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {visibleLanguages.map((item) => {
                     const selected = language === item.id
-                    const isLastSingle = !showAllLanguages && index === visibleLanguages.length - 1
                     return (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => setLanguage(item.id)}
-                        className={`${selectCardClass(selected)} xl:col-span-2 ${isLastSingle ? 'sm:col-span-2 xl:col-span-2' : ''} ${showAllLanguages || !isLastSingle ? '' : 'xl:col-start-auto'}`}
+                        className={selectCardClass(selected)}
                       >
                         <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-pebble-overlay/[0.08] to-transparent" />
                         <div className="relative flex items-start justify-between gap-3">
@@ -219,9 +218,9 @@ export function OnboardingPage() {
                             </span>
                           ) : null}
                         </div>
-                        <div className="relative mt-5 space-y-2.5">
+                        <div className="relative mt-4 space-y-2">
                           <p className="text-[1.02rem] font-semibold text-pebble-text-primary">{item.label}</p>
-                          <p className="text-[13px] leading-6 text-pebble-text-secondary">{item.purpose}</p>
+                          <p className="text-[13px] leading-5.5 text-pebble-text-secondary">{item.purpose}</p>
                         </div>
                       </button>
                     )
@@ -241,7 +240,7 @@ export function OnboardingPage() {
               </section>
             </div>
 
-            <aside className="onboarding-stage-strong rounded-[28px] p-5 lg:p-6">
+            <aside className="onboarding-stage-strong rounded-[28px] p-5 lg:p-5.5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted">
@@ -256,7 +255,7 @@ export function OnboardingPage() {
                 </span>
               </div>
 
-              <div className="mt-5 space-y-4">
+              <div className="mt-4 space-y-3">
                 <div className="onboarding-stage-muted rounded-[22px] p-4">
                   <div className="grid gap-3">
                     <div className="flex items-center justify-between gap-3 text-sm">
@@ -274,21 +273,21 @@ export function OnboardingPage() {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">
                     What you&apos;ll get
                   </p>
-                  <div className="grid gap-2.5">
+                  <div className="grid gap-2">
                     {[
                       'Weekly placement set tuned to your level.',
                       'Guided units with clear test-driven checkpoints.',
                       'Pebble Coach hints that adapt to your struggle pattern.',
                     ].map((item) => (
-                      <div key={item} className="onboarding-stage-muted flex items-start gap-2.5 rounded-[18px] px-3.5 py-3">
+                      <div key={item} className="onboarding-stage-muted flex items-start gap-2.5 rounded-[18px] px-3.5 py-2.5">
                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-pebble-accent" />
-                        <p className="text-[13px] leading-6 text-pebble-text-secondary">{item}</p>
+                        <p className="text-[13px] leading-5.5 text-pebble-text-secondary">{item}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="rounded-[22px] border border-pebble-accent/22 bg-pebble-accent/10 px-4 py-4">
+                <div className="rounded-[22px] border border-pebble-accent/22 bg-pebble-accent/10 px-4 py-3.5">
                   <div className="flex items-start gap-2.5">
                     <Route className="mt-0.5 h-4.5 w-4.5 shrink-0 text-pebble-accent" />
                     <div className="space-y-1.5">
@@ -305,7 +304,7 @@ export function OnboardingPage() {
             </aside>
           </div>
 
-          <div className="sticky bottom-0 z-10 -mx-6 border-t border-pebble-border/20 bg-pebble-panel/92 px-6 py-4 backdrop-blur-md sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+          <div className="sticky bottom-0 z-10 -mx-6 border-t border-pebble-border/20 bg-pebble-panel/92 px-6 py-3 backdrop-blur-md sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-pebble-text-muted">
