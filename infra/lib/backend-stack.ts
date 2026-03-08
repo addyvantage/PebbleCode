@@ -146,6 +146,20 @@ export class BackendStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(25),
       bundling: {
         externalModules: ['@aws-sdk/*'],
+        commandHooks: {
+          beforeInstall() {
+            return []
+          },
+          beforeBundling() {
+            return []
+          },
+          afterBundling(inputDir: string, outputDir: string) {
+            return [
+              `mkdir -p ${outputDir}/data`,
+              `if [ -d ${inputDir}/node_modules/pdfkit/js/data ]; then PDFKIT_DATA_DIR=${inputDir}/node_modules/pdfkit/js/data; elif [ -d ${inputDir}/../node_modules/pdfkit/js/data ]; then PDFKIT_DATA_DIR=${inputDir}/../node_modules/pdfkit/js/data; else echo "pdfkit data directory not found" >&2; exit 1; fi; cp -R "$PDFKIT_DATA_DIR"/. ${outputDir}/data/`,
+            ]
+          },
+        },
       },
     })
 
