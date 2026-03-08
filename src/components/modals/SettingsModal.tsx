@@ -146,7 +146,7 @@ export function SettingsModal({
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1.5">
             <p className={`text-[11px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>
-              Workspace preferences
+              {t('settings.workspacePreferences')}
             </p>
             <h2 id="settings-title" className={`text-[1.35rem] font-semibold tracking-[-0.02em] text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>
               {t('settings.title')}
@@ -180,7 +180,7 @@ export function SettingsModal({
               </span>
               <div>
                 <p className="text-sm font-semibold text-pebble-text-primary">{t('settings.language')}</p>
-                <p className="text-xs leading-5 text-pebble-text-secondary">Choose the app language Pebble should use across the interface.</p>
+                <p className="text-xs leading-5 text-pebble-text-secondary">{t('settings.languageHint')}</p>
               </div>
             </div>
             <div className="relative">
@@ -201,7 +201,7 @@ export function SettingsModal({
               </span>
               <div>
                 <p className="text-sm font-semibold text-pebble-text-primary">{t('settings.theme')}</p>
-                <p className="text-xs leading-5 text-pebble-text-secondary">Switch between Pebble’s dark and light workspace styles.</p>
+                <p className="text-xs leading-5 text-pebble-text-secondary">{t('settings.themeHint')}</p>
               </div>
             </div>
             <div className={segmentedRailClass}>

@@ -105,7 +105,7 @@ export function TestResultsPanel({
     >
       <div className="flex items-center justify-between gap-2 border-b border-pebble-border/20 pb-2">
         <div>
-          <p className={`text-[10px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>Execution</p>
+          <p className={`text-[10px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>{t('tests.execution')}</p>
           <p className={`text-[15px] font-semibold text-pebble-text-primary ${isUrdu ? 'rtlText' : ''}`}>{t('tests.title')}</p>
         </div>
         <p className={`rounded-full border border-pebble-border/25 bg-pebble-overlay/[0.08] px-3 py-[0.34rem] text-[11px] font-medium text-pebble-text-secondary ${isUrdu ? 'ltrSafe' : ''}`}>{summaryLabel}</p>

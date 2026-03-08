@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Timer } from 'lucide-react'
 import { loadStopwatch, makeStopwatchKey, saveStopwatch, type StopwatchState } from '../../lib/stopwatchStore'
+import { useI18n } from '../../i18n/useI18n'
 
 interface StopwatchControlProps {
     sessionKey: string
@@ -18,6 +19,7 @@ function formatTime(ms: number): string {
 }
 
 export function StopwatchControl({ sessionKey }: StopwatchControlProps) {
+    const { t } = useI18n()
     const storageKey = makeStopwatchKey(sessionKey)
 
     const [isExpanded, setIsExpanded] = useState(false)
@@ -73,7 +75,7 @@ export function StopwatchControl({ sessionKey }: StopwatchControlProps) {
     const isRunning = sw.isRunning
     const hasElapsed = displayMs > 0 || isRunning
 
-    const startPauseLabel = isRunning ? 'Pause' : displayMs > 0 ? 'Resume' : 'Start'
+    const startPauseLabel = isRunning ? t('stopwatch.pause') : displayMs > 0 ? t('stopwatch.resume') : t('stopwatch.start')
 
     return (
         <div className="relative inline-flex items-center gap-1.5">
@@ -81,7 +83,7 @@ export function StopwatchControl({ sessionKey }: StopwatchControlProps) {
             <div className="group relative">
                 <button
                     type="button"
-                    aria-label="Stopwatch"
+                    aria-label={t('stopwatch.ariaLabel')}
                     aria-expanded={isExpanded}
                     aria-pressed={isRunning}
                     onClick={() => setIsExpanded((v) => !v)}
@@ -182,7 +184,7 @@ export function StopwatchControl({ sessionKey }: StopwatchControlProps) {
                             'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-pebble-border/40',
                         ].join(' ')}
                     >
-                        Hide
+                        {t('actions.close')}
                     </button>
                 </div>
             )}

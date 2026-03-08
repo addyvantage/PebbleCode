@@ -2,6 +2,7 @@ import { Check, ChevronDown } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { SessionLanguageId } from '../../../shared/languageRegistry'
 import { useTheme } from '../../hooks/useTheme'
+import { useI18n } from '../../i18n/useI18n'
 
 export type ProgramLangOption = {
   id: SessionLanguageId
@@ -33,6 +34,7 @@ export function ProgramLangDropdown({
   onFooterAction,
 }: ProgramLangDropdownProps) {
   const { theme } = useTheme()
+  const { t } = useI18n()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [open, setOpen] = useState(false)
 
@@ -105,7 +107,7 @@ export function ProgramLangDropdown({
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={`Programming language: ${selected?.label ?? ''}`}
+        aria-label={t('session.programmingLanguageAria', { label: selected?.label ?? '' })}
         onClick={() => setOpen((prev) => !prev)}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -130,7 +132,7 @@ export function ProgramLangDropdown({
 
       <div
         role="listbox"
-        aria-label="Select programming language"
+        aria-label={t('session.selectProgrammingLanguage')}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown') {
             event.preventDefault()

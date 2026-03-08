@@ -10,6 +10,7 @@ import {
   type NotificationItem,
 } from '../../lib/notificationsStore'
 import { useTheme } from '../../hooks/useTheme'
+import { useI18n } from '../../i18n/useI18n'
 
 export type NotificationCenterProps = {
   open: boolean
@@ -18,12 +19,7 @@ export type NotificationCenterProps = {
 
 type NotificationFilter = 'all' | NotificationCategory
 
-const FILTERS: Array<{ id: NotificationFilter; label: string }> = [
-  { id: 'all', label: 'All' },
-  { id: 'coach', label: 'Coach' },
-  { id: 'progress', label: 'Progress' },
-  { id: 'system', label: 'System' },
-]
+const FILTERS: NotificationFilter[] = ['all', 'coach', 'progress', 'system']
 
 function formatRelativeTime(timestamp: number) {
   const deltaSeconds = Math.round((timestamp - Date.now()) / 1000)
@@ -145,13 +141,14 @@ function NotificationRow({
 }
 
 function EmptyState() {
+  const { t } = useI18n()
   return (
     <div className="rounded-[22px] border border-pebble-border/24 bg-pebble-overlay/[0.05] px-4 py-8 text-center dark:border-white/[0.08] dark:bg-[hsl(222_24%_20%)]">
       <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-[14px] border border-pebble-border/24 bg-pebble-overlay/[0.08] text-pebble-text-secondary">
         <Bell className="h-4 w-4" />
       </div>
-      <p className="mt-3 text-sm font-semibold text-pebble-text-primary dark:text-[hsl(220_20%_92%)]">You&apos;re all caught up.</p>
-      <p className="mt-1 text-xs leading-5 text-pebble-text-secondary dark:text-[hsl(220_12%_70%)]">Run a solution or start a unit to see updates.</p>
+      <p className="mt-3 text-sm font-semibold text-pebble-text-primary dark:text-[hsl(220_20%_92%)]">{t('notifications.empty.title')}</p>
+      <p className="mt-1 text-xs leading-5 text-pebble-text-secondary dark:text-[hsl(220_12%_70%)]">{t('notifications.empty.body')}</p>
     </div>
   )
 }
@@ -169,6 +166,7 @@ function PanelContent({
 }) {
   const navigate = useNavigate()
   const { theme } = useTheme()
+  const { t } = useI18n()
   const { items } = useNotifications()
 
   const unreadCount = useMemo(
@@ -212,8 +210,8 @@ function PanelContent({
             <Bell className="h-4 w-4" aria-hidden="true" />
           </span>
           <div>
-              <p className="text-[15px] font-semibold text-pebble-text-primary">Notifications</p>
-              <p className="text-[11px] font-medium text-pebble-text-muted">{unreadCount} unread</p>
+              <p className="text-[15px] font-semibold text-pebble-text-primary">{t('notifications.title')}</p>
+              <p className="text-[11px] font-medium text-pebble-text-muted">{t('notifications.unread', { count: unreadCount })}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -223,7 +221,7 @@ function PanelContent({
               className={`${actionButtonBaseClass} pebble-control text-pebble-text-secondary`}
             >
               <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              Mark all
+              {t('notifications.markAll')}
             </button>
             <button
               type="button"
@@ -231,14 +229,14 @@ function PanelContent({
               className={`${actionButtonBaseClass} border-rose-400/26 bg-rose-500/[0.08] text-rose-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)] hover:border-rose-400/44 hover:bg-rose-500/[0.13] dark:border-[rgba(255,102,102,0.30)] dark:bg-[rgba(255,92,92,0.11)] dark:text-[rgba(255,140,140,0.98)] dark:hover:border-[rgba(255,120,120,0.44)] dark:hover:bg-[rgba(255,92,92,0.16)]`}
             >
               <CircleAlert className="h-3.5 w-3.5" aria-hidden="true" />
-              Clear
+              {t('notifications.clear')}
             </button>
             {showClose ? (
               <button
                 type="button"
                 onClick={onClose}
                 className={`${actionButtonBaseClass} pebble-control h-9 w-9 px-0 text-pebble-text-secondary`}
-                aria-label="Close notifications"
+                aria-label={t('notifications.close')}
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -250,19 +248,25 @@ function PanelContent({
       <div className="pebble-segment-rail mt-3 rounded-[18px] p-1">
         <div className="flex items-center gap-1">
         {FILTERS.map((entry) => {
-          const active = filter === entry.id
+          const active = filter === entry
           return (
             <button
-              key={entry.id}
+              key={entry}
               type="button"
-              onClick={() => onFilterChange(entry.id)}
+              onClick={() => onFilterChange(entry)}
               className={`inline-flex h-9 flex-1 items-center justify-center rounded-[14px] px-2.5 text-[12px] font-semibold transition ${
                 active
                   ? 'border border-pebble-accent/38 bg-pebble-accent/14 text-pebble-text-primary shadow-[0_10px_18px_rgba(37,99,235,0.14)] dark:bg-[rgba(90,140,255,0.16)] dark:text-[hsl(220_20%_95%)]'
                   : 'text-pebble-text-secondary dark:text-[hsl(220_10%_74%)] hover:bg-pebble-overlay/[0.12] hover:text-pebble-text-primary dark:hover:bg-white/[0.07] dark:hover:text-[hsl(220_20%_92%)]'
               }`}
             >
-              {entry.label}
+              {entry === 'all'
+                ? t('notifications.filter.all')
+                : entry === 'coach'
+                  ? t('notifications.filter.coach')
+                  : entry === 'progress'
+                    ? t('notifications.filter.progress')
+                    : t('notifications.filter.system')}
             </button>
           )
         })}
@@ -284,6 +288,7 @@ function PanelContent({
 
 export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
   const [filter, setFilter] = useState<NotificationFilter>('all')
+  const { t } = useI18n()
 
   if (!open) {
     return null
@@ -307,12 +312,12 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
         className="fixed inset-0 z-[260] lg:hidden"
         role="dialog"
         aria-modal="true"
-        aria-label="Notifications panel"
+        aria-label={t('notifications.panelAria')}
         data-notification-center-root="true"
       >
         <button
           type="button"
-          aria-label="Close notifications"
+          aria-label={t('notifications.close')}
           className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
           onClick={onClose}
         />

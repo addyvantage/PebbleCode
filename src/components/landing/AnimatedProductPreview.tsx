@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { StatusPill } from '../ui/StatusPill'
 import { PebbleCoachLogo } from '../ui/PebbleCoachLogo'
+import { useI18n } from '../../i18n/useI18n'
 
 type AnimatedProductPreviewProps = {
   theme: 'light' | 'dark'
@@ -106,15 +107,6 @@ const PHASE_RANK: Record<PreviewPhase, number> = TIMELINE.reduce((acc, step, ind
 
 const TOTAL_LOOP_MS = TIMELINE.reduce((sum, step) => sum + step.durationMs, 0)
 
-const STORY_STEPS = [
-  { id: 'attempt', label: 'Attempt', detail: 'Write a solution', icon: Code2 },
-  { id: 'run1', label: 'Run', detail: 'Execute tests', icon: Play },
-  { id: 'fail', label: 'Fail', detail: 'Case #2 breaks', icon: AlertTriangle },
-  { id: 'coach', label: 'Pebble', detail: 'Ask for help', icon: MessageSquareText },
-  { id: 'fix', label: 'Fix', detail: 'Apply one change', icon: Wrench },
-  { id: 'pass', label: 'Pass', detail: 'Accepted', icon: CheckCircle2 },
-] as const
-
 const CURSOR_PHASES: Record<PreviewPhase, CursorMeta> = {
   idle: { target: 'idle', moveMs: 0 },
   move_editor: { target: 'editor', moveMs: 900 },
@@ -161,14 +153,6 @@ const LOGIC_FIXED: [string, string, string] = [
   '        if target - n in seen:',
   '            return [seen[target - n], i]',
   '        seen[n] = i',
-]
-
-const QUESTION_TEXT = "Help, I'm stuck. Why is case #2 failing?"
-
-const COACH_REPLY_LINES: [string, string, string] = [
-  'You insert into seen too early.',
-  'Check target - n before storing current value.',
-  'Then rerun.',
 ]
 
 function classNames(...values: Array<string | false | undefined>) {
@@ -405,67 +389,73 @@ function getCodeDraftState(phase: PreviewPhase, phaseProgress: number): CodeDraf
   }
 }
 
-function getStatusCopy(phase: PreviewPhase) {
+function getStatusCopy(
+  phase: PreviewPhase,
+  t: ReturnType<typeof useI18n>['t'],
+) {
   if (phase === 'running' || phase === 'running_again') {
     return {
-      testsLabel: 'Tests: running...',
+      testsLabel: t('landing.preview.status.testsRunning'),
       statusVariant: 'info' as const,
-      statusText: 'Running tests...',
-      statusMeta: 'Evaluating',
-      runtimeTitle: 'Runtime',
-      runtimeBody: 'Executing sample and hidden checks.',
+      statusText: t('landing.preview.status.running'),
+      statusMeta: t('landing.preview.meta.evaluating'),
+      runtimeTitle: t('landing.preview.runtime.runtimeTitle'),
+      runtimeBody: t('landing.preview.runtime.runtimeBody'),
     }
   }
 
   if (isAtOrAfter(phase, 'failure') && PHASE_RANK[phase] < PHASE_RANK.move_run_again) {
     return {
-      testsLabel: 'Tests: 1/3',
+      testsLabel: t('landing.preview.status.testsFailing'),
       statusVariant: 'fail' as const,
-      statusText: 'Fail #2 expected: [0,1] got: -1,-1',
-      statusMeta: 'Case isolated',
-      runtimeTitle: 'Failure signal',
-      runtimeBody: 'Case #2 fails because seen is updated before complement lookup.',
+      statusText: t('landing.preview.status.failCase'),
+      statusMeta: t('landing.preview.meta.caseIsolated'),
+      runtimeTitle: t('landing.preview.runtime.failureTitle'),
+      runtimeBody: t('landing.preview.runtime.failureBody'),
     }
   }
 
   if (phase === 'move_run_again' || phase === 'click_run_again') {
     return {
-      testsLabel: 'Tests: rerun',
+      testsLabel: t('landing.preview.status.testsRerun'),
       statusVariant: 'info' as const,
-      statusText: 'Fix applied. Ready to rerun.',
-      statusMeta: 'Ready',
-      runtimeTitle: 'Patch',
-      runtimeBody: 'Line order corrected. Triggering verification run.',
+      statusText: t('landing.preview.status.readyRerun'),
+      statusMeta: t('landing.preview.meta.ready'),
+      runtimeTitle: t('landing.preview.runtime.patchTitle'),
+      runtimeBody: t('landing.preview.runtime.patchBody'),
     }
   }
 
   if (isAtOrAfter(phase, 'success')) {
     return {
-      testsLabel: 'Tests: 3/3',
+      testsLabel: t('landing.preview.status.testsPassed'),
       statusVariant: 'success' as const,
-      statusText: 'Accepted - all tests passed',
-      statusMeta: 'Recovery complete',
-      runtimeTitle: 'Resolved',
-      runtimeBody: 'Grounded guidance + one fix closed the loop.',
+      statusText: t('landing.preview.status.accepted'),
+      statusMeta: t('landing.preview.meta.recoveryComplete'),
+      runtimeTitle: t('landing.preview.runtime.resolvedTitle'),
+      runtimeBody: t('landing.preview.runtime.resolvedBody'),
     }
   }
 
   return {
-    testsLabel: 'Tests: draft',
+    testsLabel: t('landing.preview.status.testsDraft'),
     statusVariant: 'info' as const,
-    statusText: 'Drafting attempt...',
-    statusMeta: 'Editing',
-    runtimeTitle: 'Awaiting run',
-    runtimeBody: 'Write your attempt, then run once to isolate the failing case.',
+    statusText: t('landing.preview.status.drafting'),
+    statusMeta: t('landing.preview.meta.editing'),
+    runtimeTitle: t('landing.preview.runtime.awaitingTitle'),
+    runtimeBody: t('landing.preview.runtime.awaitingBody'),
   }
 }
 
-function getCoachStateLabel(phase: PreviewPhase) {
-  if (phase === 'coach_thinking') return 'Thinking'
-  if (isAtOrAfter(phase, 'coach_reply') && PHASE_RANK[phase] < PHASE_RANK.success) return 'Guidance'
-  if (isAtOrAfter(phase, 'success')) return 'Resolved'
-  if (isAtOrAfter(phase, 'focus_input') && PHASE_RANK[phase] < PHASE_RANK.send_question) return 'Asking'
-  return 'Idle'
+function getCoachStateLabel(
+  phase: PreviewPhase,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  if (phase === 'coach_thinking') return t('landing.preview.coachState.thinking')
+  if (isAtOrAfter(phase, 'coach_reply') && PHASE_RANK[phase] < PHASE_RANK.success) return t('landing.preview.coachState.guidance')
+  if (isAtOrAfter(phase, 'success')) return t('landing.preview.coachState.resolved')
+  if (isAtOrAfter(phase, 'focus_input') && PHASE_RANK[phase] < PHASE_RANK.send_question) return t('landing.preview.coachState.asking')
+  return t('landing.preview.coachState.idle')
 }
 
 export function AnimatedProductPreview({
@@ -476,6 +466,7 @@ export function AnimatedProductPreview({
   previewUnit,
   previewCoach,
 }: AnimatedProductPreviewProps) {
+  const { t } = useI18n()
   const reducedMotion = usePrefersReducedMotion()
   const timeline = useTimelineFrame(reducedMotion)
 
@@ -483,8 +474,22 @@ export function AnimatedProductPreview({
   const phaseProgress = reducedMotion ? 1 : timeline.phaseProgress
 
   const storyStepIndex = getStoryStepIndex(phase)
-  const status = getStatusCopy(phase)
+  const status = getStatusCopy(phase, t)
   const codeDraft = getCodeDraftState(phase, phaseProgress)
+  const storySteps = useMemo(() => ([
+    { id: 'attempt', label: t('landing.preview.story.attempt.label'), detail: t('landing.preview.story.attempt.detail'), icon: Code2 },
+    { id: 'run1', label: t('landing.preview.story.run.label'), detail: t('landing.preview.story.run.detail'), icon: Play },
+    { id: 'fail', label: t('landing.preview.story.fail.label'), detail: t('landing.preview.story.fail.detail'), icon: AlertTriangle },
+    { id: 'coach', label: t('landing.preview.story.coach.label'), detail: t('landing.preview.story.coach.detail'), icon: MessageSquareText },
+    { id: 'fix', label: t('landing.preview.story.fix.label'), detail: t('landing.preview.story.fix.detail'), icon: Wrench },
+    { id: 'pass', label: t('landing.preview.story.pass.label'), detail: t('landing.preview.story.pass.detail'), icon: CheckCircle2 },
+  ]), [t])
+  const questionText = t('landing.preview.question')
+  const coachReplyLines: [string, string, string] = [
+    t('landing.preview.coachReply.1'),
+    t('landing.preview.coachReply.2'),
+    t('landing.preview.coachReply.3'),
+  ]
 
   const isResetting = !reducedMotion && phase === 'reset'
   const isRunning = phase === 'running' || phase === 'running_again'
@@ -497,31 +502,31 @@ export function AnimatedProductPreview({
 
   const inputText = useMemo(() => {
     if (phase === 'type_question') {
-      const chars = Math.max(1, getWeightedTypedChars(QUESTION_TEXT, easeInOut(phaseProgress)))
-      return QUESTION_TEXT.slice(0, chars)
+      const chars = Math.max(1, getWeightedTypedChars(questionText, easeInOut(phaseProgress)))
+      return questionText.slice(0, chars)
     }
 
     if (phase === 'move_send' || phase === 'send_question') {
-      return QUESTION_TEXT
+      return questionText
     }
 
     return ''
-  }, [phase, phaseProgress])
+  }, [phase, phaseProgress, questionText])
 
   const hasSentQuestion = isAtOrAfter(phase, 'send_question')
 
   const coachResponseLines = useMemo(() => {
     if (phase === 'coach_reply') {
-      const chars = Math.floor(totalChars(COACH_REPLY_LINES) * easeInOut(phaseProgress))
-      return sliceLinesByChars(COACH_REPLY_LINES, chars)
+      const chars = Math.floor(totalChars(coachReplyLines) * easeInOut(phaseProgress))
+      return sliceLinesByChars(coachReplyLines, chars)
     }
 
     if (isAtOrAfter(phase, 'read_reply')) {
-      return [...COACH_REPLY_LINES]
+      return [...coachReplyLines]
     }
 
     return ['', '', '']
-  }, [phase, phaseProgress])
+  }, [coachReplyLines, phase, phaseProgress])
 
   const previewRootRef = useRef<HTMLDivElement>(null)
   const editorAnchorRef = useRef<HTMLSpanElement>(null)
@@ -650,7 +655,7 @@ export function AnimatedProductPreview({
 
       <div className={`mt-4 rounded-[18px] border px-3.5 py-3 ${previewStoryClass}`}>
         <div className="grid gap-2.5 sm:grid-cols-6 sm:items-stretch">
-          {STORY_STEPS.map((step, index) => {
+          {storySteps.map((step, index) => {
             const Icon = step.icon
             const isDone = index < storyStepIndex
             const isActive = index === storyStepIndex
@@ -720,7 +725,7 @@ export function AnimatedProductPreview({
               )}
             >
               <Play className="h-3 w-3" aria-hidden="true" />
-              {isRunning ? 'Running' : 'Run'}
+              {isRunning ? t('actions.running') : t('actions.run')}
             </span>
           </div>
 
@@ -798,14 +803,14 @@ export function AnimatedProductPreview({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <span className="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border border-pebble-border/28 bg-pebble-overlay/[0.12] shadow-[0_6px_12px_rgba(55,72,110,0.10)]">
-                <PebbleCoachLogo theme={theme} alt="PebbleCode coach" />
+                <PebbleCoachLogo theme={theme} alt={t('landing.preview.coachLogoAlt')} />
               </span>
               <p className={classNames('text-[13px] font-semibold text-pebble-text-primary dark:text-[hsl(220_20%_94%)]', isUrdu && 'rtlText')}>
                 {previewCoach}
               </p>
             </div>
             <span className="pebble-chip rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em]">
-              {getCoachStateLabel(phase)}
+              {getCoachStateLabel(phase, t)}
             </span>
           </div>
 
@@ -819,7 +824,7 @@ export function AnimatedProductPreview({
                   )}
                   aria-hidden={!hasSentQuestion}
                 >
-                  {QUESTION_TEXT}
+                  {questionText}
                 </div>
               </div>
 
@@ -829,7 +834,7 @@ export function AnimatedProductPreview({
               >
                 {phase === 'coach_thinking' ? (
                   <div className="flex items-center gap-1.5">
-                    <span>Analyzing run output</span>
+                    <span>{t('landing.preview.coachThinking')}</span>
                     <span className="landing-preview-thinking-dots" aria-hidden="true">
                       <span className="landing-preview-thinking-dot" />
                       <span className="landing-preview-thinking-dot" />
@@ -838,13 +843,13 @@ export function AnimatedProductPreview({
                   </div>
                 ) : isAtOrAfter(phase, 'coach_reply') ? (
                   <div className="space-y-1.5">
-                    <p className="font-medium text-pebble-text-primary">Grounded suggestion</p>
+                    <p className="font-medium text-pebble-text-primary">{t('landing.preview.groundedSuggestion')}</p>
                     <p className="min-h-[1.2em]">{coachResponseLines[0] || ' '}</p>
                     <p className="min-h-[1.2em]">{coachResponseLines[1] || ' '}</p>
                     <p className="min-h-[1.2em]">{coachResponseLines[2] || ' '}</p>
                   </div>
                 ) : (
-                  <p>Run once, then ask Pebble why the case failed.</p>
+                  <p>{t('landing.preview.coachIdle')}</p>
                 )}
               </div>
             </div>
@@ -860,7 +865,7 @@ export function AnimatedProductPreview({
             )}
           >
             <div className="min-w-0 flex-1 text-[12px] text-pebble-text-secondary">
-              {inputText ? <span className="text-pebble-text-primary">{inputText}</span> : <span className="opacity-70">Ask Pebble...</span>}
+              {inputText ? <span className="text-pebble-text-primary">{inputText}</span> : <span className="opacity-70">{t('chat.placeholder')}</span>}
             </div>
             <span
               ref={sendButtonRef}
@@ -884,7 +889,7 @@ export function AnimatedProductPreview({
               : 'border-pebble-accent/22 bg-pebble-accent/10 text-pebble-text-secondary',
             isUrdu && 'rtlText',
           )}>
-            Recovery loop: run, inspect, ask, fix, rerun.
+            {t('landing.preview.recoveryLoop')}
           </div>
         </div>
       </div>

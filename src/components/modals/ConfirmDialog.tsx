@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useI18n } from '../../i18n/useI18n'
 
 interface ConfirmDialogProps {
     open: boolean
@@ -17,12 +18,13 @@ export function ConfirmDialog({
     open,
     title,
     description,
-    confirmText = 'Confirm',
-    cancelText = 'Cancel',
+    confirmText,
+    cancelText,
     dontAskKey,
     onConfirm,
     onClose,
 }: ConfirmDialogProps) {
+    const { t } = useI18n()
     const titleId = useId()
     const [dontAsk, setDontAsk] = useState(false)
     const confirmButtonRef = useRef<HTMLButtonElement>(null)
@@ -58,6 +60,9 @@ export function ConfirmDialog({
         }
         onConfirm()
     }
+
+    const confirmLabel = confirmText ?? t('confirm.defaultConfirm')
+    const cancelLabel = cancelText ?? t('actions.close')
 
     return createPortal(
         <div
@@ -105,7 +110,7 @@ export function ConfirmDialog({
                             onChange={(e) => setDontAsk(e.target.checked)}
                             className="h-3.5 w-3.5 accent-pebble-accent"
                         />
-                        <span>Don't ask again</span>
+                        <span>{t('confirm.dontAskAgain')}</span>
                     </label>
                 )}
 
@@ -122,7 +127,7 @@ export function ConfirmDialog({
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-border/50',
                         ].join(' ')}
                     >
-                        {cancelText}
+                        {cancelLabel}
                     </button>
                     <button
                         ref={confirmButtonRef}
@@ -135,7 +140,7 @@ export function ConfirmDialog({
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pebble-warning/40',
                         ].join(' ')}
                     >
-                        {confirmText}
+                        {confirmLabel}
                     </button>
                 </div>
             </div>

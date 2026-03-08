@@ -40,7 +40,7 @@ export function StruggleNudgeBar({
           <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className={`text-[12.5px] font-semibold text-pebble-text-primary ${isRTL ? 'rtlText' : ''}`}>Need a nudge?</p>
+          <p className={`text-[12.5px] font-semibold text-pebble-text-primary ${isRTL ? 'rtlText' : ''}`}>{t('chat.needNudge')}</p>
           <p className={`mt-0.5 text-[11.5px] leading-relaxed text-pebble-text-secondary ${isRTL ? 'rtlText' : ''}`}>{message}</p>
         </div>
       </div>

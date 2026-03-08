@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import type { ProblemLanguage } from '../../data/problemsBank'
 import { Button } from '../ui/Button'
 import { useTheme } from '../../hooks/useTheme'
+import { useI18n } from '../../i18n/useI18n'
 
 export type ProblemsFilterState = {
   status: 'all' | 'solved' | 'unsolved'
@@ -65,6 +66,7 @@ export function ProblemsFilterPopover({
   labels,
 }: ProblemsFilterPopoverProps) {
   const { theme } = useTheme()
+  const { t } = useI18n()
   const isDark = theme === 'dark'
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<ProblemsFilterState>(value)
@@ -156,7 +158,7 @@ export function ProblemsFilterPopover({
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-pebble-text-muted">{labels.filter}</p>
-            <p className="mt-1 text-[13px] leading-[1.6] text-pebble-text-secondary">Refine by status, difficulty, language, and topics.</p>
+            <p className="mt-1 text-[13px] leading-[1.6] text-pebble-text-secondary">{t('problems.filters.helper')}</p>
           </div>
         </div>
 

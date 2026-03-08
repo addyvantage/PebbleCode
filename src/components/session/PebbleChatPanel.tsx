@@ -71,13 +71,13 @@ function renderMarkdown(text: string): ReactNode {
   })
 }
 
-function formatAgentResponse(response: AgentResponse): string {
+function formatAgentResponse(response: AgentResponse, t: ReturnType<typeof useI18n>['t']): string {
   const parts: string[] = []
   if (response.reasoning_brief) parts.push(response.reasoning_brief)
-  if (response.hints.length > 0) parts.push('Hints:\n' + response.hints.map((hint, index) => `${index + 1}. ${hint}`).join('\n'))
-  if (response.steps.length > 0) parts.push('Steps:\n' + response.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'))
-  if (response.patch_suggestion) parts.push('Suggested fix:\n' + response.patch_suggestion)
-  return parts.join('\n\n') || 'No response.'
+  if (response.hints.length > 0) parts.push(`${t('chat.agent.hints')}:\n` + response.hints.map((hint, index) => `${index + 1}. ${hint}`).join('\n'))
+  if (response.steps.length > 0) parts.push(`${t('chat.agent.steps')}:\n` + response.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'))
+  if (response.patch_suggestion) parts.push(`${t('chat.agent.suggestedFix')}:\n` + response.patch_suggestion)
+  return parts.join('\n\n') || t('chat.agent.noResponse')
 }
 
 const INTERNAL_AGENT_FLAGS = new Set([
@@ -99,9 +99,11 @@ function formatDebugFlag(flag: string) {
 function AgentResponseView({
   response,
   showDebugFlags,
+  t,
 }: {
   response: AgentResponse
   showDebugFlags: boolean
+  t: ReturnType<typeof useI18n>['t']
 }) {
   const hintCards = buildHintCards(response.hints)
   const visibleDebugFlags = showDebugFlags
@@ -122,7 +124,7 @@ function AgentResponseView({
       {/* Hints */}
       {response.hints.length > 0 && (
         <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">Hints</p>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">{t('chat.agent.hints')}</p>
           <div className="space-y-1.5">
             {hintCards.map((hint) => (
               <div
@@ -140,7 +142,7 @@ function AgentResponseView({
       {/* Steps */}
       {response.steps.length > 0 && (
         <div>
-          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">Next steps</p>
+          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">{t('chat.agent.steps')}</p>
           <ol className="space-y-0.5">
             {response.steps.map((step, i) => (
               <li key={i} className="flex gap-1.5">
@@ -155,7 +157,7 @@ function AgentResponseView({
       {/* Patch suggestion */}
       {response.patch_suggestion && (
         <div>
-          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">Suggested fix</p>
+          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-pebble-text-muted">{t('chat.agent.suggestedFix')}</p>
           <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-pebble-border/25 bg-pebble-overlay/[0.06] p-2 font-mono text-[11px] text-pebble-text-primary">
             {response.patch_suggestion}
           </pre>
@@ -482,7 +484,7 @@ export function PebbleChatPanel({
           if (requestIdRef.current !== requestId) return
 
           // Format as readable text for the typewriter
-          const formattedText = formatAgentResponse(agentResult)
+          const formattedText = formatAgentResponse(agentResult, t)
           setAssistantState('idle')
           // Push with agent response metadata attached
           clearTyping()
@@ -726,7 +728,7 @@ export function PebbleChatPanel({
       <div className="session-inset rounded-2xl px-3 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <p className={`text-[10px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>Mentor context</p>
+            <p className={`text-[10px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>{t('chat.mentorContext')}</p>
             <p className={`text-sm leading-6 text-pebble-text-secondary ${isUrdu ? 'rtlText' : ''}`}>
               {hasRunContext ? t('chat.helperGrounded') : t('chat.helperUnlock')}
             </p>
@@ -790,12 +792,20 @@ export function PebbleChatPanel({
             className="ml-1.5 inline-flex items-center gap-1 rounded-full border border-pebble-border/35 bg-pebble-accent/[0.10] px-2.5 py-1 text-[10px] font-medium text-pebble-text-primary motion-safe:animate-[tierFadeIn_150ms_ease-out]"
           >
             {selectedTier === 1 ? <Lightbulb className="h-3 w-3 text-pebble-accent" /> : selectedTier === 2 ? <Search className="h-3 w-3 text-pebble-accent" /> : <Wrench className="h-3 w-3 text-pebble-accent" />}
-            {selectedTier === 1 ? 'Hint only' : selectedTier === 2 ? 'Explain + Approach' : 'Full fix'}
+            {selectedTier === 1
+              ? t('chat.tier.hintOnly')
+              : selectedTier === 2
+                ? t('chat.tier.explainApproach')
+                : t('chat.tier.fullFix')}
           </span>
         </div>
 
         <p className={`text-[10px] uppercase tracking-[0.08em] text-pebble-text-muted ${isUrdu ? 'rtlText' : ''}`}>
-          {selectedTier === 1 ? 'Nudge only' : selectedTier === 2 ? 'Explain with direction' : 'Guided full fix'}
+          {selectedTier === 1
+            ? t('chat.tier.nudgeOnly')
+            : selectedTier === 2
+              ? t('chat.tier.explainDirection')
+              : t('chat.tier.guidedFullFix')}
         </p>
       </div>
 
@@ -803,9 +813,9 @@ export function PebbleChatPanel({
       <div className="pebble-scrollbar session-inset min-h-0 flex-1 space-y-2 overflow-y-auto rounded-[24px] p-3 pr-3">
         {messages.length === 1 && assistantState === 'idle' && !agentError ? (
           <div className="rounded-2xl border border-pebble-border/20 bg-pebble-overlay/[0.05] px-3.5 py-3.5 text-sm text-pebble-text-secondary">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted">Need a nudge?</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-pebble-text-muted">{t('chat.needNudge')}</p>
             <p className={`mt-2 leading-6 ${isUrdu ? 'rtlText' : ''}`}>
-              Ask Pebble for a hint, a clearer explanation, or the next recovery step after a failed run.
+              {t('chat.nudgeBody')}
             </p>
           </div>
         ) : null}
@@ -823,7 +833,7 @@ export function PebbleChatPanel({
               </p>
             )}
             {message.agentResponse ? (
-              <AgentResponseView response={message.agentResponse} showDebugFlags={showDebugFlags} />
+              <AgentResponseView response={message.agentResponse} showDebugFlags={showDebugFlags} t={t} />
             ) : (
               <p className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${isUrdu ? 'rtlText' : ''}`}>{renderMarkdown(message.text)}</p>
             )}
@@ -838,14 +848,14 @@ export function PebbleChatPanel({
                 <span className="h-1 w-1 animate-pulse rounded-full bg-pebble-accent/70" style={{ animationDelay: '200ms' }} />
                 <span className="h-1 w-1 animate-pulse rounded-full bg-pebble-accent/70" style={{ animationDelay: '400ms' }} />
               </span>
-              {useAgentMode ? 'Agent thinking…' : t('chat.thinking')}
+              {useAgentMode ? t('chat.agentThinking') : t('chat.thinking')}
             </span>
           </div>
         )}
 
         {agentError && assistantState === 'idle' && (
           <div className="mr-auto max-w-[95%] rounded-2xl border border-pebble-warning/40 bg-pebble-warning/10 px-3 py-2.5 text-xs text-pebble-text-primary">
-            <p className="font-medium text-pebble-warning">Couldn't reach Pebble</p>
+            <p className="font-medium text-pebble-warning">{t('chat.unreachableTitle')}</p>
             <p className="mt-0.5 text-pebble-text-secondary">{agentError}</p>
             {lastAsked && (
               <button
@@ -853,7 +863,7 @@ export function PebbleChatPanel({
                 onClick={() => { setAgentError(null); void submitQuestion(lastAsked, { appendUser: false }) }}
                 className="mt-1.5 rounded-lg border border-pebble-border/30 bg-pebble-overlay/[0.10] px-2 py-0.5 text-[11px] font-medium text-pebble-text-primary transition hover:bg-pebble-overlay/[0.20]"
               >
-                Retry
+                {t('actions.retry')}
               </button>
             )}
           </div>

@@ -1063,19 +1063,19 @@ export function SessionPage() {
     if (!lastNudgeVisibleRef.current && nextVisible) {
       pushNotification({
         category: 'coach',
-        title: 'Pebble Coach suggested a hint',
-        message: 'You look stuck. Open coach for a quick nudge.',
+        title: t('session.notification.coachHintTitle'),
+        message: t('session.notification.coachHintMessage'),
         actionRoute: '/session/1',
-        actionLabel: 'Open coach',
+        actionLabel: t('session.notification.openCoach'),
       })
     }
     if (lastNudgeLevelRef.current < 2 && nextState.level >= 2) {
       pushNotification({
         category: 'coach',
-        title: 'You reached Tier 2 guidance',
-        message: 'Explain mode is now available for this attempt.',
+        title: t('session.notification.tier2Title'),
+        message: t('session.notification.tier2Message'),
         actionRoute: '/session/1',
-        actionLabel: 'View guidance',
+        actionLabel: t('session.notification.viewGuidance'),
       })
     }
     lastNudgeVisibleRef.current = nextVisible
@@ -1814,12 +1814,12 @@ export function SessionPage() {
         })
         pushNotification({
           category: 'progress',
-          title: `Run completed: ${passedCount}/${currentUnit.tests.length} tests passed`,
+          title: t('session.notification.runCompletedTitle', { passed: passedCount, total: currentUnit.tests.length }),
           message: allPassed
-            ? 'Great run. All visible tests passed.'
-            : 'Some tests are still failing. Review diagnostics and retry.',
+            ? t('session.notification.runCompletedSuccess')
+            : t('session.notification.runCompletedFail'),
           actionRoute: '/session/1',
-          actionLabel: 'Open session',
+          actionLabel: t('session.notification.openSession'),
         })
       } else {
         logSubmitEvent({
@@ -1835,12 +1835,12 @@ export function SessionPage() {
         })
         pushNotification({
           category: 'progress',
-          title: allPassed ? 'Submission accepted ✅' : 'Submission failed ❌',
+          title: allPassed ? t('session.notification.submissionAccepted') : t('session.notification.submissionFailed'),
           message: allPassed
-            ? `All ${currentUnit.tests.length} tests passed.`
-            : `${passedCount}/${currentUnit.tests.length} tests passed. Check failing diagnostics.`,
+            ? t('session.notification.submissionAcceptedMessage', { total: currentUnit.tests.length })
+            : t('session.notification.submissionFailedMessage', { passed: passedCount, total: currentUnit.tests.length }),
           actionRoute: '/session/1',
-          actionLabel: 'Open submissions',
+          actionLabel: t('session.notification.openSubmissions'),
         })
 
         // ── Phase 6: Trigger learning journey update (fire-and-forget) ────────
@@ -1878,19 +1878,19 @@ export function SessionPage() {
           if (!wasCompleted) {
             pushNotification({
               category: 'progress',
-              title: `Streak saved: Day ${Math.max(1, currentStreak.streak + 1)} 🔥`,
-              message: 'Keep momentum by completing one more run tomorrow.',
+              title: t('session.notification.streakSavedTitle', { day: Math.max(1, currentStreak.streak + 1) }),
+              message: t('session.notification.streakSavedMessage'),
               actionRoute: '/dashboard',
-              actionLabel: 'View insights',
+              actionLabel: t('session.notification.viewInsights'),
             })
             const nextUnit = units[currentUnitIndex + 1]
             if (nextUnit) {
               pushNotification({
                 category: 'progress',
-                title: `New unit unlocked: ${nextUnit.title}`,
-                message: 'Your next guided step is ready.',
+                title: t('session.notification.newUnitUnlockedTitle', { title: nextUnit.title }),
+                message: t('session.notification.newUnitUnlockedMessage'),
                 actionRoute: '/session/1',
-                actionLabel: 'Start next unit',
+                actionLabel: t('session.notification.startNextUnit'),
               })
             }
           }
@@ -2295,16 +2295,16 @@ export function SessionPage() {
           </Link>
 
           <span
-            title="Track controls recommendations and pacing. You can solve in any language."
+            title={t('session.trackTooltip')}
             className="hidden rounded-full border border-pebble-border/30 bg-pebble-overlay/[0.08] px-3 py-1.5 text-xs font-medium text-pebble-text-secondary md:inline-flex"
           >
-            Track: {languageMeta.label} • {levelLabel}
+            {t('session.trackLabel')}: {languageMeta.label} • {levelLabel}
           </span>
           <Link
             to="/onboarding"
             className="hidden text-xs font-medium text-pebble-accent transition hover:text-pebble-accent-strong md:inline-flex"
           >
-            Change track
+            {t('session.changeTrack')}
           </Link>
         </div>
 
@@ -2350,8 +2350,8 @@ export function SessionPage() {
                   type="button"
                   variant="secondary"
                   size="sm"
-                  title="Page settings"
-                  aria-label="Page settings"
+                  title={t('topBar.pageSettings')}
+                  aria-label={t('topBar.pageSettings')}
                   onClick={() => setPageSettingsOpen(true)}
                   className="h-8 w-8 rounded-full border-pebble-border/30 bg-pebble-overlay/[0.08] p-0 text-pebble-text-primary hover:border-pebble-border/45 hover:bg-pebble-overlay/[0.16]"
                 >
@@ -2359,7 +2359,7 @@ export function SessionPage() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" align="center">
-                Page settings
+                {t('topBar.pageSettings')}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -2386,8 +2386,8 @@ export function SessionPage() {
           {/* Export Report */}
           <button
             disabled={reportLoading}
-            aria-label="Export recovery report"
-            title="Export Recovery Report"
+            aria-label={t('session.exportRecoveryReport')}
+            title={t('session.exportRecoveryReport')}
             className="flex items-center gap-1.5 rounded-2xl border border-pebble-border/30 bg-pebble-overlay/[0.08] px-3.5 py-2 text-[13px] font-medium text-pebble-text-primary transition hover:bg-pebble-overlay/[0.16] disabled:opacity-50"
             onClick={async () => {
               setReportLoading(true)
@@ -2410,7 +2410,7 @@ export function SessionPage() {
                   },
                   body: JSON.stringify({
                     problemId: currentUnit?.id ?? 'unknown',
-                    problemTitle: activeProblem?.title ?? currentUnit?.title ?? 'Problem',
+                    problemTitle: activeProblem?.title ?? currentUnit?.title ?? t('session.problemFallback'),
                     difficulty: activeProblem?.difficulty ?? sessionDifficultyLabel,
                     language: editorPlacementLanguage,
                     userId: reportUserId,
@@ -2423,21 +2423,21 @@ export function SessionPage() {
                 const d = await r.json() as { reportUrl?: string; error?: string }
                 if (d.reportUrl) {
                   if (win) win.location.href = d.reportUrl
-                  setReportToast({ kind: 'ok', msg: 'Report ready — opening in new tab.' })
+                  setReportToast({ kind: 'ok', msg: t('session.reportReadyOpening') })
                   pushNotification({
                     category: 'system',
-                    title: 'Exported recovery report',
-                    message: 'Your report was generated successfully.',
+                    title: t('session.notification.reportExportedTitle'),
+                    message: t('session.notification.reportExportedMessage'),
                     actionRoute: '/dashboard',
-                    actionLabel: 'View insights',
+                    actionLabel: t('session.notification.viewInsights'),
                   })
                 } else {
                   if (win) win.close()
-                  setReportToast({ kind: 'err', msg: d.error ?? 'Report generation failed.' })
+                  setReportToast({ kind: 'err', msg: d.error ?? t('session.reportGenerationFailed') })
                 }
               } catch (err) {
                 if (win) win.close()
-                setReportToast({ kind: 'err', msg: err instanceof Error ? err.message : 'Network error.' })
+                setReportToast({ kind: 'err', msg: err instanceof Error ? err.message : t('error.network') })
               } finally {
                 setReportLoading(false)
                 setTimeout(() => setReportToast(null), 5000)
@@ -2445,14 +2445,14 @@ export function SessionPage() {
             }}
           >
             <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-            {reportLoading ? 'Generating…' : 'Export Report'}
+            {reportLoading ? t('session.generating') : t('session.exportReport')}
           </button>
 
           {/* Share Session */}
           <button
             disabled={shareLoading}
-            aria-label="Share session snapshot"
-            title="Share Session Snapshot"
+            aria-label={t('session.shareSnapshot')}
+            title={t('session.shareSnapshot')}
             className="flex items-center gap-1.5 rounded-2xl border border-violet-500/30 bg-violet-500/[0.08] px-3.5 py-2 text-[13px] font-medium text-pebble-text-primary transition hover:bg-violet-500/[0.16] disabled:opacity-50"
             onClick={async () => {
               setShareLoading(true)
@@ -2477,18 +2477,18 @@ export function SessionPage() {
                   setShareToast(d.shareUrl)
                   pushNotification({
                     category: 'system',
-                    title: 'Share session link created',
-                    message: 'Session snapshot link copied to your clipboard.',
+                    title: t('session.notification.shareLinkTitle'),
+                    message: t('session.notification.shareLinkMessage'),
                     actionRoute: '/session/1',
-                    actionLabel: 'Open session',
+                    actionLabel: t('session.notification.openSession'),
                   })
                   setTimeout(() => setShareToast(null), 5000)
                 } else {
-                  setShareToast('⚠ Snapshot failed — try again.')
+                  setShareToast(`⚠ ${t('session.snapshotFailed')}`)
                   setTimeout(() => setShareToast(null), 4000)
                 }
               } catch (err) {
-                setShareToast(`⚠ ${err instanceof Error ? err.message : 'Network error.'}`)
+                setShareToast(`⚠ ${err instanceof Error ? err.message : t('error.network')}`)
                 setTimeout(() => setShareToast(null), 4000)
               } finally {
                 setShareLoading(false)
@@ -2496,13 +2496,13 @@ export function SessionPage() {
             }}
           >
             <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
-            {shareLoading ? 'Sharing…' : 'Share Session'}
+            {shareLoading ? t('session.sharing') : t('session.shareSession')}
           </button>
 
           {/* Report toast */}
           {reportToast && (
             <div className={`fixed right-4 top-[4.5rem] z-[200] max-w-[320px] rounded-xl border px-4 py-2.5 text-[12.5px] shadow-xl backdrop-blur-xl ${reportToast.kind === 'ok' ? 'border-pebble-success/30 bg-pebble-bg/95' : 'border-red-500/30 bg-pebble-bg/95'}`}>
-              <p className="font-semibold text-pebble-text-primary">{reportToast.kind === 'ok' ? 'Report ready!' : 'Export failed'}</p>
+              <p className="font-semibold text-pebble-text-primary">{reportToast.kind === 'ok' ? t('session.reportReady') : t('session.exportFailed')}</p>
               <p className="truncate text-pebble-text-secondary">{reportToast.msg}</p>
             </div>
           )}
@@ -2510,7 +2510,7 @@ export function SessionPage() {
           {/* Share toast */}
           {shareToast && !reportToast && (
             <div className={`fixed right-4 top-[4.5rem] z-[200] max-w-[320px] rounded-xl border px-4 py-2.5 text-[12.5px] shadow-xl backdrop-blur-xl ${shareToast.startsWith('⚠') ? 'border-red-500/30 bg-pebble-bg/95' : 'border-violet-500/30 bg-pebble-bg/95'}`}>
-              <p className="font-semibold text-pebble-text-primary">{shareToast.startsWith('⚠') ? 'Share failed' : 'Link copied!'}</p>
+              <p className="font-semibold text-pebble-text-primary">{shareToast.startsWith('⚠') ? t('session.shareFailed') : t('session.linkCopied')}</p>
               <p className="truncate text-pebble-text-secondary">{shareToast}</p>
             </div>
           )}
@@ -2562,7 +2562,7 @@ export function SessionPage() {
                     value={sessionLanguage}
                     options={dropdownLanguageOptions}
                     onChange={switchLanguage}
-                    footerActionLabel="Reset editor language to track"
+                    footerActionLabel={t('session.resetLanguageToTrack')}
                     onFooterAction={resetEditorLanguageToTrack}
                   />
 
@@ -2618,14 +2618,14 @@ export function SessionPage() {
               <div className="border-b border-pebble-border/12 px-4 py-2">
                 <div className="session-inset flex items-center justify-between gap-3 rounded-2xl px-3 py-2">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-pebble-text-muted">Workspace</p>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-pebble-text-muted">{t('session.workspaceLabel')}</p>
                     <p className="truncate text-xs text-pebble-text-secondary">
-                      Runtime-aware editor with grounded mentor guidance and judged testcases.
+                      {t('session.workspaceHint')}
                     </p>
                   </div>
                   <div className="hidden items-center gap-2 lg:flex">
-                    <span className="session-chip rounded-full px-2.5 py-1 text-[11px] font-medium">Editor focus</span>
-                    <span className="session-chip rounded-full px-2.5 py-1 text-[11px] font-medium">{currentModeDescriptor.mode === 'function' ? 'Function mode' : 'Stdio mode'}</span>
+                    <span className="session-chip rounded-full px-2.5 py-1 text-[11px] font-medium">{t('session.editorFocus')}</span>
+                    <span className="session-chip rounded-full px-2.5 py-1 text-[11px] font-medium">{currentModeDescriptor.mode === 'function' ? t('editor.functionMode') : t('editor.stdioMode')}</span>
                   </div>
                 </div>
               </div>
@@ -2664,7 +2664,7 @@ export function SessionPage() {
 
               <div className="flex items-center justify-between gap-3 border-t border-pebble-border/20 px-4 py-2.5 text-xs text-pebble-text-secondary">
                 <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-pebble-text-muted">Session status</p>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-pebble-text-muted">{t('session.statusLabel')}</p>
                   <p className="truncate text-[13.5px] text-pebble-text-secondary">{runMessage}</p>
                 </div>
                 {currentIsCompleted ? (
@@ -2851,10 +2851,10 @@ export function SessionPage() {
       )}
       <ConfirmDialog
         open={isResetConfirmOpen}
-        title="Reset editor?"
-        description="This will replace your current code with the starter template. You can't undo this."
-        confirmText="Reset"
-        cancelText="Cancel"
+        title={t('confirm.resetEditorTitle')}
+        description={t('confirm.resetEditorDescription')}
+        confirmText={t('confirm.resetAction')}
+        cancelText={t('actions.close')}
         dontAskKey="pebble.confirmReset.v1"
         onConfirm={() => { setIsResetConfirmOpen(false); executeReset() }}
         onClose={() => setIsResetConfirmOpen(false)}

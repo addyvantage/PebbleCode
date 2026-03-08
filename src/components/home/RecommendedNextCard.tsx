@@ -183,7 +183,7 @@ export function RecommendedNextCard({ className }: RecommendedNextCardProps) {
                             <button
                                 onClick={() => setIsExpanded(false)}
                                 className="ml-4 shrink-0 rounded-full p-1.5 text-pebble-text-muted hover:bg-pebble-overlay/[0.08] hover:text-pebble-text-primary transition-colors focus:outline-none"
-                                aria-label="Close"
+                                aria-label={t('actions.close')}
                             >
                                 <X className="h-4 w-4" />
                             </button>
