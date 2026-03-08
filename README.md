@@ -44,7 +44,7 @@ Instead of optimizing only for accepted submissions, PebbleCode emphasizes the r
   </tr>
   <tr>
     <td align="center">
-      <img src="docs/readme-assets/aws-logo.png" alt="AWS" width="170" />
+      <img src="docs/readme-assets/aws-logo-amazon-web-services.png" alt="AWS" width="170" />
     </td>
     <td align="center">
       <img src="docs/readme-assets/aws-bedrock-icon.png" alt="AWS Bedrock" width="72" /><br/>
