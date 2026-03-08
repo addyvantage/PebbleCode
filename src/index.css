@@ -158,7 +158,7 @@ html {
     margin: 0;
     min-width: 320px;
     overflow-y: visible;
-    overflow-x: hidden;
+    overflow-x: clip;
     background:
       radial-gradient(980px 360px at 12% -10%,
         rgba(var(--pebble-glow-primary), 0.16),
