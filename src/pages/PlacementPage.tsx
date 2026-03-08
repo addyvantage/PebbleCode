@@ -345,7 +345,7 @@ export function PlacementPage() {
   }
 
   return (
-    <section className="min-h-[100dvh] overflow-x-hidden px-3 pb-5 pt-2.5">
+    <section className="min-h-[100dvh] px-3 pb-5 pt-2.5">
       <Card
         padding="md"
         className={classNames(
