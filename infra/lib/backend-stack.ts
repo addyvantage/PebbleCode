@@ -92,7 +92,7 @@ export class BackendStack extends cdk.Stack {
     // core language set exposed in the Session UI: Python, JavaScript, C++17,
     // Java 17, and C. SQL continues to use the app-level checker path.
     const runnerFn = new lambda.DockerImageFunction(this, 'PebbleRunnerFunction', {
-      functionName: 'PebbleRunnerFunction',
+      functionName: 'PebbleRunnerFunctionV2',
       description: 'Pebble Runner — executes Python, JavaScript, C++17, Java 17, and C in isolated subprocesses',
       code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, '../../runner/container')),
       architecture: lambda.Architecture.X86_64,
